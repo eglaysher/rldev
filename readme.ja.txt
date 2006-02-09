@@ -40,7 +40,7 @@
 
 kƒ‰ƒCƒZƒ“ƒXl
 
-  Program and documentation are copyright (C) 2005 Peter Jolly (Haeleth).
+  Program and documentation are copyright (C) 2006 Peter Jolly (Haeleth).
 
   This program is free software; you can redistribute it and/or modify it under
   the terms of the GNU General Public License as published by the Free Software

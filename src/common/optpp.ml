@@ -1,5 +1,5 @@
 (*
-   Copyright (C) 2005 Haeleth; based on code copyright (C) 2000 Alain Frisch
+   Copyright (C) 2006 Haeleth; based on code copyright (C) 2000 Alain Frisch
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software

@@ -1,6 +1,6 @@
 (*
     Rlc: general-purpose string tokeniser
-    Copyright (C) 2005 Haeleth
+    Copyright (C) 2006 Haeleth
 
    Replaces three specialised lexers (KeULexer.lex_string, KeULexer.lex_resstr,
    and TextLexer.lex in RLAS 1.03) with one that adequately handles all cases.

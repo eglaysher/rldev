@@ -1,6 +1,6 @@
 /*
    Rlc: Kepago parser
-   Copyright (C) 2005 Haeleth
+   Copyright (C) 2006 Haeleth
 
    This parser is for use with the Menhir LR(1) parser generator, _not_ with
    ocamlyacc.

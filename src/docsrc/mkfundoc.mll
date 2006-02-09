@@ -1,6 +1,6 @@
 (*
    RLdev: function definition documentation mangler
-   Copyright (C) 2005 Haeleth
+   Copyright (C) 2006 Haeleth
 
    This is not meant to be a friendly or pretty program, but it does the job. 
    Such documentation as there is is in the comments at the start of each 

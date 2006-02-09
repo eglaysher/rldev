@@ -1,6 +1,6 @@
 (*
     Rlc: tokenised string type utilities
-    Copyright (C) 2005 Haeleth
+    Copyright (C) 2006 Haeleth
 
    The type itself was originally defined here, but had to be moved to KeAst to
    permit mutual recursion with KeAst.expression and KeAst.parameter.
