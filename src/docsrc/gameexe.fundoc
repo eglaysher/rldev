@@ -743,16 +743,16 @@ used with @ref{select_w}.
 @ivar/WINDOW_EXBTN_USE/%<flag>/
 @ivar/WINDOW_KOEPLAY_USE/%<flag>/ % \minver{variable}{1.3.4}
 
+@ivar/OBJECT/
+% OBJECT.obj = Level, SpaceKey, ObjOnOff, TimeMod, DispSort, InitMod, WeatherOnOff
+% later vars can be omitted (WeatherOnOff usually is)
+% obj 999 sets all objects not mentioned in other #OBJECT directives
+
 @def/Undocumented variables/
 @{
   Some variables are not yet documented. If you followed a link here, you
   just found a reference to one in the documentation. Sorry.
 @}
-
-@ivar/OBJECT/
-% OBJECT.obj = Level, SpaceKey, ObjOnOff, TimeMod, DispSort, InitMod, WeatherOnOff
-% later vars can be omitted (WeatherOnOff usually is)
-% obj 999 sets all objects not mentioned in other #OBJECT directives
 
 @ivar1/SYSCOM_MOD/flag/
 @{
@@ -776,6 +776,6 @@ used with @ref{select_w}.
 @{
   \minver{variable}{1.2.5}
   
-  Loads <filename>.DLL into extension DLL slot <idx>.  See \ref{sec:dlls} for details
-  of the extension DLL system.
+  Loads <filename> into extension DLL slot <idx>.  The \file{.dll} extension can be
+  omitted.  See \ref{sec:dlls} for details of the extension DLL system.
 @}
