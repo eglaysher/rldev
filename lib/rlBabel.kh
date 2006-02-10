@@ -1,0 +1,252 @@
+{-# enc CP932 #- 
+  rlBabel.kh: dynamically lineated text display engine with proportional text support.
+
+  Copyright (c) 2006 Peter Jolly.
+
+  This library is free software; you can redistribute it and/or modify it under
+  the terms of the GNU Lesser General Public License as published by the Free
+  Software Foundation; either version 2.1 of the License, or (at your option) any
+  later version.
+
+  This library is distributed in the hope that it will be useful, but WITHOUT
+  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+  FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+  details.
+
+  You should have received a copy of the GNU Lesser General Public License
+  along with this library; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+  As a special exception to the GNU Lesser General Public License, you may
+  include a publicly distributed version of the library in a "work that uses the
+  Library" to produce a scenario file containing portions of the library, and
+  distribute that scenario file under terms of your choice, without any of the
+  additional requirements listed in clause 6 of the GNU Lesser General Public
+  License.  A "publicly distributed version of the library" means either an
+  unmodified library as distributed by Haeleth, or a modified version of the
+  library that is distributed under the conditions defined in clause 2 of the
+  GNU Lesser General Public License.  Note that this exception does not
+  invalidate any other reasons why the scenario file might be covered by the
+  GNU Lesser General Public License.
+-}
+
+#ifdef __TEXTOUT_KH__
+  #error 'The Textout and rlBabel libraries are mutually exclusive: you can only use one or the other.'
+#endif
+
+#ifndef __RLBABEL_KH__
+#define __RLBABEL_KH__
+
+#ifndef __DynamicLineation__   #define __DynamicLineation__   #endif
+#if !__DynamicLineation__      #set __DynamicLineation__ = 1  #endif
+#ifdef __dynamic_textout_print #undef __dynamic_textout_print #endif
+
+#if target_lt(1,2)
+  #error 'The rlBabel library can only be used with RealLive 1.2 or greater.'
+#endif
+
+#const OldType = target_lt(1,2,5)
+
+#ifndef rlBabel
+  #if OldType
+    #const rlBabel = 'rlBabelF'
+  #else
+    #const rlBabel = 'rlBabel'
+  #endif
+#endif
+
+// DLL index... this won't apply to 1.2.3.5 etc, of course.
+#const rlBabelDLL = -1
+#if OldType
+  #set rlBabelDLL = 0
+#else
+  #for i = 0 .. 15:
+    #if rlBabelDLL == -1
+      #if __equal_strings?(gameexe('DLL.\i:3{i}', 0, ''), rlBabel)
+        #set rlBabelDLL = i
+      #endif
+    #endif;
+  #if rlBabelDLL == -1
+    #error 'load of ' + rlBabel + ' not found'
+  #endif
+#endif
+
+
+// Static variables
+
+#if default (__DebugTextout__, 0) && !defined? (__NoDebug__)
+  #define __AllLabelled__
+#endif
+int __rlb_xmod
+str __rlb_buffer, __rlb_empty
+#if default (__DebugTextout__, 0) && !defined? (__NoDebug__)
+  #undef __AllLabelled__
+#endif
+
+// Function IDs: DLL
+#const dllInitialise     = 0
+
+// Function IDs: Textout
+#const dllTextoutStart     = 10,
+       dllTextoutAppend    = 11,
+       dllTextoutGetChar   = 12,
+       dllTextoutNewScreen = 13
+
+// Function IDs: Utility
+#const dllSetNameMod     = 100,
+       dllGetNameMod     = 101,
+       dllSetWindowName  = 102,
+       dllGetTextWindow  = 103
+
+// Return values
+#const getcError         = 0,
+       getcEndOfString   = 1,
+       getcPrintChar     = 2,
+       getcNewLine       = 3,
+       getcNewScreen     = 4,
+       getcSetIndent     = 5,
+       getcClearIndent   = 6
+
+
+// DLL wrappers: DLL
+
+#inline __initialise_dynamic_textout ():
+  #if OldType
+    if !LoadDLL (0, rlBabel)
+      rlcError ('failed to initialise text rendering engine')
+  #endif
+  __rlb_buffer = '                                ' // the only way I know to allocate a buffer
+  strclear(__rlb_empty)
+  objOfText(255, 'A') // to force the font to load -_-;
+  return CallDLL (rlBabelDLL, dllInitialise, rlBabelDLL);
+
+
+// DLL wrappers: Textout
+
+#inline __vwf_TextoutStart (__string, __is_start = 1):
+  // Initialise textout and print an empty token to fix a save point here.
+  #ifndef __DynamicLineationUsed__ #define __DynamicLineationUsed__ #endif
+  #if __is_start
+    strout(__rlb_empty)
+  #endif
+  // Define the argument to pass the startup routine.
+  #if !__variable? (__string)
+    #if __empty_string? (__string)
+      #sdefine arg = -1
+    #else
+      str s = __string
+      #sdefine arg = __addr(s)
+    #endif
+  #else
+    #sdefine arg = __addr(__string)
+  #endif
+  #if OldType
+    // Old versions unload the DLL when a saved game is loaded.  We have to
+    // check for such failures and force it to be reloaded when necessary.
+    while !CallDLL (rlBabelDLL, dllTextoutStart, arg)
+      if !LoadDLL(0, rlBabel)
+        rlcError ('failed to initialise text rendering engine')
+  #else
+    CallDLL (rlBabelDLL, dllTextoutStart, arg)
+  #endif
+  return store;
+
+#inline __vwf_TextoutAppend (__string):
+  #if !__variable? (__string)
+    #if !__empty_string? (__string)
+      str s = __string
+      CallDLL (rlBabelDLL, dllTextoutAppend, __addr(s))
+    #endif
+  #else
+    CallDLL (rlBabelDLL, dllTextoutAppend, __addr(__string))
+  #endif;
+
+#inline __vwf_TextoutGetChar (__char, __xmod):
+  return CallDLL (rlBabelDLL, dllTextoutGetChar, __addr(__char), __addr(__xmod));
+
+
+// Public utility functions
+
+#inline GetTextWindow ():
+  return CallDLL (rlBabelDLL, dllGetTextWindow);
+
+#inline SetNameMod (__value, __window = -1):
+  return CallDLL (rlBabelDLL, dllSetNameMod, __window, __value);
+
+#inline GetNameMod (__window = -1):
+  return CallDLL (rlBabelDLL, dllGetNameMod, __window);
+
+#inline SetCurrentWindowName (__value):
+  #if !__variable?(__value)
+    str s = __value
+    CallDLL (rlBabelDLL, dllSetWindowName, __addr(s))
+  #else
+    CallDLL (rlBabelDLL, dllSetWindowName, __addr(__value))
+  #endif
+  return store;
+
+
+//-------------- Spaghetti warning! Read on at your own risk ---------------------
+
+  
+#inline __vwf_TextoutDisplay ([__text]):
+  #ifndef __text
+    gosub @__textoutdisplay__
+  #elseif __empty_string? (__text)
+    gosub @__textoutdisplay__
+  #else
+    // Initialise textout and print an empty token to fix a save point here.
+    #ifndef __DynamicLineationUsed__ #define __DynamicLineationUsed__ #endif
+    strout(__rlb_empty)
+    #if !__variable? (__text)
+      str lstr = __text
+      __rlb_xmod = __addr(lstr) & $fff
+    #else
+      __rlb_xmod = __addr(__text) & $fff
+    #endif
+    gosub @__textoutdisplay_start__
+  #endif;
+  
+#inline __dynamic_textout_print ():
+  halt
+  @__textoutdisplay_start__
+    __vwf_TextoutStart(strS[__rlb_xmod], 0)
+  @__textoutdisplay__
+    DisableAutoSavepoints
+    while 1:
+      goto_on __vwf_TextoutGetChar(__rlb_buffer, __rlb_xmod) {
+        @getcError,
+        @getcEndOfString, @getcPrintChar, @getcNewLine, @getcNewScreen, @getcSetIndent, @getcClearIndent
+      }
+      @getcNewLine
+        br
+        continue
+      @getcNewScreen
+        page
+        CallDLL (rlBabelDLL, dllTextoutNewScreen, __addr(__rlb_buffer))
+        continue
+      @getcSetIndent
+        SetIndent
+        continue
+      @getcClearIndent
+        ClearIndent
+        continue
+      // To do: exfont characters? Ruby? What, if anything, actually needs special support?
+      @getcPrintChar
+        strout (__rlb_buffer)
+        TextOffsetX (__rlb_xmod)
+    ;
+    @getcError
+      __rlb_empty = __rlb_buffer
+      __rlb_buffer = "Error: "
+      __rlb_buffer += __rlb_empty
+      __rlb_buffer += ". Unable to format text."
+      strclear(__rlb_empty)
+      FastText
+      strout(__rlb_buffer)
+      NormalText
+    @getcEndOfString
+      EnableAutoSavepoints
+      ret;
+
+#endif // !defined? (__VWF_KH__)
