@@ -89,7 +89,7 @@ quantities of debugging code from their software on release has been
 The \package\ package provides tools for manipulating the data used by the 
 \vas\ \reallive\ virtual machine.\footnote{I use the term \reallive\ to cover 
 the whole current-generation interpreter series from \vas. Version 1.0 was 
-called \avgns; the name was changed to \reallive{} around version 1.0.0.8.}
+called \avgns; the name was changed to \reallive\ around version 1.0.0.8.}
 
 Since the actual language used by the developers of these games is undocumented, 
 a simple programming language of my own design, called `Kepago', is used 
