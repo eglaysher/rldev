@@ -24,7 +24,36 @@
 { (* ML *)
 
 open Printf
-open ExtString
+
+module String =
+  struct
+    include String
+    let of_char = make 1
+    let replace_chars f s =
+      let len = length s and tlen = ref 0 in
+      let rec loop i acc =
+        if i == len then acc else 
+          let s = f (unsafe_get s i) in
+          tlen := !tlen + length s;
+          loop (i + 1) (s :: acc)
+      in
+      let strs = loop 0 [] in
+      let sbuf = create !tlen in
+      let pos = ref !tlen in
+      let rec loop2 = function [] -> () | s :: acc ->
+         let len = length s in
+         pos := !pos - len;
+         blit s 0 sbuf !pos len;
+         loop2 acc
+      in
+      loop2 strs;
+      sbuf
+    let map f s =
+      let len = length s in
+      let sc = create len in
+      for i = 0 to len - 1 do unsafe_set sc i (f (unsafe_get s i)) done;
+      sc
+  end
 
 let esc'_' = String.replace_chars (function '_' -> "\\_" | c -> String.of_char c)
 and dot'_' = String.map (function '_' -> ':' | c -> c)
