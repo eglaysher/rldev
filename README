@@ -17,7 +17,7 @@ Installation:
   who needs access to it) and copy or symlink bin/rlc etc. into a suitable
   binary directory.  If when you try to run the program it complains that it
   cannot locate reallive.kfn, define an environment variable RLDEV pointing to
-  the root installation directory.
+  the root of the installation directory.
 
 
 Usage:
