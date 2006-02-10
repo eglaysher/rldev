@@ -23,8 +23,8 @@ Installation:
 Usage:
 
   Basic usage information can be obtained by running `kprl --help',
-  `rlc --help', and `vaconv --help'.  For more detailed information, refer to
-  the manual.
+  `rlc --help', `vaconv --help', and `rlxml --help'.  For more detailed 
+  information, refer to the manual.
 
 
 License:
