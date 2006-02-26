@@ -21,7 +21,7 @@ Shift_JIS が不具合なら ./configure に --encoding=euc-jp や --encoding=utf8 を
 
   Objective Caml 3.08 (http://caml.inria.fr)
   Findlib             (http://www.ocaml-programming.de/programming/findlib.html)
-  Omake               (http://omake.metaprl.org)
+  Omake 0.9.6.8       (http://omake.metaprl.org)
   ExtLib              (http://ocaml-lib.sf.net)
   ULex                (http://www.eleves.ens.fr/home/frisch/soft#ulex)
 

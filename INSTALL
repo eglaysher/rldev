@@ -26,7 +26,7 @@ following tools and libraries are required:
 
   Objective Caml 3.09 (http://caml.inria.fr)
   Findlib             (http://www.ocaml-programming.de/programming/findlib.html)
-  Omake               (http://omake.metaprl.org)
+  Omake 0.9.6.8       (http://omake.metaprl.org)
   ExtLib 1.4 or later (http://ocaml-lib.sf.net)
   Ulex                (http://www.eleves.ens.fr/home/frisch/soft#ulex)
 

@@ -1,30 +1,13 @@
-#
-# First, some standard installed configuration files.
-#
-include $(STDROOT).om
-include $(STDLIB)/build/Common
-include $(STDLIB)/build/C
-include $(STDLIB)/build/OCaml
+# OMake configuration and custom rules.
 
-#
-# Second, some custom rules.
-#
-
-if $(equal $(OSTYPE), Win32)
-  CXX=$(CC)
-  export
-else
-  CXX=c++
-  export
+open build/C
+open build/OCaml
 
 OCAML_LIBRARY_DIR = $(shell $(OCAMLC) -where)
 
-%$(EXT_OBJ): %.cpp
-    $(CXX) $(CFLAGS) $(PREFIXED_INCLUDES) -c -o $@ $*.cpp
-
-##
-## Functions to read compilation directives from source files.
-##
+#
+# Functions to read compilation directives from source files.
+#
 
 GetPP(file) =
   PP =

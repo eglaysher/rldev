@@ -259,8 +259,8 @@ install:
   \$(INSTALL) \$(addprefix \$(EXEDIR)/,kprl\$(EXE) rlc\$(EXE)$vaconv_exe$rlxml_exe) $prefix/bin
   \$(INSTALL) -d $prefix/share/rldev/lib
   \$(INSTALL) -m 644 ../lib/* $prefix/share/rldev/lib
-  \$(INSTALL) -d $prefix/share/rldev/rtl
-  \$(INSTALL) -m 644 ../rtl/* $prefix/share/rldev/rtl
+  -\$(INSTALL) -d $prefix/share/rldev/rtl
+  -\$(INSTALL) -m 644 ../rtl/* $prefix/share/rldev/rtl
 
 uninstall:
   \$(RM) \$(addprefix $prefix/bin/,kprl\$(EXE) rlc\$(EXE)$vaconv_exe$rlxml_exe)
