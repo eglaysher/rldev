@@ -22,6 +22,8 @@ open Printf
 open Encoding
 open Text
 
+let force_encode = ref false
+
 (* Encode Simplified Chinese text.
    Fail on characters that cannot be represented in the GBK encoding. *)
 let encode_kfc fail text =
@@ -34,7 +36,9 @@ let encode_kfc fail text =
         else try
           IMap.find ch Cp936.map.uni_to_db 
         with Not_found ->
-          fail ch; assert false
+          if !force_encode
+          then 0x20
+          else (fail ch; assert false)
       in
       assert (gbch >= 0 && gbch <= 0xf7fe);
       if gbch < 0x80 then
@@ -110,8 +114,11 @@ let encode_cp1252 fail text =
             | 0x02dc -> 0x98 | 0x2122 -> 0x99 | 0x0161 -> 0x9a | 0x203a -> 0x9b 
             | 0x0153 -> 0x9c | 0x017e -> 0x9e | 0x0178 -> 0x9f | _      -> ch
         in
-        if wc < 0 || wc > 0xff then fail ch;
-        let c = char_of_int wc in
+        let c =
+          if wc < 0 || wc > 0xff 
+          then if !force_encode then '\x20' else (fail ch; assert false)
+          else char_of_int wc
+        in
         match c with
           | '\x00' .. '\x7f' -> Buffer.add_char b c
           | '\x80' .. '\xbf' -> Buffer.add_char b '\x89'; Buffer.add_char b c
@@ -198,7 +205,9 @@ let to_sjs_bytecode a =
       try
         Buffer.add_string b (IMap.find c Cp932.uni_to_db)
       with Not_found ->
-        raise (Text.Bad_char c))
+        if !force_encode
+        then Buffer.add_string b " "
+        else raise (Text.Bad_char c))
     a;
   Buffer.contents b
 

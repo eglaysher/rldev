@@ -111,6 +111,10 @@ let options =
           descr = "output encoding transformation (default: none)";
           withoutarg = None;
           witharg = Some (fun e -> TextTransforms.set_encoding e) };
+    Opt { short = "";   long = "force-transform"; argname = "";
+          descr = "don't abort when input can't be represented in output encoding";
+          withoutarg = set_flag TextTransforms.force_encode true;
+          witharg = None; };
     Opt { short = "-t"; long = "target"; argname = "TGT";
           descr = "specify target as RealLive, AVG2000, or Kinetic (default: try to autodetect, fall back on RealLive)";
           withoutarg = None;

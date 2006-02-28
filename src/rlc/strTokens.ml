@@ -146,7 +146,8 @@ and to_string ?(rv = Buffer.create 0) ?(enc = "CP932") ?(quote = false) (tokens 
                  (try Text.iter (fun c -> if not (unquoted_char c) then raise Exit) t; false with Exit -> true));
                Buffer.add_string rv (encode t)
              with Text.Bad_char c ->
-               ksprintf (error l) "cannot represent U+%04x in RealLive bytecode with %s" c (TextTransforms.describe ())))
+               ksprintf (warning l) "cannot represent U+%04x in RealLive bytecode with %s" c (TextTransforms.describe ());
+               Buffer.add_string rv " " (* sane default for emergencies *)))
     tokens;
   if quote && !needs_quotes
   then sprintf "\"%s\"" (Buffer.contents rv)
