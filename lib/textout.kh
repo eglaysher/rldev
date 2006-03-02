@@ -607,9 +607,9 @@ str __dto_text
       token = strsub (text, arg1, arg2)
       if tokenmode == md_norm && currwidth[cwind] == 0:
         accum_str = strsub (token, 0, 1)
-        arg1 = strcmp (accum_str, '「')
-        arg2 = strcmp (accum_str, '『')
-        if arg1 == 0 || arg2 == 0 || accum_str == '（', currindent[cwind] += fontsz[cwind] + fontxmod;
+        if strpos ('「『（', accum_str) >= 0
+          currindent[cwind] += fontsz[cwind] + fontxmod
+      ;
       exit
 
     // Text not followed by space
@@ -741,8 +741,7 @@ str __dto_text
         strcpy (temp_str2, var_str, 1)
         var_str = strsub (var_str, 1)
         // If it's not ＊ or ％, loop.
-        arg1 = temp_str2 != '＊'
-        if arg1 && temp_str2 != '％', goto @__dto_name_glomp_loop_continue
+        if strpos ('＊％', temp_str2) == -1, goto @__dto_name_glomp_loop_continue
         // If it is, peek ahead to see whether the next character forms a valid name
         // variable reference; loop if not.
         strcpy (temp_str, var_str, 1)
