@@ -566,13 +566,13 @@ str __dto_text
                   || (tokentype == id_stext && tokenwidth + currwidth[cwind] - hankaku_char * 2 < width):     
                     #sdefine tstr = __dto_accum_str[2]
                     if tokentype == id_stext, tstr = strrsub (token, 2, 1) else tstr = strrsub (token, 1)
-                    tempvar = streq (tstr, '.')     tempvar &= streq (tstr, ',')
-                    tempvar &= streq (tstr, ':')    tempvar &= streq (tstr, ';')
-                    tempvar &= streq (tstr, '!')    tempvar &= streq (tstr, '?')
-                    tempvar &= streq (tstr, ')')    tempvar &= streq (tstr, ']')
-                    tempvar &= streq (tstr, '}')    tempvar &= streq (tstr, '\'')
+                    tempvar  = strcmp (tstr, '.')    tempvar &= strcmp (tstr, ',')
+                    tempvar &= strcmp (tstr, ':')    tempvar &= strcmp (tstr, ';')
+                    tempvar &= strcmp (tstr, '!')    tempvar &= strcmp (tstr, '?')
+                    tempvar &= strcmp (tstr, ')')    tempvar &= strcmp (tstr, ']')
+                    tempvar &= strcmp (tstr, '}')    tempvar &= strcmp (tstr, '\'')
                     __dto_accum_str[1] = zentohan ('h')
-                    tempvar &= streq (tstr, __dto_accum_str[1])
+                    tempvar &= strcmp (tstr, __dto_accum_str[1])
                     if tempvar == 0:
                       if tokentype == id_stext, strtrunc (token, strcharlen (token) - 1)
                       currwidth[cwind] = width
@@ -741,7 +741,6 @@ str __dto_text
           exit
       ecase
       // Check - and compensate - for –‚` etc.
-      // TODO: this is a prime candidate for lifting into a DLL.
       while strused (var_str):
         // Get the next character from var_str.
         strcpy (temp_str2, var_str, 1)
@@ -785,21 +784,7 @@ str __dto_text
 
       @__dto_index_of_zenkaku_capital
         // Increase arg2 by the index of temp_str.
-        // With only 26 options, we can probably get away with a linear search.
-        if temp_str == '‚`': arg2 += 0, ret;  if temp_str == '‚a': arg2 += 1, ret;
-        if temp_str == '‚b': arg2 += 2, ret;  if temp_str == '‚c': arg2 += 3, ret;
-        if temp_str == '‚d': arg2 += 4, ret;  if temp_str == '‚e': arg2 += 5, ret;
-        if temp_str == '‚f': arg2 += 6, ret;  if temp_str == '‚g': arg2 += 7, ret;
-        if temp_str == '‚h': arg2 += 8, ret;  if temp_str == '‚i': arg2 += 9, ret;
-        if temp_str == '‚j': arg2 += 10, ret; if temp_str == '‚k': arg2 += 11, ret;
-        if temp_str == '‚l': arg2 += 12, ret; if temp_str == '‚m': arg2 += 13, ret;
-        if temp_str == '‚n': arg2 += 14, ret; if temp_str == '‚o': arg2 += 15, ret;
-        if temp_str == '‚p': arg2 += 16, ret; if temp_str == '‚q': arg2 += 17, ret;
-        if temp_str == '‚r': arg2 += 18, ret; if temp_str == '‚s': arg2 += 19, ret;
-        if temp_str == '‚t': arg2 += 20, ret; if temp_str == '‚u': arg2 += 21, ret;
-        if temp_str == '‚v': arg2 += 22, ret; if temp_str == '‚w': arg2 += 23, ret;
-        if temp_str == '‚x': arg2 += 24, ret; if temp_str == '‚y': arg2 += 25, ret;
-        assert (store + 1 == store) // expression is always false, but isn't optimised away
+        arg2 += strpos ('‚`‚a‚b‚c‚d‚e‚f‚g‚h‚i‚j‚k‚l‚m‚n‚o‚p‚q‚r‚s‚t‚u‚v‚w‚x‚y', temp_str)
         ret
 
     // \{...}
@@ -812,7 +797,7 @@ str __dto_text
         assert (tokenmode == md_name, 'found name block closing outside name block')
         tokenmode = md_norm
         // Set the current name.
-        store = __addr(accum_str) & $ffff
+        store = __addr(__dto_accum_str[0]) & $ffff
         raw #8179 #232323 ?PRINT(strS[store]) #817a endraw
         // Increase the current width and set the indent level, when appropriate.
         if !(windflags & wf_NAME_MOD):

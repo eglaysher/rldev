@@ -117,7 +117,7 @@ let compile (loc, dest, s, opcode, window, params) =
   Output.add_code loc (code_of_opcode 0 2 opcode (List.length params) 0);
   Option.may 
     (fun e -> 
-      if List.mem opcode [2; 3; 12; 13]
+      if List.mem opcode [3; 13] (* removed 2 and 12 *)
       then ksprintf (error loc) "select window specifiers are not valid in `%s' calls" s
       else ksprintf (Output.add_code nowhere) "(%s)" (code_of_expr e))
     window;
