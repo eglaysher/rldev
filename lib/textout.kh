@@ -566,14 +566,9 @@ str __dto_text
                   || (tokentype == id_stext && tokenwidth + currwidth[cwind] - hankaku_char * 2 < width):     
                     #sdefine tstr = __dto_accum_str[2]
                     if tokentype == id_stext, tstr = strrsub (token, 2, 1) else tstr = strrsub (token, 1)
-                    tempvar  = strcmp (tstr, '.')    tempvar &= strcmp (tstr, ',')
-                    tempvar &= strcmp (tstr, ':')    tempvar &= strcmp (tstr, ';')
-                    tempvar &= strcmp (tstr, '!')    tempvar &= strcmp (tstr, '?')
-                    tempvar &= strcmp (tstr, ')')    tempvar &= strcmp (tstr, ']')
-                    tempvar &= strcmp (tstr, '}')    tempvar &= strcmp (tstr, '\'')
-                    __dto_accum_str[1] = zentohan ('h')
-                    tempvar &= strcmp (tstr, __dto_accum_str[1])
-                    if tempvar == 0:
+                    __dto_accum_str[1] = zentohan('.,:;!?)]}\'h')
+                    tempvar = strpos (__dto_accum_str[1], tstr)
+                    if tempvar >= 0:
                       if tokentype == id_stext, strtrunc (token, strcharlen (token) - 1)
                       currwidth[cwind] = width
                       goto @__dynamic_print_strout_token;;
