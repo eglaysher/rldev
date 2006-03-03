@@ -146,7 +146,7 @@ let rec unary_to_logop l =
 and conditional_unit =
   function
     | (`LogOp _ | `AndOr _) as c -> c
-    | `Unary (l, `Not, e) -> unary_to_logop l e
+    | `Unary (l, `Not, e) -> unary_to_logop l (conditional_unit e) (* TODO: check: is this correct? *)
     | `Parens (l, c) -> `Parens (l, conditional_unit c)
     | (`VarOrFn (_, _, t) | `Deref (_, _, t, _) | `Func (_, _, t, _, None)) as fc
       when Memory.defined t || Intrinsic.is_builtin t -> conditional_unit (expr_disambiguate fc)

@@ -662,6 +662,8 @@ str __dto_text
 
     // Just spaces
     of id_space
+      // We create a string of N spaces in just two operations by formatting a number padded to 
+      // N+1 digits with spaces and then truncating the digit away.
       token = itoa_s (0, arg1 + 1)
       strtrunc (token, arg1)
       exit

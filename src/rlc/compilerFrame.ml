@@ -271,7 +271,7 @@ and parse_struct =
           in
           parse_elt (`FuncCall (l, None, "goto_if", Text.ident "goto_if", [`Simple (l, e)], Some lbl))
           
-    | `If (l, e, smt, elsesmt)
+    | `If (l, e, smt, elsesmt) 
        -> let lendif = unique_label nowhere in
           let lelse = if elsesmt = None then lendif else unique_label nowhere in
           begin try
