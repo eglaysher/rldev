@@ -601,6 +601,7 @@ str __dto_text
   #sinline exit () goto @__dynamic_textout_gettoken_exit
   #sinline merge (): goto_unless (tokenmode == md_name) @__dynamic_textout_gettoken_merge_sbcs, exit;
   #sdefine arg1 = __dto_temp[0], arg2 = __dto_temp[1]
+  #sdefine nexttkn = tokens(index + 1) & 15
   arg1 = tokens(index) >> 12
   arg2 = tokens(index) >> 4 & $ff
   case tokentype
@@ -618,7 +619,12 @@ str __dto_text
         if strpos ('「『（', accum_str) >= 0
           currindent[cwind] += fontsz[cwind] + fontxmod
       ;
-      exit
+      // Merge opening quotes with following text
+      strpos('「『（', token)
+      goto_unless (tokenmode != md_name && store >= 0
+        && index < tokens(0) && (nexttkn == id_stext || nexttkn == id_ntext)) @__dynamic_textout_gettoken_exit
+      tokentype = id_ntext
+      goto @__dynamic_textout_gettoken_merge_sbcs
 
     // Text not followed by space
     of id_ntext
@@ -632,7 +638,7 @@ str __dto_text
       goto_unless (tokenmode == md_norm) @__dynamic_textout_gettoken_exit
 
     @__dynamic_textout_gettoken_merge_sbcs
-      #sdefine nexttkn = tokens(index + 1) & 15, tstr = accum_str
+      #sdefine tstr = accum_str
       while index < tokens(0)
          && (nexttkn == id_stext || nexttkn == id_ntext || nexttkn == id_dquot || nexttkn == id_space):
         // Break if last char is hyphen
