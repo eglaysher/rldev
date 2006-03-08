@@ -221,6 +221,11 @@ str __dto_text
 #define __HideFunctionsSilently__
 
   // Wrapper utilities
+  #inline __dto_pause_rcmod ():
+    // clears currwidth[cwind] and currindent[cwind], inserts a line break
+    setrng_stepped (currwidth[cwind], windowcount, 2)
+    __dto_next_line;
+  
   #inline __dto_reset_curr ()
     // clears currwidth[cwind], currindent[cwind], and curr_y[cwind]
     setrng_stepped (currwidth[cwind], windowcount, 3)
@@ -289,7 +294,7 @@ str __dto_text
         @__dto_pause
           #hiding pause, pause
           if __dto_any_have_r_command_mod && windflags & wf_R_COMMAND_MOD
-            __dto_reset_curr
+            __dto_pause_rcmod
           else
             __dto_reset_all
           ret;
@@ -303,7 +308,10 @@ str __dto_text
   #if default (__DynamicLineation__, 1)
     __define_dto_variables
     // always leaves windows other than the current unchanged
-    __dto_reset_curr
+    if __dto_any_have_r_command_mod && windflags & wf_R_COMMAND_MOD
+      __dto_pause_rcmod
+    else
+      __dto_reset_curr
   #endif;
 
 #inline page ():
