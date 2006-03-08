@@ -502,6 +502,14 @@ str __dto_text
       #else
         spause // TEST: if this introduces a save point, it breaks the program.
         curr_y[cwind] = 0
+        // Fix indent-related breakage if first character of next screen is 「『（
+        strcpy(__dto_accum_str[2], token, 1)
+        if strpos('「『（', __dto_accum_str[2]) >= 0:
+          __DebugMessage ('Correcting indentation')
+          __dto_accum_str[2] = ' '
+          __dto_accum_str[2] += token
+          token = __dto_accum_str[2]
+          tokenwidth += (fontsz[cwind] + fontxmod) / 2;
       #endif;
     ret
 
