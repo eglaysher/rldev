@@ -505,7 +505,6 @@ str __dto_text
         // Fix indent-related breakage if first character of next screen is 「『（
         strcpy(__dto_accum_str[2], token, 1)
         if strpos('「『（', __dto_accum_str[2]) >= 0:
-          __DebugMessage ('Correcting indentation')
           __dto_accum_str[2] = ' '
           __dto_accum_str[2] += token
           token = __dto_accum_str[2]
