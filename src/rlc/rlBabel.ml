@@ -46,7 +46,10 @@ and token_name_right  = Text.of_arr [| 0x02 |]
 and token_break       = Text.of_arr [| 0x03 |]
 and token_setindent   = Text.of_arr [| 0x04 |]
 and token_clearindent = Text.of_arr [| 0x05 |]
+(* 6, 7 are exfont markers *)
 and token_quote       = Text.of_arr [| 0x08 |]
+and token_emphasis    = Text.of_arr [| 0x09 |]
+and token_regular     = Text.of_arr [| 0x0a |]
 
 let compile addstrs loc text =
 (*  if not (Memory.defined (Text.ident "__DynamicLineationUsed__")) then
@@ -143,6 +146,11 @@ let compile addstrs loc text =
             if s = "r" then DynArray.add b (`Text (loc, `Sbcs, token_clearindent));
             DynArray.add b (`Text (loc, `Sbcs, token_break));
 
+      | `Code (loc, id, e, p) when id = Text.of_arr [| 0x62 |] (* \b *)
+         -> DynArray.add b (`Text (loc, `Sbcs, token_emphasis));
+      | `Code (loc, id, e, p) when id = Text.of_arr [| 0x75 |] (* \u *)
+         -> DynArray.add b (`Text (loc, `Sbcs, token_regular));
+         
       (* TODO: other special case codes? *)        
             
       | `Code (loc, id, e, params)

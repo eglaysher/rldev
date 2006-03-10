@@ -62,9 +62,14 @@ rule line xt b =
           bprintf b "\\%c%s%s{" t (if len <> "" then ":" else "") len;
           simparg true b lexbuf;
           line xt b lexbuf }
+    | "\\b" 
+        { bprintf b "\\b";
+          line xt b lexbuf }
+    | "\\r" 
+        { bprintf b "\\u";
+          line xt b lexbuf }
 
    (* Unsupported features (including incompatible ones) *)
-    | "\\b" | "\\r" { line xt b lexbuf }
     | '\\' ['g' 'G'] sp '{'
         { simparg false b lexbuf;
           skip_gloss_part_2 lexbuf;
