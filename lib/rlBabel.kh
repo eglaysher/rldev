@@ -231,10 +231,10 @@ str __rlb_buffer, __rlb_empty
       @getcClearIndent
         ClearIndent
         continue
-      // To do: exfont characters? Ruby? What, if anything, actually needs special support?
+      // To do: exfont characters? Ruby? What, else, if anything, actually needs special support?
       @getcPrintChar
         strout (__rlb_buffer)
-        TextOffsetX (__rlb_xmod)
+        TextPosX (__rlb_xmod)
     ;
     @getcError
       __rlb_empty = __rlb_buffer
