@@ -41,11 +41,11 @@
 #if !__DynamicLineation__      #set __DynamicLineation__ = 1  #endif
 #ifdef __dynamic_textout_print #undef __dynamic_textout_print #endif
 
-#if target_lt(1,2)
+#if target_lt (1,2)
   #error 'The rlBabel library can only be used with RealLive 1.2 or greater.'
 #endif
 
-#const OldType = target_lt(1,2,5)
+#const OldType = target_lt (1,2,5)
 
 #ifndef rlBabel
   #if OldType
@@ -62,7 +62,7 @@
 #else
   #for i = 0 .. 15:
     #if rlBabelDLL == -1
-      #if __equal_strings?(gameexe('DLL.\i:3{i}', 0, ''), rlBabel)
+      #if __equal_strings? (gameexe ('DLL.\i:3{i}', 0, ''), rlBabel)
         #set rlBabelDLL = i
       #endif
     #endif;
@@ -116,8 +116,8 @@ str __rlb_buffer, __rlb_empty
       rlcError ('failed to initialise text rendering engine')
   #endif
   __rlb_buffer = '                                ' // the only way I know to allocate a buffer
-  strclear(__rlb_empty)
-  objOfText(255, 'A') // to force the font to load -_-;
+  strclear (__rlb_empty)
+  objOfText (255, 'A') // to force the font to load -_-;
   return CallDLL (rlBabelDLL, dllInitialise, rlBabelDLL);
 
 
@@ -144,7 +144,7 @@ str __rlb_buffer, __rlb_empty
     // Old versions unload the DLL when a saved game is loaded.  We have to
     // check for such failures and force it to be reloaded when necessary.
     while !CallDLL (rlBabelDLL, dllTextoutStart, arg)
-      if !LoadDLL(0, rlBabel)
+      if !LoadDLL (0, rlBabel)
         rlcError ('failed to initialise text rendering engine')
   #else
     CallDLL (rlBabelDLL, dllTextoutStart, arg)
@@ -161,9 +161,6 @@ str __rlb_buffer, __rlb_empty
     CallDLL (rlBabelDLL, dllTextoutAppend, __addr(__string))
   #endif;
 
-#inline __vwf_TextoutGetChar (__char, __xmod):
-  return CallDLL (rlBabelDLL, dllTextoutGetChar, __addr(__char), __addr(__xmod));
-
 
 // Public utility functions
 
@@ -177,7 +174,7 @@ str __rlb_buffer, __rlb_empty
   return CallDLL (rlBabelDLL, dllGetNameMod, __window);
 
 #inline SetCurrentWindowName (__value):
-  #if !__variable?(__value)
+  #if !__variable? (__value)
     str s = __value
     CallDLL (rlBabelDLL, dllSetWindowName, __addr(s))
   #else
@@ -197,7 +194,7 @@ str __rlb_buffer, __rlb_empty
   #else
     // Initialise textout and print an empty token to fix a save point here.
     #ifndef __DynamicLineationUsed__ #define __DynamicLineationUsed__ #endif
-    strout(__rlb_empty)
+    strout (__rlb_empty)
     #if !__variable? (__text)
       str lstr = __text
       __rlb_xmod = __addr(lstr) & $fff
@@ -210,11 +207,11 @@ str __rlb_buffer, __rlb_empty
 #inline __dynamic_textout_print ():
   halt
   @__textoutdisplay_start__
-    __vwf_TextoutStart(strS[__rlb_xmod], 0)
+    __vwf_TextoutStart (strS[__rlb_xmod], 0)
   @__textoutdisplay__
     DisableAutoSavepoints
     while 1:
-      goto_on __vwf_TextoutGetChar(__rlb_buffer, __rlb_xmod) {
+      goto_on CallDLL (rlBabelDLL, dllTextoutGetChar, __addr(__rlb_buffer), __addr(__rlb_xmod)) {
         @getcError,
         @getcEndOfString, @getcPrintChar, @getcNewLine, @getcNewScreen, @getcSetIndent, @getcClearIndent
       }
@@ -223,6 +220,7 @@ str __rlb_buffer, __rlb_empty
         continue
       @getcNewScreen
         page
+        TextPos (0, 0) // page() doesn't reset the values that are otherwise perfect position counters?
         CallDLL (rlBabelDLL, dllTextoutNewScreen, __addr(__rlb_buffer))
         continue
       @getcSetIndent
@@ -241,9 +239,9 @@ str __rlb_buffer, __rlb_empty
       __rlb_buffer = "Error: "
       __rlb_buffer += __rlb_empty
       __rlb_buffer += ". Unable to format text."
-      strclear(__rlb_empty)
+      strclear (__rlb_empty)
       FastText
-      strout(__rlb_buffer)
+      strout (__rlb_buffer)
       NormalText
     @getcEndOfString
       EnableAutoSavepoints
