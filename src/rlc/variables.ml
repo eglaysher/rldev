@@ -24,20 +24,10 @@ open KeAst
 
 (* Code-generation auxiliaries *)
 
-let zero = `Int (nowhere, 0l)
-    
-let assign v e =
-  !Global.compilerFrame__parse (Global.dynArray (`Assign (nowhere, v, `Set, e)))
-
-let call fn ?(lbl = None) parms =
-  !Global.compilerFrame__parse (Global.dynArray (
-    `FuncCall (nowhere, None, fn, Text.ident fn, List.map (fun e -> `Simple (nowhere, e)) parms, lbl)
-  ))
-
 let setrng ?init fn s t ?(first = 0) len =
-  call fn (`Deref (nowhere, s, t, `Int (nowhere, Int32.of_int first))
-        :: `Deref (nowhere, s, t, `Int (nowhere, Int32.of_int (len - 1)))
-        :: (match init with None -> [] | Some e -> [e]))
+  Meta.call fn (`Deref (nowhere, s, t, Meta.int first)
+             :: `Deref (nowhere, s, t, Meta.int (len - 1))
+             :: (match init with None -> [] | Some e -> [e]))
 
 
 (* Main functions *)
@@ -243,11 +233,11 @@ let allocate (loc, vartype, directives, variables) =
     (* If they haven't, we can just zero the entire block. *)
     if not any_have_values then
       if is_str then
-        call "strclear" 
+        Meta.call "strclear" 
           [`SVar (nowhere, spc, `Int (nowhere, addr));
            `SVar (nowhere, spc, `Int (nowhere, Int32.add addr (Int32.of_int (elt_total - 1))))]
       else
-        call "setrng" 
+        Meta.call "setrng" 
           [`IVar (nowhere, spc, `Int (nowhere, addr));
            `IVar (nowhere, spc, `Int (nowhere, Int32.add addr (Int32.of_int (elt_total - 1))))]
     else
@@ -256,13 +246,13 @@ let allocate (loc, vartype, directives, variables) =
         List.fold_right2
           (fun (loc, str_id, _, _, ival, _) elt_count vallist ->
             match ival with
-              | `None -> List.rev_append (List.make elt_count zero) vallist
+              | `None -> List.rev_append (List.make elt_count Meta.zero) vallist
               | `Scalar e -> List.rev_append (List.make elt_count e) vallist
               | `Array es 
                  -> let len = List.length es in
                     if len > elt_count then ksprintf (error loc) "too many values supplied to initialise %s[]" str_id;
                     es @ if len < elt_count
-                         then List.rev_append (List.make (elt_count - len) zero) vallist
+                         then List.rev_append (List.make (elt_count - len) Meta.zero) vallist
                          else vallist)
           variables elements
           []
@@ -271,15 +261,15 @@ let allocate (loc, vartype, directives, variables) =
       if is_str then
         let any_empty = List.exists (function `Int _ -> true | _ -> false) init_values in
         if any_empty then 
-          call "strclear" 
+          Meta.call "strclear" 
             [`SVar (nowhere, spc, `Int (nowhere, addr));
              `SVar (nowhere, spc, `Int (nowhere, Int32.add addr (Int32.of_int (elt_total - 1))))];
         List.iter
-          (function `Int _ -> () | expr -> assign (`VarOrFn (nowhere, str_id, txt_id)) expr)
+          (function `Int _ -> () | expr -> Meta.assign (`VarOrFn (nowhere, str_id, txt_id)) `Set expr)
           init_values
       else
         (* For ints, we just call setarray.  (This may be a Bad Thing if init_values is very long.) *)
-        call "setarray" (`IVar (nowhere, spc, `Int (nowhere, addr)) :: init_values)
+        Meta.call "setarray" (`IVar (nowhere, spc, `Int (nowhere, addr)) :: init_values)
   end 
   else
     (* Not a block allocation, or no `zero' directive: initalise variables separately. *)
@@ -292,8 +282,8 @@ let allocate (loc, vartype, directives, variables) =
                    give the variable an empty initial value, otherwise leave it alone. *)
                 if is_zero then
                   begin match is_str, is_array with
-                    | false, false -> assign (`VarOrFn (nowhere, str_id, txt_id)) zero
-                    | true,  false -> call "strclear" [`VarOrFn (nowhere, str_id, txt_id)]
+                    | false, false -> Meta.assign (`VarOrFn (nowhere, str_id, txt_id)) `Set Meta.zero
+                    | true,  false -> Meta.call "strclear" [`VarOrFn (nowhere, str_id, txt_id)]
                     | false, true  -> setrng "setrng" str_id txt_id elt_count
                     | true,  true  -> setrng "strclear" str_id txt_id elt_count
                   end
@@ -304,153 +294,25 @@ let allocate (loc, vartype, directives, variables) =
                     !Global.compilerFrame__parse (Global.dynArray (
                      `For
                        (nowhere,
-                        Global.dynArray (`Assign (nowhere, idx, `Set, zero)),
-                        `LogOp (nowhere, idx, `Ltn, `Int (nowhere, Int32.of_int elt_count)),
-                        Global.dynArray (`Assign (nowhere, idx, `Add, `Int (nowhere, 1l))),
+                        Global.dynArray (`Assign (nowhere, idx, `Set, Meta.zero)),
+                        `LogOp (nowhere, idx, `Ltn, Meta.int elt_count),
+                        Global.dynArray (`Assign (nowhere, idx, `Add, Meta.int 1)),
                         `Assign (nowhere, `Deref (nowhere, str_id, txt_id, idx), `Set, e))
                     ))
                   else
                     setrng "setrng" str_id txt_id elt_count ~init:e
                 else
-                  assign (`VarOrFn (nowhere, str_id, txt_id)) e
+                  Meta.assign (`VarOrFn (nowhere, str_id, txt_id)) `Set e
           | `Array es
              -> let len = List.length es in
                 if len > elt_count then ksprintf (error loc) "too many values supplied to initialise %s[]" str_id;
                 if is_str then
-                  List.iteri (fun i e -> assign (`Deref (nowhere, str_id, txt_id, `Int (nowhere, Int32.of_int i))) e) es
+                  List.iteri (fun i e -> Meta.assign (`Deref (nowhere, str_id, txt_id, Meta.int i)) `Set e) es
                 else
-                  call "setarray" (`Deref (nowhere, str_id, txt_id, zero) :: es);
+                  Meta.call "setarray" (`Deref (nowhere, str_id, txt_id, Meta.zero) :: es);
                 if len < elt_count then
                   if is_zero 
                   then setrng (if is_str then "strclear" else "setrng") str_id txt_id ~first:len elt_count
                   else ksprintf (warning loc) "not enough values supplied for %s[]: the last %d elements will hold undefined values" str_id (elt_count - len))
       variables 
       elements
-
-(*"*)/*
-let allocate_one (loc, vartype, directives, variables) =
-  let _, str_id, txt_id, array_length, init_value, fixed_address = (* variables *)
-    match variables with [one] -> one | _ -> assert false 
-  in
-  let is_str = vartype = `Str 
-  and is_array = array_length <> `None
-  in
-  (* Set `elements' to the length of the array to allocate, or 1 for scalars. *)
-  let elements = 
-    match array_length with
-      | `None -> 1
-      | `Auto -> 
-       (match init_value with 
-          | `Array l -> List.length l
-          | _ -> ksprintf (error loc) "array `%s[]' must be given a length, either explicitly or by providing an initial value array" str_id)
-      | `Some expr -> 
-       (try
-          Int32.to_int (Global.expr__normalise_and_get_int expr ~abort_on_fail:false)
-        with Exit ->
-          ksprintf (error (loc_of_expr expr)) "array length for `%s[]' must evaluate to a constant integer" str_id)
-  in
-  (* Retrieve an appropriate address to use.
-     Currently we use a very coarse allocation method - all addresses are aligned on
-     32-bit boundaries, so smaller integers only save space when packed in arrays. *)
-  let blocks_required =
-    match vartype with
-      | `Str -> elements
-      | `Int eltbits -> (elements * eltbits - 1) / 32 + 1
-  in
-  let space, address =
-    match fixed_address with 
-      | None 
-         -> let space, f, max = if is_str then Memory.temp_str_spec () else Memory.temp_int_spec () in
-            space, Memory.find_block loc space f blocks_required ~max
-      | Some (sp, addr) 
-         -> try
-              Int32.to_int (Global.expr__normalise_and_get_int sp ~abort_on_fail:false),
-              Int32.to_int (Global.expr__normalise_and_get_int addr ~abort_on_fail:false)
-            with Exit ->
-              ksprintf (error (loc_of_expr sp)) "fixed address for `%s' must evaluate to a pair of constant integers" str_id
-  in
-  (* Allocate and declare the variable. *)
-  let rspace, raddr, alloc_address =
-    let rspace, eltmod = 
-      match vartype with 
-        | `Int 1 -> space + 26, 32
-        | `Int 2 -> space + 52, 16
-        | `Int 4 -> space + 78,  8
-        | `Int 8 -> space + 104, 4
-        | _      -> space, 1
-    in
-    let raddr, aaddr =
-      if fixed_address = None 
-      then address * eltmod, address
-      else address, address / eltmod
-    in
-    rspace, raddr, aaddr
-  in  
-  Memory.allocate_block loc space alloc_address blocks_required;
-  Memory.define 
-    txt_id 
-    (`StaticVar 
-      (rspace, 
-       Int32.of_int raddr, 
-       (if is_array then Some elements else None), 
-       Memory.varidx space, 
-       alloc_address, 
-       blocks_required))
-    ~scoped:(not (List.mem `Ext directives));
-  
-  (* Write to flag.ini *)
-  if !App.flag_labels && List.mem `Label directives then (
-    let fn = Filename.concat (Filename.dirname !App.gameexe) "flag.ini" in
-    let oc = open_out_gen [Open_wronly; Open_creat; Open_append; Open_text] 0o666 fn in
-    try
-      fprintf oc "%s[%d]:0:%s\n" 
-        (variable_name rspace ~prefix:false) 
-        raddr 
-        (if array_length = `None then str_id else sprintf "%s[%d]" str_id elements);
-      close_out oc
-    with e -> 
-      close_out oc;
-      raise e
-  );
-  
-  (* Initialise the variable *)
-  let is_zero = List.mem `Zero directives in
-  match init_value with
-    | `None 
-       -> (* No initial value supplied.  If the zero directive is in effect, we
-             give the variable an empty initial value, otherwise leave it alone. *)
-          if is_zero then
-            begin match is_str, is_array with
-              | false, false -> assign (`VarOrFn (nowhere, str_id, txt_id)) (zero)
-              | true,  false -> call "strclear" [`VarOrFn (nowhere, str_id, txt_id)]
-              | false, true  -> setrng "setrng" str_id txt_id elements
-              | true,  true  -> setrng "strclear" str_id txt_id elements
-            end
-    | `Scalar e
-       -> if is_array then
-            if is_str then
-              let idx = Memory.get_temp_int () in
-              !Global.compilerFrame__parse (Global.dynArray (
-               `For
-                 (nowhere,
-                  Global.dynArray (`Assign (nowhere, idx, `Set, zero)),
-                  `LogOp (nowhere, idx, `Ltn, `Int (nowhere, Int32.of_int elements)),
-                  Global.dynArray (`Assign (nowhere, idx, `Add, `Int (nowhere, 1l))),
-                  `Assign (nowhere, `Deref (nowhere, str_id, txt_id, idx), `Set, e))
-              ))
-            else
-              setrng "setrng" str_id txt_id elements ~init:e
-          else
-            assign (`VarOrFn (nowhere, str_id, txt_id)) e
-    | `Array es
-       -> let len = List.length es in
-          if len > elements then ksprintf (error loc) "too many values supplied to initialise %s[]" str_id;
-          if is_str then
-            List.iteri (fun i e -> assign (`Deref (nowhere, str_id, txt_id, `Int (nowhere, Int32.of_int i))) e) es
-          else
-            call "setarray" (`Deref (nowhere, str_id, txt_id, zero) :: es);
-          if len < elements then
-            if is_zero 
-            then setrng (if is_str then "strclear" else "setrng") str_id txt_id ~first:len elements
-            else ksprintf (warning loc) "not enough values supplied for %s[]: the last %d elements will hold undefined values" str_id (elements - len);
-*/(*"*)

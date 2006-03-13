@@ -4845,24 +4845,47 @@ effort to comply with the terms of the LGPL.
       can do this automatically: it should be available from the same sources as 
       \package.
 
+    \lsubsubsection{Additional features provided in the dynamic formatting library}
+    
+      Text can be italicised by using the new \ccref{b} and \ccref{u} control codes
+      (not to be mistaken for ``bold'' and ``underline''!):
+      
+      \ccdef{b}
+      \lstinline|\b|
+      \begin{cmdesc}
+        Begin an emphasis block. The text that follows will be italicised, up to the
+        next \ccref{u} code or the end of the current string.
+      \end{cmdesc}
+      \ccdef{u}
+      \lstinline|\u|
+      \begin{cmdesc}
+        End an emphasis block.
+      \end{cmdesc}
+      
+      For example, \lstinline|'R2D2! It \bis\u you!'| outputs ``R2D2! It 
+      \textit{is} you!''.
+      
     \lsubsubsection{Limitations of dynamic formatting}
    
       Certain \reallive\ features are not available in rlBabel-formatted
       text.  In particular, the \ccref{ruby} control code is not supported
       at present.
-
-      The proportional text calculations are based entirely on fonts' quoted
-      advance widths.  Fonts that rely on kerning pairs or other metrics to
-      obtain correct spacing will not display properly.  Similarly, since
-      the calculations can only be done in terms of whole pixels, text may
-      appear unevenly spaced; there will be a cumulative rounding error.
+      
+      Proportional text formatting has not been extended to cover all cases. In 
+      particular, text displayed by @ref{select_s}, @ref{objOfText}, 
+      @ref{grpTextout}, and related functions still uses the fixed advance width 
+      system built into \reallive.  Support for these functions is planned for
+      a future release.
       
     \lsubsubsection{Using bitmapped characters in text}
     
-      By default, bitmapped characters printed with the \ccref{e} and \ccref{em}
-      codes are one em wide.  When using proportional text output, it is possible
-      to specify widths for bitmapped characters by defining a new variable in
-      \gameexe:
+      When using proportional text output, bitmapped characters printed with the 
+      \ccref{e} and \ccref{em} codes are currently not permitted in @ref{select} 
+      calls.  They can be used as normal in regular text.
+    
+      By default, bitmapped characters are exactly one em wide.  When using 
+      proportional text output, it is possible to specify widths for individual
+      characters by defining a new variable in \gameexe:
       
 @ivar/RLBABEL_E_MOJI_WIDTHS/
 @def/#RLBABEL_E_MOJI_WIDTHS = <width>@[, <width>~{\ldots~}@]/
@@ -4870,7 +4893,7 @@ effort to comply with the terms of the LGPL.
   Define widths for bitmapped characters.  Each <width> is a percentage of an
   em square for the corresponding character: that is, the first <width>
   defines the width of character 0, the second defines character 1, and so on.
-  Any widths left unspecified default to 100.
+  Any widths left unspecified default to 100, i.e.\ the normal width.
 @}
     
   %rlBabel additional functions:

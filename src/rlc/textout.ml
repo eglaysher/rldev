@@ -24,25 +24,7 @@ open KeTypes
 open KeAst
 open Codegen
 
-let parse d = !Global.compilerFrame__parse d
-let parse_elt e = parse (Global.dynArray e)
-
-let assign (lhs : [assignable | expression]) op (rhs : [assignable | expression]) =
-  match lhs, rhs with
-    | #assignable as lhs, (#expression as rhs) -> parse_elt (`Assign (nowhere, lhs, op, rhs))
-    | _ -> failwith "internal error"
-
-let call ?rv ?label funname args =
-  let d = DynArray.make 1 in
-  DynArray.add d (`FuncCall (nowhere, rv, funname, Text.ident funname, List.map (fun e -> `Simple (nowhere, e)) args, label));
-  parse d
-
-let int x = `Int (nowhere, Int32.of_int x)
-
-let goto label = call "goto" [] ~label
-and gosub label = call "gosub" [] ~label
-and goto_unless cond label = call "goto_unless" [cond] ~label
-
+open Meta
 
 (*** FOR TEXTOUT LIBRARY ***)
 
@@ -78,9 +60,7 @@ let make_token id arg1 arg2 =
 
 let finalise () =
   if Memory.defined (Text.ident "__DynamicLineationUsed__") then
-    parse
-      (Global.dynArray
-        (`VarOrFn (nowhere, "__dynamic_textout_print", Text.of_sjs "__dynamic_textout_print")))
+    Meta.parse_elt (`VarOrFn (nowhere, "__dynamic_textout_print", Text.of_sjs "__dynamic_textout_print"))
 
 exception AddText of string
 
@@ -455,8 +435,7 @@ let handle_rewrite pause_or_page loc text =
     func;
   Queue.add (KeAstParser.EOF, nowhere) nfunc;
   (* Parse and compile the code *)
-  let ast = KeULexer.call_parser KeAstParser.just_statements (fun _ () -> Queue.pop nfunc) () in
-  !Global.compilerFrame__parse ast
+  Meta.parse (KeULexer.call_parser KeAstParser.just_statements (fun _ () -> Queue.pop nfunc) ())
 
 
 let rec do_compile ?(eaddstrs = Queue.create ()) compilefun (loc, text, pause_or_page) =

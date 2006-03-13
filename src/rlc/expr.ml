@@ -426,7 +426,7 @@ and traverse ?(as_cond = false) ?(keep_unknown_funcs = false) ~reject aux =
           Memory.define (Text.ident "__CALLER_FILE__") (`Macro (`Str (nowhere, Global.dynArray (`Text (nowhere, `Sbcs, Text.of_err l.file))))) ~scoped:true;
           Memory.define (Text.ident "__CALLER_LINE__") (`Macro (`Int (nowhere, Int32.of_int l.line))) ~scoped:true;
           List.iter (fun (i, e) -> Memory.define i (`Macro e) ~scoped:true) defs;
-          !Global.compilerFrame__parse smts;
+          Meta.parse smts;
           let rv = traverse aux (expr_of_statement last) ~as_cond ~reject ~keep_unknown_funcs in
           Memory.close_scope ();
           Memory.replace_sym id sym;

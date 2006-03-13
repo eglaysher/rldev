@@ -349,7 +349,7 @@ let rec check_and_compile loc funname defs params =
         (* Function to return a variable containing just '"'. *)
         let doublequote () = `String (code_of_expr (double_quote_var ()))
         (* Temporary variables to use to build the result. *)
-        and tempstr () = (*lazy (Memory.get_temp_str ())*) Memory.get_temp_var `Str "__handle_literal_in_strc__tempstr__\000"
+        and tempstr () = Memory.get_temp_var `Str "__handle_literal_in_strc__tempstr__\000"
         and accum =
           if is_cpy_or_cat <> `No then
             (* In the case of strcpy and strcat, we use the first parameter as an
@@ -360,7 +360,6 @@ let rec check_and_compile loc funname defs params =
                here, because we know that we are always in a scope local to the current
                statement. *)
             Memory.get_temp_str ()
-            (*Memory.get_temp_var `Str "__handle_literal_in_strc__accum__\000" *)
         in
         (* Now we iterate through the string, adding chunks to the accumulator. *)
         let empty = ref true in

@@ -38,6 +38,7 @@ FILES []=
   iniLexer
   keAst
   global
+  meta
   strTokens
   memory
   variables

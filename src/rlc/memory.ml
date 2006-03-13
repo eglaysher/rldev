@@ -200,13 +200,12 @@ let rec get_deref_as_expression ?(loc = nowhere) ?s id offset =
               ksprintf (error loc) "index %ld exceeds bounds of array `%s[%d]'" offsc s len
           with Exit ->
             if check_def "__SafeArrays__" () then
-              let lhs = `LogOp (nowhere, offset, `Gte, `Int (nowhere, 0l))
-              and rhs = `LogOp (nowhere, offset, `Ltn, `Int (nowhere, Int32.of_int len)) in
+              let lhs = `LogOp (nowhere, offset, `Gte, Meta.int 0)
+              and rhs = `LogOp (nowhere, offset, `Ltn, Meta.int len) in
               let parm = `AndOr (nowhere, lhs, `LAnd, rhs)
               and msg = `Str (nowhere, Global.dynArray (`Text (nowhere, `Sbcs, Text.of_sjs "array index out of bounds"))) in
               let parms = [`Simple (nowhere, parm); `Simple (nowhere, msg)] in
-              let func = `FuncCall (nowhere, None, "assert", Text.ident "assert", parms, None) in
-              !Global.compilerFrame__parse (Global.dynArray func)
+              Meta.parse_elt (`FuncCall (nowhere, None, "assert", Text.ident "assert", parms, None))
           end;
           let idx = `Op (nowhere, `Int (nowhere, idx), `Add, offset) in
           if a >= 8 then `SVar (loc, sp, idx) else `IVar (loc, sp, idx)
@@ -327,7 +326,7 @@ let get_temp_int ?(space = temp_int_spc()) ?(min = temp_int_min()) ?(max = temp_
   IFDEF DEBUG_SCOPING THEN eprintf "Allocating %d.%d\n%!" vidx idx ELSE () END;
   staticvars.(vidx) <- IMap.add idx 1 staticvars.(vidx);
   define (ksprintf Text.of_sjs "[temp %d.%d]" space idx) (`StaticVar (space, Int32.of_int idx, None, vidx, idx, 1)) ~warnings:false;
-  `IVar (useloc, space, `Int (nowhere, Int32.of_int idx))
+  `IVar (useloc, space, Meta.int idx)
 
 let get_temp_str ?(space = temp_str_spc()) ?(min = temp_str_min()) ?(max = temp_str_max()) ?(useloc = temploc) () =
   let vidx = varidx space in
@@ -335,7 +334,7 @@ let get_temp_str ?(space = temp_str_spc()) ?(min = temp_str_min()) ?(max = temp_
   IFDEF DEBUG_SCOPING THEN eprintf "Allocating %d.%d\n%!" vidx idx ELSE () END;
   staticvars.(vidx) <- IMap.add idx 1 staticvars.(vidx);
   define (ksprintf Text.of_sjs "[temp %d.%d]" space idx) (`StaticVar (space, Int32.of_int idx, None, vidx, idx, 1)) ~warnings:false;
-  `SVar (useloc, space, `Int (nowhere, Int32.of_int idx))
+  `SVar (useloc, space, Meta.int idx)
 
 let get_temp_var (vtype : [`Int | `Str]) s =
   let s = Text.ident s in

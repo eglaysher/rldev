@@ -150,7 +150,7 @@ and handle_textout next (`Return (l, _, _) as elt) =
     then Textout.compile (l, ret, next)
     else if Memory.defined (Text.ident "__RLBABEL_KH__")
     then Textout.compile_vwf (l, ret, next)
-    else error l "no recognised dynamic lineation library loaded"
+    else error l "__DynamicLineation__ defined, but no recognised dynamic lineation library loaded"
   )
 
 and parse_elt elt =
@@ -191,7 +191,15 @@ and parse_norm_elt : statement -> unit =
         -> if Intrinsic.is_builtin t
            then parse_elt (Intrinsic.eval_as_code f)
            else Function.compile f
-    | `Select f -> Select.compile f
+    | `Select (l, _, _, _, _, _ as f)
+       -> let dynalin = Text.ident "__DynamicLineation__" in
+          if not (Memory.defined dynalin) 
+          || (Memory.get_as_expression dynalin matches `Int (_, 0l))
+          || Memory.defined (Text.ident "__TEXTOUT_KH__")
+          then Select.compile f
+          else if Memory.defined (Text.ident "__RLBABEL_KH__")
+          then Select.compile_vwf f
+          else error l "__DynamicLineation__ defined, but no recognised dynamic lineation library loaded"
     | `UnknownOp o -> Function.compile_unknown o
     | `LoadFile (l, f)
        -> parse_elt

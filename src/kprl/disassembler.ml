@@ -554,7 +554,7 @@ and get_string ?(in_ruby = false) sep_str lexbuf =
           -> expect lexbuf '(' "get_string.print";
              let e = get_expression lexbuf in
              expect lexbuf ')' "get_string.print";
-             bprintf b "\\%c{%s}" (if e.[0] = 'S' || e.[0] = 'M' then 's' else 'i') e;
+             bprintf b "\\%c{%s}" (if e.[0] = 's' then 's' else 'i') e;
              unquot lexbuf
       | _ -> rollback lexbuf;
              Buffer.contents b

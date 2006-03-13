@@ -98,6 +98,11 @@ str __rlb_buffer, __rlb_empty
        dllSetWindowName  = 102,
        dllGetTextWindow  = 103
 
+// Function IDs: Select
+#const dllSelectInit     = 200,
+       dllSelectAdd      = 201,
+       dllSelectCleanup  = 202
+
 // Return values
 #const getcError         = 0,
        getcEndOfString   = 1,
@@ -123,6 +128,10 @@ str __rlb_buffer, __rlb_empty
 
 // DLL wrappers: Textout
 
+#inline __vwf_TryLoad()
+  if !LoadDLL (0, rlBabel)
+    rlcError ('failed to initialise text rendering engine')
+
 #inline __vwf_TextoutStart (__string, __is_start = 1):
   // Initialise textout and print an empty token to fix a save point here.
   #ifndef __DynamicLineationUsed__ #define __DynamicLineationUsed__ #endif
@@ -143,9 +152,7 @@ str __rlb_buffer, __rlb_empty
   #if OldType
     // Old versions unload the DLL when a saved game is loaded.  We have to
     // check for such failures and force it to be reloaded when necessary.
-    while !CallDLL (rlBabelDLL, dllTextoutStart, arg)
-      if !LoadDLL (0, rlBabel)
-        rlcError ('failed to initialise text rendering engine')
+    while !CallDLL (rlBabelDLL, dllTextoutStart, arg) __vwf_TryLoad
   #else
     CallDLL (rlBabelDLL, dllTextoutStart, arg)
   #endif
@@ -160,6 +167,53 @@ str __rlb_buffer, __rlb_empty
   #else
     CallDLL (rlBabelDLL, dllTextoutAppend, __addr(__string))
   #endif;
+
+
+// DLL wrappers: Select
+
+#inline __vwf_SelectInit (__window, [__string1], [__string2], [__string3]):
+  #ifndef __DynamicLineationUsed__ #define __DynamicLineationUsed__ #endif
+  strout (__rlb_empty)
+  DisableAutoSavepoints
+  #if OldType
+    // Old versions unload the DLL when a saved game is loaded.  We have to
+    // check for such failures and force it to be reloaded when necessary.
+    #if defined?(__string3)
+      while !CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1), __addr(__string2), __addr(__string3)) __vwf_TryLoad
+    #elseif defined?(__string2)
+      while !CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1), __addr(__string2)) __vwf_TryLoad
+    #elseif defined?(__string1)
+      while !CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1)) __vwf_TryLoad
+    #else
+      while !CallDLL (rlBabelDLL, dllSelectInit, __window) __vwf_TryLoad
+    #endif
+  #else
+    #if defined?(__string3)
+      CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1), __addr(__string2), __addr(__string3))
+    #elseif defined?(__string2)
+      CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1), __addr(__string2))
+    #elseif defined?(__string1)
+      CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1))
+    #else
+      CallDLL (rlBabelDLL, dllSelectInit, __window)
+    #endif
+  #endif;
+
+#inline __vwf_SelectAdd (__window, [__string1], [__string2], [__string3]):
+  #if defined?(__string3)
+    CallDLL (rlBabelDLL, dllSelectAdd, __window, __addr(__string1), __addr(__string2), __addr(__string3))
+  #elseif defined?(__string2)
+    CallDLL (rlBabelDLL, dllSelectAdd, __window, __addr(__string1), __addr(__string2))
+  #elseif defined?(__string1)
+    CallDLL (rlBabelDLL, dllSelectAdd, __window, __addr(__string1))
+  #else
+    CallDLL (rlBabelDLL, dllSelectAdd, __window)
+  #endif;
+  
+#inline __vwf_SelectCleanup (__dest = store):
+  CallDLL (rlBabelDLL, dllSelectCleanup, __dest)
+  EnableAutoSavepoints
+  return store;
 
 
 // Public utility functions

@@ -205,7 +205,7 @@ Note that \gameexe\ is case-sensitive.
 
 %------------------------------------------------------------------------------%
 
-\lsection{Message windows}
+\lsection{Text output}
 
 Message window configuraton is quite complicated, and not well understood.  The
 incomplete documentation here contains some details; if in doubt, you'd be better
@@ -240,6 +240,46 @@ off examining what's done in actual games and copying details from there...
   @irefs{WINDOW}{ATTR} instead.  
 @}
 
+
+\subsection{Global font settings}
+
+@ivar1/INIT_FONT_TYPE/type/
+@{
+  Selects a basic font style to use by default.  If <type> is 0, the game will 
+  use MS Gothic; if it is 1, the game will use MS Mincho.  If the selected font 
+  is not available on the player's system (or if the player is using a 
+  non-Japanese codepage), they will be forced to select a custom font the first 
+  time text is displayed.
+
+  As an \package\ extension, if the \package\ Unicode mode has been enabled by
+  loading the rlBabel DLL (see \ref{lib:rlBabel}), you can specify a different
+  default font by setting <type> to 2 and using @iref{INIT_FONT_NAME}.  If
+  rlBabel is not loaded, this will have no effect.
+@}
+
+@ivar1s/INIT_FONT_NAME/font/
+@{
+  \emph{This is an \package\ extension. It is only available when the rlBabel
+  DLL is loaded (see \ref{lib:rlBabel}); otherwise it has no effect.}
+  
+  If @iref{INIT_FONT_TYPE} is 2, then <font> is used as the default font for
+  the game.
+  
+  Due to the way \gameexe\ is parsed, font names that are not in Japanese
+  or English may not be recognised.
+@}
+
+@ivar1/INIT_FONT_QUALITY/quality/
+@{
+  Sets the default font quality to use.  The values of <quality>, and their 
+  meanings, are the same as for @ref{SetFontQuality}.
+@}
+
+@ivar1/INIT_FONT_WEIGHT/weight/
+@{
+  Sets the default font weight to use.  The values of <weight>, and their 
+  meanings, are the same as for @ref{SetFontWeight}.
+@}
 
 
 \subsection{Defining a window}\label{sec:windowdefinition}

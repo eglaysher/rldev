@@ -24,23 +24,6 @@ open KeTypes
 open KeAst
 open Codegen
 
-(* コピペ from textout.ml: ideally this should be factored into its own module, I guess... *)
-let parse d = !Global.compilerFrame__parse d
-let parse_elt e = parse (Global.dynArray e)
-
-let assign (lhs : [assignable | expression]) op (rhs : [assignable | expression]) =
-  match lhs, rhs with
-    | #assignable as lhs, (#expression as rhs) -> parse_elt (`Assign (nowhere, lhs, op, rhs))
-    | _ -> failwith "internal error"
-
-let call ?rv ?label funname args =
-  let d = DynArray.make 1 in
-  DynArray.add d (`FuncCall (nowhere, rv, funname, Text.ident funname, List.map (fun e -> `Simple (nowhere, e)) args, label));
-  parse d
-
-let int x = `Int (nowhere, Int32.of_int x)
-(* コピペ終わり *)
-
 let token_name_left   = Text.of_arr [| 0x01 |]
 and token_name_right  = Text.of_arr [| 0x02 |]
 and token_break       = Text.of_arr [| 0x03 |]
@@ -52,10 +35,6 @@ and token_emphasis    = Text.of_arr [| 0x09 |]
 and token_regular     = Text.of_arr [| 0x0a |]
 
 let compile addstrs loc text =
-(*  if not (Memory.defined (Text.ident "__DynamicLineationUsed__")) then
-    Memory.define ~scoped:false (Text.ident "__DynamicLineationUsed__") (`Integer 1l);
-  Output.add_kidoku loc;
-  (* And we may need to add an empty string-out command, too, like in Textout. *)*)
   let b = DynArray.create () in
   let ignore_one_space = ref false in
   let appending = ref false in
@@ -63,15 +42,15 @@ let compile addstrs loc text =
     if display then 
       if !appending then (
         appending := false;
-        call "__vwf_TextoutAppend" [`Str (nowhere, b)];
-        call "__vwf_TextoutDisplay" []
+        Meta.call "__vwf_TextoutAppend" [`Str (nowhere, b)];
+        Meta.call "__vwf_TextoutDisplay" []
       )
-      else call "__vwf_TextoutDisplay" [`Str (nowhere, b)]
+      else Meta.call "__vwf_TextoutDisplay" [`Str (nowhere, b)]
     else 
-      if !appending then call "__vwf_TextoutAppend" [`Str (nowhere, b)]
+      if !appending then Meta.call "__vwf_TextoutAppend" [`Str (nowhere, b)]
       else (
         appending := true;
-        call "__vwf_TextoutStart" [`Str (nowhere, b)]
+        Meta.call "__vwf_TextoutStart" [`Str (nowhere, b)]
       );
     DynArray.clear b
   in
@@ -100,7 +79,7 @@ let compile addstrs loc text =
                 | [`Simple (_, idx); `Simple (_, size)] -> idx, Some size
                 | _ -> ksprintf (error loc) "incorrect parameters to code \\%s{}" (Text.to_sjs id)
             in
-            Option.may (fun sz -> flush true; call "FontSize" [sz]) size;
+            Option.may (fun sz -> flush true; Meta.call "FontSize" [sz]) size;
             DynArray.add b (`Text (loc, `Dbcs, Text.of_arr [| 5 + Text.length id |]));
             begin try
               let i = match !Global.expr__normalise_and_get_const idx ~expect:`Int ~abort_on_fail:false
@@ -110,18 +89,18 @@ let compile addstrs loc text =
               flush false;
               Memory.open_scope ();
                 let svar = Memory.get_temp_str () in
-                call ~rv:svar "itoa" [idx; int 2];
-                call "__vwf_TextoutAppend" [svar];
+                Meta.call ~rv:svar "itoa" [idx; Meta.int 2];
+                Meta.call "__vwf_TextoutAppend" [svar];
               Memory.close_scope ();
             end;            
             (**)
-            Option.may (fun _ -> flush true; call "FontSize" []) size
+            Option.may (fun _ -> flush true; Meta.call "FontSize" []) size
       | `Code (loc, id, e, p) when id = Text.of_arr [| 0x73 |] (* \s{} *)
          -> let parm = match p with [`Simple (_, s)] -> s | _ -> error loc "the control code \\s{} must have one and only one parameter" in
             if not (parm matches `SVar _) then error loc (string_of_expr parm); (* it should, by this stage *)
             if e <> None then error loc "the control code \\s{} cannot have a length specifier";
             flush false;
-            call "__vwf_TextoutAppend" [parm]
+            Meta.call "__vwf_TextoutAppend" [parm]
       | `Code (loc, id, e, p) when id = Text.of_arr [| 0x69 |](* \i{} *)
          -> let parm = match p with [`Simple (_, i)] -> i | _ -> error loc "the control code \\i{} must have one and only one parameter" in
             if normalised_expr_is_const parm then
@@ -136,8 +115,8 @@ let compile addstrs loc text =
               flush false;
               Memory.open_scope ();
                 let svar = Memory.get_temp_str () in
-                call ~rv:svar "itoa" (parm :: length);
-                call "__vwf_TextoutAppend" [svar];
+                Meta.call ~rv:svar "itoa" (parm :: length);
+                Meta.call "__vwf_TextoutAppend" [svar];
               Memory.close_scope ()
       | `Code (loc, id, e, p) when id = Text.of_arr [| 0x6e |] || id = Text.of_arr [| 0x72 |] (* \n, \r *)
          -> let s = Text.to_err id in
@@ -177,8 +156,8 @@ let compile addstrs loc text =
                   flush false;
                   Memory.open_scope ();
                     let svar = Memory.get_temp_str () in
-                    call ~rv:svar "itoa_w" [w; int 2];
-                    call "__vwf_TextoutAppend" [svar];
+                    Meta.call ~rv:svar "itoa_w" [w; Meta.int 2];
+                    Meta.call "__vwf_TextoutAppend" [svar];
                   Memory.close_scope ())
               w
       | `Gloss (loc, _, _) -> error loc "not implemented: \\g{}"

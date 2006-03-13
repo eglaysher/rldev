@@ -8,6 +8,15 @@
                                    CHANGELOG
 -------------------------------------------------------------------------------
 
+-- 1.35 - unreleased --
+
+  Numerous bug fixes.  The Textout library now works properly, having been
+  tested more thoroughly in Polyphonica.
+
+  rlBabel is now mature enough for limited use (it supports the features Kanon
+  needs).
+
+
 -- 1.30 - 2006-2-1 --
 
   Support for non-Japanese character sets.  Games can now use ISO-8859-1 or 
@@ -33,7 +42,7 @@ RLC:
   Generate correct code for == and != on string operands.
   
   New alternative dynamic formatting library 'rlBabel': this supports 
-  proportional text, but only works in RealLive 1.2 and up.
+  proportional text, but only works in RealLive 1.2 and up.  Work in progress.
 
 KPRL:
 

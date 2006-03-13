@@ -112,6 +112,7 @@ let get_op l s t =
     | _ -> ksprintf (error l) "unknown effect `%s' in select condition" s
 
 let compile (loc, dest, s, opcode, window, params) =
+  if params = [] then ksprintf (warning loc) "`%s' called with no options" s;
   let handle = handle_parameter (Output.length ()) s in
   Output.add_kidoku loc;
   Output.add_code loc (code_of_opcode 0 2 opcode (List.length params) 0);
@@ -148,3 +149,33 @@ let compile (loc, dest, s, opcode, window, params) =
   match dest with
     | `Store _ -> ()
     | _ -> ksprintf (Output.add_code loc) "%s\\\x1e$\xc8" (code_of_var dest)
+
+let compile_vwf (loc, dest, s, opcode, window, params) =
+  if not (List.mem opcode [0; 1; 10; 11]) then 
+    compile (loc, dest, s, opcode, window, params)
+  else 
+    let get_var e =
+      let v = Memory.get_temp_str () ~useloc:nowhere in
+      Function.compile
+        (nowhere, None, "strcpy", Text.ident "strcpy", List.map (fun x -> `Simple (nowhere, x)) [v; e], None);
+      v
+    in
+    Memory.open_scope ();
+    let vars, vparams =
+      List.split
+        (List.map
+          (function
+            | `Always (l, e)      -> let v = get_var e in v, `Always (l, v)
+            | `Special (l, cl, e) -> let v = get_var e in v, `Special (l, cl, v))
+          params)
+    in
+    let rec loop s =
+      function
+        | [] -> ()
+        | l -> Meta.call s (Option.default (Meta.int ~-1) window :: List.take 3 l);
+               loop "__vwf_SelectAdd" (List.drop 3 l)
+    in
+    loop "__vwf_SelectInit" vars;
+    compile (loc, dest, s, opcode, window, vparams);
+    Meta.call "__vwf_SelectCleanup" [(dest :> expression)];
+    Memory.close_scope ()    
