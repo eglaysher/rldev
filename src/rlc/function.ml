@@ -451,7 +451,7 @@ let rec check_and_compile loc funname defs params =
                   if t = "s" then
                     let parm = match p with [`Simple (_, s)] -> s | _ -> error l "the control code \\s{} must have one and only one parameter" in
                     (* By this stage, the parameter SHOULD be a string variable. *)
-                    if not (parm matches `SVar _) then error l (string_of_expr parm);
+                    if not (parm matches `SVar _) then ksprintf (error l) "Oops, expected string variable but found %s" (string_of_expr parm);
                     if e <> None then error l "the control code \\s{} cannot have a length specifier";
                     (* Append the string. *)
                     flush ();
@@ -597,7 +597,7 @@ and compile ?(is_code = false) (loc, dest, s, t, params, label) =
       get_func_def t params ?look_in:(if is_code then Some ctrlcodes else None)
     with
       | Not_found -> IFDEF DEBUG THEN failwith "Not_found in get_func_def" ELSE fail loc s END
-      | Failure s -> error loc s
+      | Failure s -> ksprintf (error loc) "caught exception Failure (%s)" s
       | Exit -> ksprintf (error loc) "expected %s, found %s `%s'"
                   (if dest = None then "expression" else "statement")
                   (Memory.describe t) s

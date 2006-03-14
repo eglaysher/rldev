@@ -465,7 +465,21 @@ let rec do_compile ?(eaddstrs = Queue.create ()) compilefun (loc, text, pause_or
   if not (Queue.is_empty addstrs) then
     let _, (nextloc, nexttxt) = Queue.take addstrs in
     let text, loc = Global.get_resource nextloc (Text.to_err nexttxt, nexttxt) in
-    do_compile compilefun (loc, `Str (loc, text), pause_or_page) ~eaddstrs:addstrs 
+    let stext = (* FIXME: refactor this (partly a C&P from CompilerFrame.handle_textout) *)
+      match Expr.normalise (`Return (loc, false, `Str (loc, text))) with
+        | `Single (`Return (_, _, e)) -> e
+        | `Nothing 
+        | `Single _ -> assert false
+        | `Multiple elts
+           -> assert (DynArray.length elts > 0);
+              let last = DynArray.last elts in
+              DynArray.delete_last elts;
+              Meta.parse elts;
+              Memory.close_scope ();
+              match last with `Return (_, _, e) -> e | _ -> assert false
+    in
+    do_compile compilefun (loc, stext, pause_or_page) ~eaddstrs:addstrs 
+
 
 
 let compile_stub text = do_compile compile_stub text

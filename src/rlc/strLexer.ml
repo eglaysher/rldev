@@ -245,9 +245,14 @@ let rec get_token aux : lexbuf -> strtoken =
                 Global.expr__normalise_and_get_str
                   (`VarOrFn (floc, "__DefStrFunc__", Text.ident "__DefStrFunc__")) 
               in
-              get_f_code aux 
-                (loc_of_expr (Memory.get_as_expression (Text.ident "__DefStrFunc__"))) 
-                (from_utf8_string (StrTokens.to_string str ~enc:"UTF8"))
+              let aline = aux.line in
+              let rv = 
+                get_f_code aux 
+                  (loc_of_expr (Memory.get_as_expression (Text.ident "__DefStrFunc__"))) 
+                  (from_utf8_string (StrTokens.to_string str ~enc:"UTF8"))
+              in
+              aux.line <- aline; (* Prevent line number resetting bug *)
+              rv
           in
           let key = DynArray.length rewrites in
           DynArray.add rewrites code;

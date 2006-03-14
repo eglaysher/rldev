@@ -59,7 +59,9 @@ rule line xt b =
               | 's' | 'i' -> t
               | _ -> kprintf Optpp.sysWarning "unsupported code \\%c{} - replacing with \\i{}" t; 'i'
           in
-          bprintf b "\\%c%s%s{" t (if len <> "" then ":" else "") len;
+          if t = 's'
+          then Buffer.add_string b "\\s{"
+          else bprintf b "\\%c%s%s{" t (if len <> "" then ":" else "") len;
           simparg true b lexbuf;
           line xt b lexbuf }
     | "\\b" 

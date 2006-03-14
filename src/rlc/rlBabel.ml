@@ -97,7 +97,7 @@ let compile addstrs loc text =
             Option.may (fun _ -> flush true; Meta.call "FontSize" []) size
       | `Code (loc, id, e, p) when id = Text.of_arr [| 0x73 |] (* \s{} *)
          -> let parm = match p with [`Simple (_, s)] -> s | _ -> error loc "the control code \\s{} must have one and only one parameter" in
-            if not (parm matches `SVar _) then error loc (string_of_expr parm); (* it should, by this stage *)
+            if not (parm matches `SVar _) then ksprintf (error loc) "Oops, expected string variable but found `%s'" (string_of_expr parm); (* it should, by this stage *)
             if e <> None then error loc "the control code \\s{} cannot have a length specifier";
             flush false;
             Meta.call "__vwf_TextoutAppend" [parm]
