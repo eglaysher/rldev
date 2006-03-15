@@ -144,6 +144,9 @@
 
 #ifdef KPACAPI
 
+  #inline fade (__col)
+    grpFade (__col)
+
   #inline popjsr ()
     CallStackPop
 

@@ -264,6 +264,7 @@ str __rlb_buffer, __rlb_empty
     __vwf_TextoutStart (strS[__rlb_xmod], 0)
   @__textoutdisplay__
     DisableAutoSavepoints
+    __rlb_buffer = '                                '
     while 1:
       goto_on CallDLL (rlBabelDLL, dllTextoutGetChar, __addr(__rlb_buffer), __addr(__rlb_xmod)) {
         @getcError,

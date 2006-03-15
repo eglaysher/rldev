@@ -194,7 +194,7 @@ and at =
                 { file = StrTokens.to_string (Global.expr__normalise_and_get_str file);
                   line = Int32.to_int (Global.expr__normalise_and_get_int line) }
               in
-              KeULexer.call_parser_on_string KeAstParser.program atloc (StrTokens.to_string str)
+              KeULexer.call_parser_on_text KeAstParser.program atloc (Text.of_string "UTF8" (StrTokens.to_string str ~enc:"UTF8"))
         | _ -> error loc "the `at' intrinsic statement must be passed a location and a string to evaluate (str file; int line; str statement_string)")
   
 and __empty_string =
@@ -310,7 +310,7 @@ and rlc_parse_string =
                 try Global.expr__normalise_and_get_str str ~abort_on_fail:false
                 with _ -> error loc "the string passed to `rlc_parse_string' must be evaluable at compile-time"
               in
-              KeULexer.call_parser_on_string KeAstParser.just_expression loc (StrTokens.to_string str)
+              KeULexer.call_parser_on_text KeAstParser.just_expression loc (Text.of_string "UTF8" (StrTokens.to_string str ~enc:"UTF8"))
         | _ -> error loc "the `rlc_parse_string' intrinsic must be passed a single string constant")
     (fun loc rv ->
       function
@@ -320,5 +320,5 @@ and rlc_parse_string =
                 try Global.expr__normalise_and_get_str str ~abort_on_fail:false
                 with _ -> error loc "the string passed to `rlc_parse_string' must be evaluable at compile-time"
               in
-              KeULexer.call_parser_on_string KeAstParser.program loc (StrTokens.to_string str)
+              KeULexer.call_parser_on_text KeAstParser.program loc (Text.of_string "UTF8" (StrTokens.to_string str ~enc:"UTF8"))
         | _ -> error loc "the `rlc_parse_string' intrinsic must be passed a single string constant")

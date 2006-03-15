@@ -36,7 +36,7 @@ let resource loc expr =
 let getconst e =
   match !Global.expr__normalise_and_get_const e with
     | `Integer i -> `Integer i
-    | `String s -> `String (Text.of_sjs (StrTokens.to_string s)) (*TODO: could be more efficient... *)
+    | `String s -> `String (Text.of_string "UTF8" (StrTokens.to_string s ~enc:"UTF8")) (*TODO: could be more efficient... *)
 
 let set (loc, s, t, set, e) =
   try
@@ -50,7 +50,7 @@ let set (loc, s, t, set, e) =
 let ini_set (loc, s, t, expr) =
   Ini.set (Text.to_sjs t)
     [match const_of_normalised_expr expr with
-      | `String s -> `String (StrTokens.to_string s)
+      | `String s -> assert false
       | `Integer i -> `Integer i]
 
 let generic =
@@ -66,7 +66,7 @@ let generic =
       | "print" -> let loc = loc_of_expr expr in ksprintf Optpp.cliWarning "%s line %d: %s" loc.file loc.line (as_string expr)
       | "resource" -> resource loc expr
       | "val_0x2c" -> Global.val_0x2c := Int32.to_int (int_of_normalised_expr expr)
-      | "character" -> DynArray.add Global.dramatis_personae (StrTokens.to_string (str_of_normalised_expr expr))
+      | "character" -> DynArray.add Global.dramatis_personae (StrTokens.to_string (str_of_normalised_expr expr)) (* TODO: candidate for text transformation? *)
       | "entrypoint" -> let idx = Int32.to_int (int_of_normalised_expr expr) in
                         if idx <> 0 || loc.file = "system.kh" then
                           if idx < 0 || idx >= 100 

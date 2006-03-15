@@ -337,16 +337,6 @@ let rec get_token aux : lexbuf -> strtoken =
               | [`Simple (_, a); `Simple (_, b)] -> return a (Some b)
               | [_] | [_; _] -> ksprintf (KeTypes.error iloc) "arguments to control code \\%s{} must be simple expressions" (Text.to_sjs code)
               | _ -> ksprintf (KeTypes.error iloc) "too many arguments to control code \\%s{}" (Text.to_sjs code)
-(*        else if code = Text.ident "u" then
-            let chrs = 
-              List.map 
-                (function `Simple (_, c) -> c | _ -> KeTypes.error iloc "arguments to control code \\u{} must be simple expressions")
-                arglist
-            in
-            let tlist =
-              List.fold_left
-                (fun 
-            `Text (codeloc, `Dbcs*)
           else
             `Code (codeloc, code, optarg, arglist)
 
