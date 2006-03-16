@@ -495,6 +495,7 @@ str __dto_text
   @__dto_next_line
     __dto_temp[2] = currwidth[cwind]
     currwidth[cwind] = currindent[cwind]
+  @__dto_next_line2
     curr_y[cwind] += fontsz[cwind] + fontymod
     if curr_y[cwind] + fontsz[cwind] + fontymod > height:
       __DebugMessage ('WARNING: screen overflow')
@@ -564,6 +565,8 @@ str __dto_text
                   remaining_space = (width - currwidth[cwind]) / zenkaku_char,
                   chars_on_next_line = (store - remaining_space) % ((width - currindent[cwind]) / zenkaku_char)
                 currwidth[cwind] = currindent[cwind] + chars_on_next_line * zenkaku_char
+                __dto_temp[2] = 0
+                gosub @__dto_next_line2
                 goto @__dynamic_print_strout_token;
                 
               // For SBCS strings, try trimming trailing spaces and see if that helps.
@@ -624,8 +627,9 @@ str __dto_text
       token = strsub (text, arg1, arg2)
       if tokenmode == md_norm && currwidth[cwind] == 0:
         accum_str = strsub (token, 0, 1)
-        if strpos ('「『（', accum_str) >= 0
-          currindent[cwind] += fontsz[cwind] + fontxmod
+        if strpos ('「『（', accum_str) >= 0:
+          if __dto_any_have_r_command_mod && windflags & wf_R_COMMAND_MOD, __dto_next_line
+          currindent[cwind] += fontsz[cwind] + fontxmod;
       ;
       // Merge opening quotes with following text
       strpos('「『（', token)
