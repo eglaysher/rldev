@@ -493,14 +493,15 @@ str __dto_text
   __define_dto_variables
 
   @__dto_next_line
+    __dto_temp[2] = currwidth[cwind]
     currwidth[cwind] = currindent[cwind]
     curr_y[cwind] += fontsz[cwind] + fontymod
     if curr_y[cwind] + fontsz[cwind] + fontymod > height:
       __DebugMessage ('WARNING: screen overflow')
       #ifdef __dto_page_on_overflow
-        page
+        if __dto_temp[2] > currindent[cwind], page
       #else
-        spause // TEST: if this introduces a save point, it breaks the program.
+        if __dto_temp[2] > currindent[cwind], spause // TEST: if this introduces a save point, it breaks the program.
         curr_y[cwind] = 0
         // Fix indent-related breakage if first character of next screen is uwi
         strcpy(__dto_accum_str[2], token, 1)
