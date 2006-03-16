@@ -96,6 +96,10 @@ let options =
           descr = "enable maximum compression (no effect on some formats, can be extremely slow on others)";
           withoutarg = set_flag App.brutal true;
           witharg = None };
+    Opt { short = ""; long = "masked-only"; argname = "";
+          descr = "for format 2 G00s, allow cropping of transparent areas of the image regardless of their contents";
+          withoutarg = set_flag App.masked_only true;
+          witharg = None };
 (*  Opt { short = ""; long = "dump-format-2"; argname = "";
           descr = "dump raw version of format 2 G00s (debugging option)";
           withoutarg = set_flag App.debug_dump_file true;

@@ -36,3 +36,4 @@ let metafile = ref ""
 let use_meta = ref true
 let debug_dump_file = ref false
 let include_parts = ref false
+let masked_only = ref false

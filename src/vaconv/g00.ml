@@ -348,14 +348,20 @@ let encode_format_2 img i_regions rgba =
   in
   (* For non-duplicate regions, isolate graphical elements. *)
   let blocks =
-   List.map
+    List.map
       (function (`Dup _) as d -> d | `Elt elt ->
+        let pixel_clear x y =
+          if !App.masked_only
+          then rgba.{y, x, 3} != 0
+          else rgba.{y, x, 0} != 0 || rgba.{y, x, 1} != 0 || rgba.{y, x, 2} != 0 || rgba.{y, x, 3} != 0
+        in
         let x1 = ref elt.x1 and y1 = ref elt.y1 and x2 = ref elt.x2 and y2 = ref elt.y2 in
         let scanline_clear y =
           let rv = ref true and x = ref !x1 in
           while !x <= !x2 && !rv do
-            if rgba.{y, !x, 0} != 0 || rgba.{y, !x, 1} != 0 || rgba.{y, !x, 2} != 0 || rgba.{y, !x, 3} != 0
-            then rv := false else incr x
+            if pixel_clear !x y
+            then rv := false 
+            else incr x
           done; !rv
         in
         let break = ref false in
@@ -366,8 +372,9 @@ let encode_format_2 img i_regions rgba =
         let column_clear x =
           let rv = ref true and y = ref !y1 in
           while !y <= !y2 && !rv do
-            if rgba.{!y, x, 0} != 0 || rgba.{!y, x, 1} != 0 || rgba.{!y, x, 2} != 0 || rgba.{!y, x, 3} != 0
-            then rv := false else incr y
+            if pixel_clear x !y
+            then rv := false 
+            else incr y
           done; !rv
         in
         let break = ref false in
