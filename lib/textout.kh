@@ -496,13 +496,15 @@ str __dto_text
     __dto_temp[2] = currwidth[cwind]
     currwidth[cwind] = currindent[cwind]
   @__dto_next_line2
+GetTextPos(store, curr_y[cwind])
     curr_y[cwind] += fontsz[cwind] + fontymod
     if curr_y[cwind] + fontsz[cwind] + fontymod > height:
       __DebugMessage ('WARNING: screen overflow')
       #ifdef __dto_page_on_overflow
         if __dto_temp[2] > currindent[cwind], page
       #else
-        if __dto_temp[2] > currindent[cwind], spause // TEST: if this introduces a save point, it breaks the program.
+//                              Removed as it seems to cause problems. What was it for, again?
+//      if __dto_temp[2] > currindent[cwind], spause // TEST: if this introduces a save point, it breaks the program.
         curr_y[cwind] = 0
         // Fix indent-related breakage if first character of next screen is uwi
         strcpy(__dto_accum_str[2], token, 1)
