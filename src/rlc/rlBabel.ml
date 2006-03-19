@@ -35,6 +35,9 @@ and token_emphasis    = Text.of_arr [| 0x09 |]
 and token_regular     = Text.of_arr [| 0x0a |]
 
 let compile addstrs loc text =
+  let start_lbl = unique_label loc in
+  Output.add_label start_lbl;
+  Output.add_kidoku loc;
   let b = DynArray.create () in
   let ignore_one_space = ref false in
   let appending = ref false in
@@ -54,7 +57,6 @@ let compile addstrs loc text =
       );
     DynArray.clear b
   in
-  Output.add_kidoku loc;
   let rec parse elt =
     if !ignore_one_space && not (elt matches `Space _) then ignore_one_space := false;
     match elt with
@@ -160,8 +162,12 @@ let compile addstrs loc text =
                     Meta.call "__vwf_TextoutAppend" [svar];
                   Memory.close_scope ())
               w
-      | `Gloss (loc, _, _) -> error loc "not implemented: \\g{}"
-      | `Ruby (loc, _, _)  -> error loc "not implemented: \\ruby{} in rlBabel-formatted text"
+      | `Ruby (loc, tokens, _)
+         -> warning loc "not implemented: \\ruby{} in rlBabel-formatted text";
+            DynArray.iter parse tokens
+      | `Gloss (loc, tokens, resstr) 
+         -> warning loc "not implemented: \\g{}";
+            DynArray.iter parse tokens
   in
   DynArray.iter parse text;
   flush true
