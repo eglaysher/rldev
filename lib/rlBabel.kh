@@ -237,9 +237,36 @@ str __rlb_buffer, __rlb_empty
   return store;
 
 
-//-------------- Spaghetti warning! Read on at your own risk ---------------------
+// Pause function wrappers
 
+#define __HideFunctionsSilently__
+
+#const rlbPauseContinue         = 0,
+       rlbPauseClear            = 1,
+       rlbPauseClearUnlessNovel = 2
+
+#inline __vwf_DoPauseFunc (__func, __clear):
+  at (__CALLER_FILE__, __CALLER_LINE__, __func)
+  #ifdef __EnableGlosses__
+    
+  #endif;
   
+#inline pause  () __vwf_DoPauseFunc ('pause',  rlbPauseClearUnlessNovel)
+#inline spause () __vwf_DoPauseFunc ('spause', rlbPauseContinue)
+#inline page   () __vwf_DoPauseFunc ('page',   rlbPauseClear)
+
+{- Wrap direct calls to breaking functions with calls to the textout routines.
+   This will ensure that screen overflows are handled properly.
+   A consequence is that it becomes more space-efficient to use control codes
+   in strings than to call the functions directly. -}
+#inline br  () '\n'
+#inline par () '\r'
+
+#undef __HideFunctionsSilently__
+
+
+// The main rlBabel functions
+ 
 #inline __vwf_TextoutDisplay ([__text]):
   #ifndef __text
     gosub @__textoutdisplay__
@@ -248,7 +275,7 @@ str __rlb_buffer, __rlb_empty
   #else
     // Initialise textout and print an empty token to fix a save point here.
     #ifndef __DynamicLineationUsed__ #define __DynamicLineationUsed__ #endif
-    strout (__rlb_empty)
+    // strout (__rlb_empty) // let's try moving this to rlBabel.ml
     #if !__variable? (__text)
       str lstr = __text
       __rlb_xmod = __addr(lstr) & $fff
@@ -257,49 +284,48 @@ str __rlb_buffer, __rlb_empty
     #endif
     gosub @__textoutdisplay_start__
   #endif;
-  
+
 #inline __dynamic_textout_print ():
+  // Inserted at the end of scenarios using rlBabel
   halt
   @__textoutdisplay_start__
     __vwf_TextoutStart (strS[__rlb_xmod], 0)
   @__textoutdisplay__
     DisableAutoSavepoints
     __rlb_buffer = '                                '
-    while 1:
-      goto_on CallDLL (rlBabelDLL, dllTextoutGetChar, __addr(__rlb_buffer), __addr(__rlb_xmod)) {
-        @getcError,
-        @getcEndOfString, @getcPrintChar, @getcNewLine, @getcNewScreen, @getcSetIndent, @getcClearIndent
-      }
-      @getcNewLine
-        br
+    while 1
+      case CallDLL (rlBabelDLL, dllTextoutGetChar, __addr(__rlb_buffer), __addr(__rlb_xmod))
+      of getcNewLine
+        #hiding br, br
         continue
-      @getcNewScreen
+      of getcNewScreen
         page
         TextPos (0, 0) // page() doesn't reset the values that are otherwise perfect position counters?
         CallDLL (rlBabelDLL, dllTextoutNewScreen, __addr(__rlb_buffer))
         continue
-      @getcSetIndent
+      of getcSetIndent
         SetIndent
         continue
-      @getcClearIndent
+      of getcClearIndent
         ClearIndent
         continue
-      // To do: exfont characters? Ruby? What, else, if anything, actually needs special support?
-      @getcPrintChar
+      of getcPrintChar
         strout (__rlb_buffer)
         TextPosX (__rlb_xmod)
-    ;
-    @getcError
-      __rlb_empty = __rlb_buffer
-      __rlb_buffer = "Error: "
-      __rlb_buffer += __rlb_empty
-      __rlb_buffer += ". Unable to format text."
-      strclear (__rlb_empty)
-      FastText
-      strout (__rlb_buffer)
-      NormalText
-    @getcEndOfString
-      EnableAutoSavepoints
-      ret;
+        continue
+      of getcError
+        __rlb_empty = __rlb_buffer
+        __rlb_buffer = "Error: "
+        __rlb_buffer += __rlb_empty
+        __rlb_buffer += ". Unable to format text."
+        strclear (__rlb_empty)
+        FastText
+        strout (__rlb_buffer)
+        NormalText
+      of getcEndOfString
+      other
+        EnableAutoSavepoints
+        ret
+      ecase;
 
 #endif // !defined? (__VWF_KH__)

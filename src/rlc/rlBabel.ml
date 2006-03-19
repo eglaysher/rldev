@@ -38,6 +38,7 @@ let compile addstrs loc text =
   let start_lbl = unique_label loc in
   Output.add_label start_lbl;
   Output.add_kidoku loc;
+  Meta.call "strout" [`VarOrFn (nowhere, "__rlb_empty", Text.ident "__rlb_empty")];
   let b = DynArray.create () in
   let ignore_one_space = ref false in
   let appending = ref false in
@@ -103,7 +104,7 @@ let compile addstrs loc text =
             if e <> None then error loc "the control code \\s{} cannot have a length specifier";
             flush false;
             Meta.call "__vwf_TextoutAppend" [parm]
-      | `Code (loc, id, e, p) when id = Text.of_arr [| 0x69 |](* \i{} *)
+      | `Code (loc, id, e, p) when id = Text.of_arr [| 0x69 |] (* \i{} *)
          -> let parm = match p with [`Simple (_, i)] -> i | _ -> error loc "the control code \\i{} must have one and only one parameter" in
             if normalised_expr_is_const parm then
               let s = 

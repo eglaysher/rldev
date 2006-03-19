@@ -338,6 +338,17 @@ and parse_struct =
              `Label skip];
           Memory.close_scope ();
           ignore (Stack.pop break_stack, Stack.pop continue_stack)
+    | `Case (l, e, [], other)
+       -> (* Degenerate case *)
+          parse_elt (`Assign (l, `Store nowhere, `Set, e));
+          if other <> None then
+            let skip = unique_label nowhere in
+            Stack.push skip break_stack;
+            Memory.define (Text.ident "__ConstantCase__") (`Macro (`Int (nowhere, 1l))) ~warnings:false;
+            parse (Option.get other);
+            Memory.undefine nowhere "__ConstantCase__" (Text.ident "__ConstantCase__");
+            parse_elt (`Label skip);
+            ignore (Stack.pop break_stack)
     | `Case (l, e, ofs, other)
        -> let skip = unique_label nowhere in
           Stack.push skip break_stack;
@@ -375,23 +386,58 @@ and parse_struct =
           with Exit -> 
             (* If variables are involved, we must compile to a jump table instead. *)
             let olbl = if other = None then skip else unique_label nowhere in
-            let cases, ofs =
-              List.fold_left
-                (fun (ca, oa) (ce, oe) -> (ce :: ca), (oe :: oa))
-                ([`Default olbl], 
-                 match other with None -> [] | Some smts -> [`Label olbl :: DynArray.to_list smts])
-                (List.rev_map
-                  (fun (e, smts) ->
-                    let l = unique_label nowhere in
-                    let c = `Match (e, l) in
-                    let o = `Label l :: DynArray.to_list smts in
-                    c, o)
-                  ofs)
-            in
-            Memory.define (Text.ident "__ConstantCase__") (`Macro (`Int (nowhere, 0l))) ~warnings:false;
-            parse_elt (`GotoCase (l, `Goto, e, cases));
-            List.iter (List.iter parse_elt) ofs;
-            Memory.undefine nowhere "__ConstantCase__" (Text.ident "__ConstantCase__")
+            (* First, check whether the cases defined are constant and consecutive.
+               If all this holds true, use goto_on(). *)
+            try
+              (* Check all cases are constant (and record the constant values) *)
+              let cases, bodies =
+                List.fold_left
+                  (fun (ca, oa) (ce, l, oe) -> ((ce, l) :: ca), (oe :: oa))
+                  ([], 
+                   match other with 
+                     | None -> []
+                     | Some body -> let da = DynArray.create () in
+                                    DynArray.add da (`Label olbl);
+                                    DynArray.append body da; [da])
+                  (List.rev_map
+                    (fun (case, body) -> 
+                      let l = unique_label nowhere
+                      and da = DynArray.create () in
+                      DynArray.add da (`Label l);
+                      DynArray.append body da;
+                      Expr.normalise_and_get_int case ~abort_on_fail:false, l, da)
+                    ofs)
+              in
+              (* Check all cases are consecutive (and get them sorted if they are). *)
+              let cases = List.sort cases ~cmp:(fun (a, _) (b, _) -> compare a b) in
+              let first = fst (List.hd cases) in
+              let desired = List.init (List.length cases) (fun i -> Int32.add first (Int32.of_int i)) in
+              if not (List.for_all2 (fun (a, _) b -> a = b) cases desired) then raise Exit;
+              (* We pass!  Compile to a nice efficient goto_on() statement. *)
+              Memory.define (Text.ident "__ConstantCase__") (`Macro (`Int (nowhere, 0l))) ~warnings:false;
+              parse_elt (`GotoOn (l, `Goto, `Op (nowhere, e, `Sub, `Int (nowhere, first)), List.map snd cases));
+              Meta.goto olbl;
+              List.iter parse bodies;
+              Memory.undefine nowhere "__ConstantCase__" (Text.ident "__ConstantCase__")
+            with Exit ->
+              (* Use goto_case() to handle complex situations. *)
+              let cases, ofs =
+                List.fold_left
+                  (fun (ca, oa) (ce, oe) -> (ce :: ca), (oe :: oa))
+                  ([`Default olbl], 
+                   match other with None -> [] | Some smts -> [`Label olbl :: DynArray.to_list smts])
+                  (List.rev_map
+                    (fun (e, smts) ->
+                      let l = unique_label nowhere in
+                      let c = `Match (e, l) in
+                      let o = `Label l :: DynArray.to_list smts in
+                      c, o)
+                    ofs)
+              in
+              Memory.define (Text.ident "__ConstantCase__") (`Macro (`Int (nowhere, 0l))) ~warnings:false;
+              parse_elt (`GotoCase (l, `Goto, e, cases));
+              List.iter (List.iter parse_elt) ofs;
+              Memory.undefine nowhere "__ConstantCase__" (Text.ident "__ConstantCase__")
           end;
           parse_elt (`Label skip);
           ignore (Stack.pop break_stack)

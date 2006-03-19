@@ -16,6 +16,11 @@
   rlBabel is now mature enough for limited use (it supports the features Kanon
   needs).
 
+RLC:
+
+  "case" statements are now compiled more efficiently in the optimal case where
+  all "of" expressions are constant and there are no gaps in coverage.
+
 
 -- 1.30 - 2006-2-1 --
 
