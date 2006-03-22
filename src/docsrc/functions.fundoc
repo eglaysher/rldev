@@ -1332,14 +1332,15 @@ these functions much, so this documentation is probably even less reliable.
   Fills the variables <origin>, <x>, and <y> with the current or default
   position of window <index>.
 
-  <x> and <y> are the absolute measurements from the corner of the window
-  defined by <origin>:
+  As with the \gameexe\ setting @irefs{WINDOW}{POS}, <x> and <y> are the 
+  absolute distance between an edge of the screen, determined by <origin>, and 
+  the nearest edge of the window.  Values of <origin> are:
 
   \begin{tabular}{r@@{\hs}l}
-  \textbf{0} & top left  \\
-  \textbf{1} & top right \\
-  \textbf{2} & bottom left \\
-  \textbf{3} & bottom right
+  \textbf{0} & top and left  \\
+  \textbf{1} & top and right \\
+  \textbf{2} & bottom and left \\
+  \textbf{3} & bottom and right
   \end{tabular}
 @}
 

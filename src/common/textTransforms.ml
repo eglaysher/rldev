@@ -91,7 +91,7 @@ let decode_kfc text =
                Buf.add_int b Cp936.map.db_to_uni.(c1).(c2);
                getc (idx + 2)
         | '\x00'..'\x7f' -> Buf.add_char b c; getc (idx + 1)
-        | _ -> failwith "malformed string"
+        | _ -> failwith "decode_kfc: malformed string"
   in
   getc 0
 
@@ -130,10 +130,10 @@ let encode_cp1252 fail text =
 let decode_cp1252 text =
   let b = Buf.create 0 in
   if String.fold_left
-       (fun b1 ch ->
-          if b1 then ((
-            match ch with
-              | '\x80' .. '\xbf' 
+       (function 
+          | `Encoded -> 
+            (function
+              | '\x80' .. '\xbf' as ch
                  -> Buf.add_int b 
                       (match int_of_char ch with 
                          | 0x80 -> 0x20ac | 0x82 -> 0x201a | 0x83 -> 0x0192 | 0x84 -> 0x201e 
@@ -142,17 +142,27 @@ let decode_cp1252 text =
                          | 0x8e -> 0x017d | 0x91 -> 0x2018 | 0x92 -> 0x2019 | 0x93 -> 0x201c 
                          | 0x94 -> 0x201d | 0x95 -> 0x2022 | 0x96 -> 0x2013 | 0x97 -> 0x2014 
                          | 0x98 -> 0x02dc | 0x99 -> 0x2122 | 0x9a -> 0x0161 | 0x9b -> 0x203a 
-                         | 0x9c -> 0x0153 | 0x9e -> 0x017e | 0x9f -> 0x0178 | c    -> c)
-              | '\xc0' -> Buf.add_char b '\xff'
-              | _ -> failwith "malformed string"
-            ); false)
-          else match ch with
-            | '\x00' .. '\x7f' -> Buf.add_char b ch; false
-            | '\x89' -> true
-            | '\xa1' .. '\xdf' -> Buf.add_int b (int_of_char ch + 0x1f); false
-            | _ -> failwith "malformed string")
-       false text
-  then failwith "malformed string"
+                         | 0x9c -> 0x0153 | 0x9e -> 0x017e | 0x9f -> 0x0178 | c    -> c);
+                    `Normal
+              | '\xc0' -> Buf.add_char b '\xff'; `Normal
+              | _ -> failwith "decode_cp1252: malformed string")
+          | `Normal ->
+            (function
+              | '\x00' .. '\x7f' as ch -> Buf.add_char b ch; `Normal
+              | '\x81' .. '\x82' as ch -> `Sjis ch
+              | '\x89' -> `Encoded
+              | '\xa1' .. '\xdf' as ch -> Buf.add_int b (int_of_char ch + 0x1f); `Normal
+              | ch -> ksprintf failwith "decode_cp1252: malformed string (found 0x%02x)" (int_of_char ch))
+          | `Sjis c1 -> 
+            (fun c2 -> 
+              try
+                Buf.add_int b Cp932.db_to_uni.(int_of_char c1).(int_of_char c2); `Normal
+              with _ ->
+                (* no warnings, so just skip for now *)
+                Buf.add_char b '_'; `Normal))
+       `Normal text
+  <> `Normal
+  then failwith "decode_cp1252: malformed string"
   else Buf.contents b
 
 

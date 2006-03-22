@@ -74,43 +74,47 @@
 
 // Static variables
 
-#if default (__DebugTextout__, 0) && !defined? (__NoDebug__)
-  #define __AllLabelled__
-#endif
-int __rlb_xmod
+#if default (__DebugTextout__, 0) && !defined? (__NoDebug__) #define __AllLabelled__ #endif
+
+int __rlb_glosses_active, __rlb_temp[4]
 str __rlb_buffer, __rlb_empty
-#if default (__DebugTextout__, 0) && !defined? (__NoDebug__)
-  #undef __AllLabelled__
-#endif
+
+#if default (__DebugTextout__, 0) && !defined? (__NoDebug__) #undef __AllLabelled__ #endif
 
 // Function IDs: DLL
-#const dllInitialise     = 0
+#const dllInitialise       =  0
 
 // Function IDs: Textout
 #const dllTextoutStart     = 10,
        dllTextoutAppend    = 11,
        dllTextoutGetChar   = 12,
-       dllTextoutNewScreen = 13
+       dllTextoutNewScreen = 13,
+       dllClearGlosses     = 20,
+       dllNewGloss         = 21,
+       dllAddGloss         = 22,
+	   dllTestGlosses      = 23
 
 // Function IDs: Utility
-#const dllSetNameMod     = 100,
-       dllGetNameMod     = 101,
-       dllSetWindowName  = 102,
-       dllGetTextWindow  = 103
-
-// Function IDs: Select
-#const dllSelectInit     = 200,
-       dllSelectAdd      = 201,
-       dllSelectCleanup  = 202
+#const dllSetNameMod      = 100,
+       dllGetNameMod      = 101,
+       dllSetWindowName   = 102,
+       dllGetTextWindow   = 103,
+       dllGetRCommandMod  = 104
+                          
+// Function IDs: Select   
+#const dllSelectInit      = 200,
+       dllSelectAdd       = 201,
+       dllSelectCleanup   = 202
 
 // Return values
-#const getcError         = 0,
-       getcEndOfString   = 1,
-       getcPrintChar     = 2,
-       getcNewLine       = 3,
-       getcNewScreen     = 4,
-       getcSetIndent     = 5,
-       getcClearIndent   = 6
+#const getcError       = 0,
+       getcEndOfString = 1,
+       getcPrintChar   = 2,
+       getcNewLine     = 3,
+       getcNewScreen   = 4,
+       getcSetIndent   = 5,
+       getcClearIndent = 6,
+       getcBeginGloss  = 7
 
 
 // DLL wrappers: DLL
@@ -120,10 +124,42 @@ str __rlb_buffer, __rlb_empty
     if !LoadDLL (0, rlBabel)
       rlcError ('failed to initialise text rendering engine')
   #endif
-  __rlb_buffer = '                                ' // the only way I know to allocate a buffer
   strclear (__rlb_empty)
+  __rlb_glosses_active = 0
   objOfText (255, 'A') // to force the font to load -_-;
   return CallDLL (rlBabelDLL, dllInitialise, rlBabelDLL);
+
+
+// Public utility functions
+
+#inline GetTextWindow ():
+  return CallDLL (rlBabelDLL, dllGetTextWindow);
+
+#inline SetNameMod (__value, __window = -1):
+  return CallDLL (rlBabelDLL, dllSetNameMod, __window, __value);
+
+#inline GetNameMod (__window = -1):
+  return CallDLL (rlBabelDLL, dllGetNameMod, __window);
+
+#inline SetCurrentWindowName (__value):
+  #if !__variable? (__value)
+    str s = __value
+    CallDLL (rlBabelDLL, dllSetWindowName, __addr(s))
+  #else
+    CallDLL (rlBabelDLL, dllSetWindowName, __addr(__value))
+  #endif
+  return store;
+
+#inline GetRCommandMod (__window = -1):
+  return CallDLL (rlBabelDLL, dllGetRCommandMod, __window);
+
+
+// Ensures a string has room for [len] bytes.  The contents of the string are undefined.
+#inline AllocStr (__str, __len):
+  store = 8, __str = '        '
+  while store < __len:
+    __str += __str
+    store *= 2;;
 
 
 // DLL wrappers: Textout
@@ -143,8 +179,8 @@ str __rlb_buffer, __rlb_empty
     #if __empty_string? (__string)
       #sdefine arg = -1
     #else
-      str s = __string
-      #sdefine arg = __addr(s)
+      __rlb_buffer = __string
+      #sdefine arg = __addr(__rlb_buffer)
     #endif
   #else
     #sdefine arg = __addr(__string)
@@ -161,8 +197,8 @@ str __rlb_buffer, __rlb_empty
 #inline __vwf_TextoutAppend (__string):
   #if !__variable? (__string)
     #if !__empty_string? (__string)
-      str s = __string
-      CallDLL (rlBabelDLL, dllTextoutAppend, __addr(s))
+      __rlb_buffer = __string
+      CallDLL (rlBabelDLL, dllTextoutAppend, __addr(__rlb_buffer))
     #endif
   #else
     CallDLL (rlBabelDLL, dllTextoutAppend, __addr(__string))
@@ -216,25 +252,27 @@ str __rlb_buffer, __rlb_empty
   return store;
 
 
-// Public utility functions
+// DLL wrappers: glosses
 
-#inline GetTextWindow ():
-  return CallDLL (rlBabelDLL, dllGetTextWindow);
+#inline __vwf_BeginGloss ():
+  FontColour (6) // TODO: make customisable, disableable, etc.
+  CallDLL (rlBabelDLL, dllNewGloss)
+  __rlb_glosses_active += 1
+  ;
 
-#inline SetNameMod (__value, __window = -1):
-  return CallDLL (rlBabelDLL, dllSetNameMod, __window, __value);
+#inline __vwf_GlossTextStart (__string):
+  __rlb_buffer = __string;
+#inline __vwf_GlossTextAppend (__string):
+  __rlb_buffer += __string;
+#inline __vwf_GlossTextSet ([__setstring]):
+  #ifdef __setstring
+    __vwf_GlossTextStart (__setstring) // different name because naive compiler = name capture = nontermination
+  #endif;
 
-#inline GetNameMod (__window = -1):
-  return CallDLL (rlBabelDLL, dllGetNameMod, __window);
-
-#inline SetCurrentWindowName (__value):
-  #if !__variable? (__value)
-    str s = __value
-    CallDLL (rlBabelDLL, dllSetWindowName, __addr(s))
-  #else
-    CallDLL (rlBabelDLL, dllSetWindowName, __addr(__value))
-  #endif
-  return store;
+#inline __vwf_EndGloss ():
+  CallDLL (rlBabelDLL, dllAddGloss, __addr(__rlb_buffer))
+  FontColour
+  ;
 
 
 // Pause function wrappers
@@ -246,11 +284,12 @@ str __rlb_buffer, __rlb_empty
        rlbPauseClearUnlessNovel = 2
 
 #inline __vwf_DoPauseFunc (__func, __clear):
-  at (__CALLER_FILE__, __CALLER_LINE__, __func)
-  #ifdef __EnableGlosses__
-    
-  #endif;
-  
+  if defined?(__EnableGlosses__) && __rlb_glosses_active
+    rlc_parse_string ('gosub @__vwf_handle_glosses_\i{__clear}__')
+  else
+    at (__CALLER_FILE__, __CALLER_LINE__, __func)
+;
+
 #inline pause  () __vwf_DoPauseFunc ('pause',  rlbPauseClearUnlessNovel)
 #inline spause () __vwf_DoPauseFunc ('spause', rlbPauseContinue)
 #inline page   () __vwf_DoPauseFunc ('page',   rlbPauseClear)
@@ -268,6 +307,7 @@ str __rlb_buffer, __rlb_empty
 // The main rlBabel functions
  
 #inline __vwf_TextoutDisplay ([__text]):
+  #bind a = __rlb_temp[0], buf = __rlb_buffer
   #ifndef __text
     gosub @__textoutdisplay__
   #elseif __empty_string? (__text)
@@ -277,31 +317,35 @@ str __rlb_buffer, __rlb_empty
     #ifndef __DynamicLineationUsed__ #define __DynamicLineationUsed__ #endif
     // strout (__rlb_empty) // let's try moving this to rlBabel.ml
     #if !__variable? (__text)
-      str lstr = __text
-      __rlb_xmod = __addr(lstr) & $fff
+      buf = __text
+      gosub @__textoutdisplay_start_buffer__
     #else
-      __rlb_xmod = __addr(__text) & $fff
+      a = __addr(__text) & $fff
+      gosub @__textoutdisplay_start__
     #endif
-    gosub @__textoutdisplay_start__
   #endif;
 
 #inline __dynamic_textout_print ():
   // Inserted at the end of scenarios using rlBabel
+  #bind a = __rlb_temp[0], b = __rlb_temp[1], x = __rlb_temp[2], y = __rlb_temp[3], buf = __rlb_buffer
   halt
   @__textoutdisplay_start__
-    __vwf_TextoutStart (strS[__rlb_xmod], 0)
+    __vwf_TextoutStart (strS[a], 0)
+    goto @__textoutdisplay__
+  @__textoutdisplay_start_buffer__
+    __vwf_TextoutStart (buf, 0)
   @__textoutdisplay__
     DisableAutoSavepoints
-    __rlb_buffer = '                                '
+    AllocStr (__rlb_buffer, 512)
     while 1
-      case CallDLL (rlBabelDLL, dllTextoutGetChar, __addr(__rlb_buffer), __addr(__rlb_xmod))
+      case CallDLL (rlBabelDLL, dllTextoutGetChar, __addr(buf), __addr(a))
       of getcNewLine
         #hiding br, br
         continue
       of getcNewScreen
         page
         TextPos (0, 0) // page() doesn't reset the values that are otherwise perfect position counters?
-        CallDLL (rlBabelDLL, dllTextoutNewScreen, __addr(__rlb_buffer))
+        CallDLL (rlBabelDLL, dllTextoutNewScreen, __addr(buf))
         continue
       of getcSetIndent
         SetIndent
@@ -309,23 +353,62 @@ str __rlb_buffer, __rlb_empty
       of getcClearIndent
         ClearIndent
         continue
+      of getcBeginGloss
+        __vwf_BeginGloss
+        // fall through
       of getcPrintChar
-        strout (__rlb_buffer)
-        TextPosX (__rlb_xmod)
+        strout (buf)
+        TextPosX (a)
         continue
       of getcError
-        __rlb_empty = __rlb_buffer
-        __rlb_buffer = "Error: "
-        __rlb_buffer += __rlb_empty
-        __rlb_buffer += ". Unable to format text."
+        __rlb_empty = buf
+        buf = "Error: "
+        buf += __rlb_empty
+        buf += ". Unable to format text."
         strclear (__rlb_empty)
         FastText
-        strout (__rlb_buffer)
+        strout (buf)
         NormalText
       of getcEndOfString
       other
         EnableAutoSavepoints
         ret
-      ecase;
+      ecase
+  #ifdef __EnableGlosses__
+    @__vwf_handle_glosses_0__ 
+      a = rlbPauseContinue
+      goto @__vwf_handle_glosses__
+    @__vwf_handle_glosses_1__
+      a = rlbPauseClear
+      goto @__vwf_handle_glosses__
+    @__vwf_handle_glosses_2__
+      a = rlbPauseClearUnlessNovel
+    @__vwf_handle_glosses__
+      
+      AllocStr (__rlb_empty, 2048)
+      while 1:
+        FlushClick
+        #hiding spause, spause
+        GetCursorPos (x, y, b, store)
+        if b != 2, break
+        if !CallDLL (rlBabelDLL, dllTestGlosses, x, y, __addr(__rlb_empty), GetWakuAll), break
+        rlBabelGlossCallback (__rlb_empty)
+      ;
+      strclear (__rlb_empty)
+      
+      case a
+      of rlbPauseClearUnlessNovel
+        if GetRCommandMod:
+          par
+          break;
+      of rlbPauseClear
+        __rlb_glosses_active = 0
+        msgClear
+        CallDLL (rlBabelDLL, dllClearGlosses)
+      of rlbPauseContinue
+      ecase
+      store = 1
+      ret
+  #endif;
 
 #endif // !defined? (__VWF_KH__)

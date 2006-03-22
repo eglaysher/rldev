@@ -29,16 +29,26 @@ and token_name_right  = Text.of_arr [| 0x02 |]
 and token_break       = Text.of_arr [| 0x03 |]
 and token_setindent   = Text.of_arr [| 0x04 |]
 and token_clearindent = Text.of_arr [| 0x05 |]
-(* 6, 7 are exfont markers *)
+(* 06 & 07 are exfont markers *)
 and token_quote       = Text.of_arr [| 0x08 |]
 and token_emphasis    = Text.of_arr [| 0x09 |]
 and token_regular     = Text.of_arr [| 0x0a |]
+(* 0b - 1e are available *)
+and token_begingloss  = Text.of_arr [| 0x1f |]
 
-let compile addstrs loc text =
-  let start_lbl = unique_label loc in
-  Output.add_label start_lbl;
-  Output.add_kidoku loc;
-  Meta.call "strout" [`VarOrFn (nowhere, "__rlb_empty", Text.ident "__rlb_empty")];
+let rec compile
+  ?(with_kidoku = true)
+  ?(f_start = "__vwf_TextoutStart")
+  ?(f_append = "__vwf_TextoutAppend")
+  ?(f_display = "__vwf_TextoutDisplay")
+  addstrs loc text 
+=
+  if with_kidoku then (
+    let start_lbl = unique_label loc in
+    Output.add_label start_lbl;
+    Output.add_kidoku loc;
+    Meta.call "strout" [`VarOrFn (nowhere, "__rlb_empty", Text.ident "__rlb_empty")]
+  );
   let b = DynArray.create () in
   let ignore_one_space = ref false in
   let appending = ref false in
@@ -46,15 +56,15 @@ let compile addstrs loc text =
     if display then 
       if !appending then (
         appending := false;
-        Meta.call "__vwf_TextoutAppend" [`Str (nowhere, b)];
-        Meta.call "__vwf_TextoutDisplay" []
+        Meta.call f_append [`Str (nowhere, b)];
+        Meta.call f_display []
       )
-      else Meta.call "__vwf_TextoutDisplay" [`Str (nowhere, b)]
+      else Meta.call f_display [`Str (nowhere, b)]
     else 
-      if !appending then Meta.call "__vwf_TextoutAppend" [`Str (nowhere, b)]
+      if !appending then Meta.call f_append [`Str (nowhere, b)]
       else (
         appending := true;
-        Meta.call "__vwf_TextoutStart" [`Str (nowhere, b)]
+        Meta.call f_start [`Str (nowhere, b)]
       );
     DynArray.clear b
   in
@@ -93,7 +103,7 @@ let compile addstrs loc text =
               Memory.open_scope ();
                 let svar = Memory.get_temp_str () in
                 Meta.call ~rv:svar "itoa" [idx; Meta.int 2];
-                Meta.call "__vwf_TextoutAppend" [svar];
+                Meta.call f_append [svar];
               Memory.close_scope ();
             end;            
             (**)
@@ -103,7 +113,7 @@ let compile addstrs loc text =
             if not (parm matches `SVar _) then ksprintf (error loc) "Oops, expected string variable but found `%s'" (string_of_expr parm); (* it should, by this stage *)
             if e <> None then error loc "the control code \\s{} cannot have a length specifier";
             flush false;
-            Meta.call "__vwf_TextoutAppend" [parm]
+            Meta.call f_append [parm]
       | `Code (loc, id, e, p) when id = Text.of_arr [| 0x69 |] (* \i{} *)
          -> let parm = match p with [`Simple (_, i)] -> i | _ -> error loc "the control code \\i{} must have one and only one parameter" in
             if normalised_expr_is_const parm then
@@ -119,7 +129,7 @@ let compile addstrs loc text =
               Memory.open_scope ();
                 let svar = Memory.get_temp_str () in
                 Meta.call ~rv:svar "itoa" (parm :: length);
-                Meta.call "__vwf_TextoutAppend" [svar];
+                Meta.call f_append [svar];
               Memory.close_scope ()
       | `Code (loc, id, e, p) when id = Text.of_arr [| 0x6e |] || id = Text.of_arr [| 0x72 |] (* \n, \r *)
          -> let s = Text.to_err id in
@@ -160,15 +170,31 @@ let compile addstrs loc text =
                   Memory.open_scope ();
                     let svar = Memory.get_temp_str () in
                     Meta.call ~rv:svar "itoa_w" [w; Meta.int 2];
-                    Meta.call "__vwf_TextoutAppend" [svar];
+                    Meta.call f_append [svar];
                   Memory.close_scope ())
               w
       | `Ruby (loc, tokens, _)
          -> warning loc "not implemented: \\ruby{} in rlBabel-formatted text";
             DynArray.iter parse tokens
-      | `Gloss (loc, tokens, resstr) 
-         -> warning loc "not implemented: \\g{}";
-            DynArray.iter parse tokens
+      | `Gloss (loc, tokens, (resloc, resstr))
+         -> if Memory.defined (Text.ident "__EnableGlosses__") then (
+              (*flush true;
+              Meta.call "__vwf_BeginGloss" [];*)
+              DynArray.add b (`Text (loc, `Sbcs, token_begingloss));
+              DynArray.iter parse tokens;
+              flush true;
+              let gloss_str, gloss_loc = Global.get_resource resloc (Text.to_err resstr, resstr) in
+              compile (Queue.create ()) gloss_loc gloss_str
+                ~with_kidoku:false
+                ~f_start:"__vwf_GlossTextStart"
+                ~f_append:"__vwf_GlossTextAppend"
+                ~f_display:"__vwf_GlossTextSet";
+              Meta.call "__vwf_EndGloss" [];
+            )
+            else (
+              warning loc "__EnableGlosses__ not defined - ignoring \\g{}";
+              DynArray.iter parse tokens
+            )
   in
   DynArray.iter parse text;
   flush true
