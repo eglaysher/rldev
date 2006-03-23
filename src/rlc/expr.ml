@@ -464,14 +464,13 @@ and traverse_str_tokens aux tkns =
               DynArray.add rv (`Text (l, `Sbcs, s))
             else
               DynArray.add rv (`Code (l, i, Option.map (traverse aux ~reject:`Str) e, args))
-      | `Gloss (l, s, r) -> DynArray.add rv (`Gloss (l, traverse_str_tokens aux s, r))
-      | `Ruby (l, s, r)
+      | `Gloss (l, g, s, r)
          -> let rl, rs =
               match r with
                 | `Closed rl_rs -> rl_rs
                 | `ResStr (kl, k) -> let a, b = Global.get_resource kl (Text.to_sjs k, k) in b, a
             in
-            DynArray.add rv (`Ruby (l, traverse_str_tokens aux s, `Closed (rl, traverse_str_tokens aux rs)))
+            DynArray.add rv (`Gloss (l, g, traverse_str_tokens aux s, `Closed (rl, traverse_str_tokens aux rs)))
       | `Name (l, lg, e, w)
          -> DynArray.add rv (`Name (l, lg, traverse aux e ~reject:`Str, Option.map (traverse aux ~reject:`Str) w))
       | #strtoken_non_expr as e -> DynArray.add rv e
@@ -612,9 +611,8 @@ let rec finalise aux : 'inferred -> expression =
 and finalise_str_tokens aux =
   function
     | `Code (l, i, e, p) -> `Code (l, i, Option.map (finalise aux) e, List.map (map_func_param finalise aux) p)
-    | `Gloss (l, s, r) -> `Gloss (l, DynArray.map (finalise_str_tokens aux) s, r)
-    | `Ruby (l, s, `Closed (cl, r))  -> `Ruby (l, DynArray.map (finalise_str_tokens aux) s, `Closed (cl, DynArray.map (finalise_str_tokens aux) r))
-    | `Ruby (_, _, `ResStr _) -> assert false
+    | `Gloss (l, g, s, `Closed (cl, r))  -> `Gloss (l, g, DynArray.map (finalise_str_tokens aux) s, `Closed (cl, DynArray.map (finalise_str_tokens aux) r))
+    | `Gloss (_, _, _, `ResStr _) -> assert false
     | `Name (l, lg, e, cidx) -> `Name (l, lg, finalise aux e, Option.map (finalise aux) cidx)
     | #strtoken_non_expr as e -> e
 

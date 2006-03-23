@@ -175,6 +175,27 @@ let ver_fun s opts =
 let rlfun s = ver_fun s (Hashtbl.find_all functions (Text.ident s))
 let ccode s = ver_fun s (Hashtbl.find_all ctrlcodes (Text.ident s))
 
+let function_type f =
+  if List.mem KfnTypes.PushStore f.flags then 
+    `Int
+  else try
+    match
+      List.find
+        (fun (_, pattrs) -> List.mem KfnTypes.Return pattrs)
+        (Option.get 
+          (List.find 
+            ((<>) None)
+            (Array.to_list f.prototypes)))
+    with
+      | KfnTypes.Int, _
+          -> `Int
+      | KfnTypes.Str, _
+          -> `Str
+      | _ -> ksprintf sysError "error in reallive.kfn: invalid return type for function `%s'" f.ident
+  with Not_found ->
+    `None
+
+
 let modules = Hashtbl.create 0
 let () =
   KfnTypes.handle_module :=

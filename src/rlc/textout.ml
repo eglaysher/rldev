@@ -279,18 +279,16 @@ let compile addstrs loc text =
          -> flush ();
             add_token_nconst id_namev idx (int (if lorg = `Local then 0b11 else 0b10));
             DynArray.add toknbuf cindex
-      | `Ruby (_, base, gloss)
+      | `Gloss (_, `Ruby, base, gloss)
          -> let gloss = match gloss with `Closed (_, g) -> g | `ResStr _ -> (* converted to `Closed in Expr.traverse_str_tokens *) assert false in
             add_nontext id_ruby 0 0;
             DynArray.iteri parse base;
             add_nontext id_ruby 0 1;
             DynArray.iteri parse gloss;
             add_nontext id_ruby 0 2
-      | `Gloss (l, base, gloss_key)
-         -> warning loc "\\g{} not implemented";
-            (*add_nontext id_ruby 0 3;*)
-            DynArray.iteri parse base(*;
-            add_nontext id_ruby (a gloss identifier) 4*)
+      | `Gloss (l, `Gloss, base, _)
+         -> warning loc "\\g{} not implemented in Textout-formatted text";
+            DynArray.iteri parse base
       | `Add elt -> Queue.add elt addstrs
   in
   DynArray.iteri parse text;
@@ -393,8 +391,8 @@ let compile_stub addstrs loc text =
                 in
                 bprintf b "\x82%c" (char_of_int (w + 0x4f)))
               w
-      | `Gloss (l, _, _) -> error loc "glosses are not supported in non-lineated text"
-      | `Ruby (_, base, gloss)
+      | `Gloss (l, `Gloss, _, _) -> error loc "\\g{} is not implemented in unformatted text"
+      | `Gloss (_, `Ruby, base, gloss)
          -> let gloss = match gloss with `Closed (_, g) -> g | `ResStr _ -> (* converted to `Closed in Expr.traverse_str_tokens *) assert false in
             flush ();
             call "__doruby" [];

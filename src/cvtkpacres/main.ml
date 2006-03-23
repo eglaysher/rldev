@@ -36,6 +36,10 @@ let options =
           withoutarg = Some (fun () -> failwith "version");
           witharg = None };
     Break;
+    Opt { short = "-g"; long = "glosses"; argname = "";
+          descr = "don't strip gloss codes";
+          withoutarg = Some (fun () -> Lexer.glosses := true);
+          witharg = None };
     Opt { short = "-d"; long = "define"; argname = "SYM";
           descr = "define SYM for #ifdef tests";
           withoutarg = None;

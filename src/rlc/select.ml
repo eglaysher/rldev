@@ -59,8 +59,8 @@ let handle_parameter insert_pos s l e =
                       ksprintf (error l) "cannot represent U+%04x in RealLive bytecode" c)
              (* Invalid codes *)
               | `Speaker l -> invalid l "{}' / `\\name"
-              | `Gloss (l, _, _) -> invalid l "g"
-              | `Ruby (l, _, _) -> invalid l "ruby"
+              | `Gloss (l, `Gloss, _, _) -> invalid l "g"
+              | `Gloss (l, `Ruby, _, _) -> invalid l "ruby"
               | `Add (l, _) -> invalid l "a"
               | `Delete l -> invalid l "d"
               | `Rewrite (l, _) -> invalid l "f"

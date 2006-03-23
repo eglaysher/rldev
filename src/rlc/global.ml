@@ -54,6 +54,12 @@ let expr__normalise_and_get_str ?(abort_on_fail = true) e =
     | `String s -> s
     | _ -> assert false
 
+let expr__disambiguate
+  : ([ `Deref of location * string * Text.t * expression
+     | `Func of location * string * Text.t * parameter list * label option
+     | `VarOrFn of location * string * Text.t ] -> expression) ref
+  = ref (fun _ -> assert false)
+
 (* Header data *)
 
 let dramatis_personae: string DynArray.t = DynArray.create ()

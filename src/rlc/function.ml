@@ -404,8 +404,8 @@ let rec check_and_compile loc funname defs params =
                -> add (StrTokens.get_object_code l funname t p)
            (* Invalid codes *)
             | `Speaker l -> invalid l "{}' / `\\name"
-            | `Gloss (l, _, _) -> invalid l "g"
-            | `Ruby (l, _, _) -> invalid l "ruby"
+            | `Gloss (l, `Gloss, _, _) -> invalid l "g"
+            | `Gloss (l, `Ruby, _, _) -> invalid l "ruby"
             | `Add (l, _) -> invalid l "a"
             | `Delete l -> invalid l "d"
             | `Rewrite (l, _) -> invalid l "f"

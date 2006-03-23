@@ -146,8 +146,7 @@ let rec get_token aux : lexbuf -> strtoken =
         | `EOS -> unterminated aux ~msg:(sprintf "expected `}' in \\%s code" ident)
         | `RCur _ -> tkns
         | `Speaker _ when restrict -> ksprintf (error aux) "\\{} is illegal in %s" context
-        | `Gloss _ when restrict -> ksprintf (error aux) "\\g{} is illegal in %s" context
-        | `Ruby _ when restrict -> ksprintf (error aux) "\\ruby{} is illegal in %s" context
+        | `Gloss (_, g, _, _) when restrict -> ksprintf (error aux) "\\%s{} is illegal in %s" (match g with `Gloss -> "g" | `Ruby -> "ruby") context
         | tkn -> DynArray.add tkns tkn; loop ()
     in
     loop ()
@@ -196,15 +195,15 @@ let rec get_token aux : lexbuf -> strtoken =
           let tkns = get_closed_tokens true "g" "a glossed term" lexbuf in
           let get_key =
             lexer
-              | sp "=" sp "<" -> (try get_resstr_key aux lexbuf with End_of_file -> unterminated aux)
+              | sp "=" sp "<" -> (try `ResStr (get_resstr_key aux lexbuf) with End_of_file -> unterminated aux)
               | sp "=" sp "{" -> let l = loc aux in
                                  let k = get_anon_resstr_key () and tkns = get_closed_tokens false "g" "" lexbuf in
                                  Hashtbl.replace Global.resources k (tkns, l);
-                                 l, k
+                                 `ResStr (l, k)
               | _ -> error aux "expected '=' after \\g{}"
               | eof -> unterminated aux ~msg:"expected '=' after \\g{}"
           in
-          `Gloss (gloc, tkns, get_key lexbuf)
+          `Gloss (gloc, `Gloss, tkns, get_key lexbuf)
 
     | "\\ruby" (sp "{")?
        -> if lexeme_length lexbuf = 5 then error aux "expected `{' after \\ruby";
@@ -222,7 +221,7 @@ let rec get_token aux : lexbuf -> strtoken =
               | _ -> error aux "expected '=' after \\ruby{}"
               | eof -> unterminated aux ~msg:"expected '=' after \\ruby{}"
           in
-          `Ruby (rloc, tkns, get_key lexbuf)
+          `Gloss (rloc, `Ruby, tkns, get_key lexbuf)
 
     | "\\a" sp "{"
        -> let loc = loc aux in
@@ -461,8 +460,7 @@ let rec handle_resstr aux lexbuf (startpos, ikey, istr) =
     in
     DynArray.map
       (function
-        | `Gloss (l, e, (ll, t)) -> `Gloss (l, e, (ll, getkey t))
-        | `Ruby (l, e, `ResStr (ll, t)) -> `Ruby (l, e, `ResStr (ll, getkey t))
+        | `Gloss (l, g, e, `ResStr (ll, t)) -> `Gloss (l, g, e, `ResStr (ll, getkey t))
         | `Add (l, (ll, t)) -> `Add (l, (ll, getkey t))
         | `Rewrite (_, key) as e
            -> let first = ref true in

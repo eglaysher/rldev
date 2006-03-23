@@ -173,17 +173,19 @@ let rec compile
                     Meta.call f_append [svar];
                   Memory.close_scope ())
               w
-      | `Ruby (loc, tokens, _)
+      | `Gloss (loc, `Ruby, tokens, _)
          -> warning loc "not implemented: \\ruby{} in rlBabel-formatted text";
             DynArray.iter parse tokens
-      | `Gloss (loc, tokens, (resloc, resstr))
+      | `Gloss (loc, `Gloss, tokens, str)
          -> if Memory.defined (Text.ident "__EnableGlosses__") then (
-              (*flush true;
-              Meta.call "__vwf_BeginGloss" [];*)
+              let gloss_loc, gloss_str =
+                match str with
+                  | `Closed (l, s) -> l, s
+                  | `ResStr _ -> assert false (* should have been normalised away *)
+              in
               DynArray.add b (`Text (loc, `Sbcs, token_begingloss));
               DynArray.iter parse tokens;
               flush true;
-              let gloss_str, gloss_loc = Global.get_resource resloc (Text.to_err resstr, resstr) in
               compile (Queue.create ()) gloss_loc gloss_str
                 ~with_kidoku:false
                 ~f_start:"__vwf_GlossTextStart"

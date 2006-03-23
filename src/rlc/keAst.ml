@@ -92,9 +92,8 @@ type res = location * Text.t
 type 'expression __strtoken =
   [ strtoken_non_expr
   | `Name  of location * [ `Local | `Global ] * 'expression * 'expression option
-  | `Gloss of location * 'expression __strtokens * res
-  | `Ruby  of location * 'expression __strtokens 
-            * [ `Closed  of location * 'expression __strtokens | `ResStr of res ]
+  | `Gloss of location * [ `Gloss | `Ruby ] * 'expression __strtokens 
+            * [ `Closed  of location * 'expression __strtokens | `ResStr of res ] 
   | `Code  of location * Text.t * 'expression option * 'expression __parameter list ]
 
 and 'expression __strtokens = 'expression __strtoken DynArray.t
@@ -544,9 +543,8 @@ and string_of_strtokens t =
       | `Percent _ -> add (Text.sjs_to_enc Config.default_encoding "\x81\x93")
       | `Hyphen _  -> add "-"
       | `Speaker _ -> add "\\{"
-      | `Gloss (_, s, (_, t)) -> ksprintf add "\\g{%s}=<%s>" (string_of_strtokens s) (Text.to_err t)
-      | `Ruby (_, s, `Closed (_, r)) -> ksprintf add "\\ruby{%s}={%s}" (string_of_strtokens s) (string_of_strtokens r)
-      | `Ruby (_, s, `ResStr (_, t)) -> ksprintf add "\\ruby{%s}=<%s>" (string_of_strtokens s) (Text.to_err t)
+      | `Gloss (_, g, s, `Closed (_, r)) -> ksprintf add "\\%s{%s}={%s}" (match g with `Gloss -> "g" | `Ruby -> "ruby") (string_of_strtokens s) (string_of_strtokens r)
+      | `Gloss (_, g, s, `ResStr (_, t)) -> ksprintf add "\\%s{%s}=<%s>" (match g with `Gloss -> "g" | `Ruby -> "ruby") (string_of_strtokens s) (Text.to_err t)
       | `Add (_, (_, t)) -> ksprintf add "\\a{%s}" (Text.to_err t)
       | `Rewrite (_, i) -> ksprintf add "\\f{<rewrite %d>}" i
       | `Name (_, lg, e, None) -> ksprintf add "\\%s{%s}" (if lg = `Local then "l" else "m") (string_of_expr e)

@@ -467,7 +467,8 @@ let initialise_modular_recursion : unit =
   KeAst.memory__get_as_expression := Memory.get_as_expression;
   Global.expr__normalise_and_get_const := Expr.normalise_and_get_const;
   Global.compilerFrame__parse := parse;
-  Global.intrinsic__is_builtin := Intrinsic.is_builtin
+  Global.intrinsic__is_builtin := Intrinsic.is_builtin;
+  Global.expr__disambiguate := Expr.expr_disambiguate
 
 
 let compile fname =

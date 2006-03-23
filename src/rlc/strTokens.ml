@@ -112,8 +112,8 @@ and to_string ?(rv = Buffer.create 0) ?(enc = "CP932") ?(quote = false) (tokens 
       | `Percent _ -> Buffer.add_string rv (encode_char 0xff05)
       | `Hyphen _  -> needs_quotes := true; Buffer.add_string rv "-"
       | `Speaker l -> invalid l "{}' / `\\name"
-      | `Gloss (l, _, _) -> invalid l "g"
-      | `Ruby (l, _, _) -> invalid l "ruby"
+      | `Gloss (l, `Gloss, _, _) -> invalid l "g"
+      | `Gloss (l, `Ruby, _, _) -> invalid l "ruby"
       | `Add (l, _) -> invalid l "a"
       | `Delete l -> invalid l "d"
       | `Rewrite (l, _) -> invalid l "f"

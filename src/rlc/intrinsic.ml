@@ -79,6 +79,38 @@ and constant =
         `Int (loc, 0l))
     (make_unignorable_as_code "constant?")
 
+and integer =
+  let rec not_int =
+    function
+      | `Int _ | `Store _ | `IVar _ | `LogOp _ | `AndOr _ | `Unary _ | `SelFunc _
+         -> false
+      | `Str _ | `SVar _ | `Res _
+         -> true
+      | `Op (_, e, _, _) | `Parens (_, e)
+         -> not_int e
+      | `ExprSeq (_, _, _, d)
+         -> not_int (expr_of_statement (DynArray.last d))
+      | `Func (_, _, t, _, _) as elt when Memory.defined t || is_builtin t
+         -> not_int (!Global.expr__disambiguate elt)
+      | `VarOrFn _ | `Deref _ as elt
+         -> not_int (!Global.expr__disambiguate elt)
+      | `Func (l, s, t, p, label)
+         -> let f = ver_fun "" (Hashtbl.find_all functions t) in
+            function_type f <> `Int
+  in  
+  buildin "integer?"
+    (fun loc exprs ->
+      try
+        List.iter
+          (function
+            | `Simple (_, e) -> if not_int e then raise Exit
+            | _ -> raise Exit)
+          exprs;
+        `Int (loc, 1l)
+      with Exit | Not_found ->
+        `Int (loc, 0l))
+    (make_unignorable_as_code "integer?")
+
 and array =
   buildin "array?"
     (fun loc syms ->

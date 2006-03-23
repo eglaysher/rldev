@@ -99,7 +99,8 @@ str __rlb_buffer, __rlb_empty
        dllGetNameMod      = 101,
        dllSetWindowName   = 102,
        dllGetTextWindow   = 103,
-       dllGetRCommandMod  = 104
+       dllGetRCommandMod  = 104,
+       dllMessageBox      = 105
                           
 // Function IDs: Select   
 #const dllSelectInit      = 200,
@@ -153,13 +154,23 @@ str __rlb_buffer, __rlb_empty
 #inline GetRCommandMod (__window = -1):
   return CallDLL (rlBabelDLL, dllGetRCommandMod, __window);
 
-
-// Ensures a string has room for [len] bytes.  The contents of the string are undefined.
-#inline AllocStr (__str, __len):
-  store = 8, __str = '        '
-  while store < __len:
-    __str += __str
-    store *= 2;;
+#inline MessageBox (__text, __title = 0):
+  #if integer? (__title)
+    #bind tval = __title
+  #elseif __variable? (__title)
+    #const tval = __addr(__title)
+  #else
+    str t = __title
+    #const tval = __addr(t)
+  #endif
+  #if !__variable? (__text)
+    str s
+    if integer? (__text), s = itoa (__text), else s = __text
+    CallDLL (rlBabelDLL, dllMessageBox, __addr(s), tval)
+  #else
+    CallDLL (rlBabelDLL, dllMessageBox, __addr(__text), tval)
+  #endif  
+  return store;
 
 
 // DLL wrappers: Textout
@@ -171,9 +182,7 @@ str __rlb_buffer, __rlb_empty
 #inline __vwf_TextoutStart (__string, __is_start = 1):
   // Initialise textout and print an empty token to fix a save point here.
   #ifndef __DynamicLineationUsed__ #define __DynamicLineationUsed__ #endif
-  #if __is_start
-    strout(__rlb_empty)
-  #endif
+  if __is_start, strout (__rlb_empty)
   // Define the argument to pass the startup routine.
   #if !__variable? (__string)
     #if __empty_string? (__string)
@@ -336,7 +345,7 @@ str __rlb_buffer, __rlb_empty
     __vwf_TextoutStart (buf, 0)
   @__textoutdisplay__
     DisableAutoSavepoints
-    AllocStr (__rlb_buffer, 512)
+    stralloc (__rlb_buffer, 512)
     while 1
       case CallDLL (rlBabelDLL, dllTextoutGetChar, __addr(buf), __addr(a))
       of getcNewLine
@@ -375,6 +384,7 @@ str __rlb_buffer, __rlb_empty
         ret
       ecase
   #ifdef __EnableGlosses__
+    // Pause handling in the presence of glosses.
     @__vwf_handle_glosses_0__ 
       a = rlbPauseContinue
       goto @__vwf_handle_glosses__
@@ -385,15 +395,20 @@ str __rlb_buffer, __rlb_empty
       a = rlbPauseClearUnlessNovel
     @__vwf_handle_glosses__
       
-      AllocStr (__rlb_empty, 2048)
+      stralloc (__rlb_empty, 2048)
       while 1:
         FlushClick
         #hiding spause, spause
         GetCursorPos (x, y, b, store)
         if b != 2, break
         if !CallDLL (rlBabelDLL, dllTestGlosses, x, y, __addr(__rlb_empty), GetWakuAll), break
-        rlBabelGlossCallback (__rlb_empty)
-      ;
+        #ifdef rlBabelGlossCallback
+          // If the user has supplied a gloss callback, do what they want.
+          rlBabelGlossCallback (__rlb_empty)
+        #else
+          // Default gloss behaviour: simple & sane
+          MessageBox (__rlb_empty, 1)
+        #endif;
       strclear (__rlb_empty)
       
       case a

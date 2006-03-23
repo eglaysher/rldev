@@ -20,6 +20,8 @@
 {
   open Printf
   open Lexing
+  
+  let glosses = ref false
 }
 
 let sjs1 = ['\x81'-'\x9f' '\xe0'-'\xef' '\xf0'-'\xfc']
@@ -71,10 +73,19 @@ rule line xt b =
         { bprintf b "\\u";
           line xt b lexbuf }
 
-   (* Unsupported features (including incompatible ones) *)
+   (* Glosses *)
     | '\\' ['g' 'G'] sp '{'
-        { simparg false b lexbuf;
-          skip_gloss_part_2 lexbuf;
+        { if !glosses then
+            let nb = Buffer.create 0 in
+            simparg false nb lexbuf;
+            let s = Buffer.contents nb in
+            bprintf b "\\g{%s}" s;
+            s.[0] <- Char.uppercase s.[0];
+            gloss_part_2 false b s lexbuf
+          else (
+            simparg false b lexbuf;
+            gloss_part_2 true b "" lexbuf
+          );
           line xt b lexbuf }
 
    (* Other features needing special treatment *)
@@ -116,8 +127,12 @@ and simparg withclose b =
     | sjs1 sjs2 
     | _ { Buffer.add_string b (lexeme lexbuf); simparg withclose b lexbuf }
 
-and skip_gloss_part_2 =
+and gloss_part_2 skip b prefix =
   parse
-    | sp "=" sp '{'
-    | sp "->" sp '{'
-        { simparg false (Buffer.create 0) lexbuf }
+    | sp ("=" | "->" as cn) sp '{'
+        { if not skip then (
+            bprintf b "%s{%s: " cn prefix;
+            simparg true b lexbuf
+          )
+          else 
+            simparg false (Buffer.create 0) lexbuf }

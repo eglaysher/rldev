@@ -857,6 +857,19 @@ these functions much, so this documentation is probably even less reliable.
   Truncates <var> such that its length does not exceed <length> characters.
 @}
 
+@fun/stralloc/
+@def/stralloc(<var>, <length>)/
+@{
+  Allocates memory for <var> such that its length is greater than or equal to
+  <length> characters.  Any existing value is lost.  The new value is undefined.
+  
+  The main purpose of this function is to ensure that extension DLLs can write 
+  to string variables safely.  There is no way to determine the \emph{capacity} 
+  (as distinct from length) of a string: therefore it may be necessary to call 
+  this function to ensure that the string has at least the required capacity 
+  before calling the DLL, or risk an access violation if it did not.  
+@}
+
 @fun/strsub,strrsub/
 @def/strsub(<source>, <offset>, [length]): string/
 @and/strrsub~{\ldots~}/
@@ -4896,18 +4909,69 @@ effort to comply with the terms of the LGPL.
   defines the width of character 0, the second defines character 1, and so on.
   Any widths left unspecified default to 100, i.e.\ the normal width.
 @}
+  
+    \lsubsubsection{Utility functions}
     
-  %rlBabel additional functions:
-  %
-  % @fun/GetTextWindow/
-  % @def/GetTextWindow(): store/
-  %
-  % @fun/SetNameMod,GetNameMod/
-  % @def/SetNameMod(<value>, [window]): store/ % returns previous value
-  % @def/GetNameMod([window]): store/
-  %
-  % @fun/SetCurrentWindowName/
-  % @def/SetCurrentWindowName(<name>)/
+      The rlBabel DLL implements a number of additional functions which may be of
+      general utility, but which are not provided directly by \reallive\ itself
+      (or, to be precise, are not \emph{known} to be provided by \reallive).
+      
+      These functions are defined in the \file{rlBabel} header file.  If you wish
+      to use them in a program which does not actually use rlBabel for dynamic
+      lineation of Western text, you will need to disable dynamic lineation
+      manually by adding the line
+      \begin{lstlisting}
+        #set __DynamicLineation__ = 0
+      \end{lstlisting}
+      immediately after you load the header.
+    
+@fun/MessageBox/
+@def/MessageBox(<expr>, [title]): store/
+@{
+  Pops up a message box displaying the result of the given expression.  Returns 
+  1 if the operation succeeded, 0 otherwise.
+  
+  Unlike @ref{__DebugMsgBox}, this function is not ignored outside debug mode,
+  and the title of the message box can be customised.
+@}
+    
+@fun/GetTextWindow/
+@def/GetTextWindow(): store/
+@{
+  Returns the index of the currently active text window.
+@}
+
+@fun/SetNameMod,GetNameMod/
+@def/SetNameMod(<value>, [window]): store/
+@{
+  Modifies the value of @irefs{WINDOW}{NAME_MOD}, for <window> if given, or
+  else for the currently active window.  Returns the previous value.
+@}
+
+@def/GetNameMod([window]): store/
+@{
+  Returns the current value of @irefs{WINDOW}{NAME_MOD}, for <window> if given,
+  or else for the currently active window.
+@}
+
+@fun/SetCurrentWindowName/
+@def/SetCurrentWindowName(<name>): store/
+@{
+  Sets the speaker name associated with the current window, without displaying
+  any text.  That is to say,
+      \begin{lstlisting}
+        SetCurrentWindowName('speaker')
+        'speaker "Examples are easier to think of when it\'s not so late."'
+      \end{lstlisting}
+  \noindent is usually roughly equivalent to
+      \begin{lstlisting}
+        '\{speaker} "Examples are easier to think of when it\'s not so late."'
+      \end{lstlisting}
+  
+  The return value is always 1 if no error occurred.  (If an error occurs, it
+  is unlikely that this function will return at all, but hypothetically it might
+  conceivably return 0 if some deity intervened.)
+@}
 
 \lsection{Textout: a compatible rendering engine for Western text}\label{lib:textout}
 
@@ -4963,47 +5027,3 @@ effort to comply with the terms of the LGPL.
   small kana, is \emph{not} taken into account, which may well lead to incorrect 
   lineation of strings containing these characters.  The safest option is not to
   mix western and Japanese text in one window.
-
-%@fun/TextoutEnableGlosses/
-%@def/TextoutEnableGlosses([optional], [colour])/
-%@{
-%  Enables, and optionally configures, gloss support in the Textout library.
-%
-%  <optional> should be a constant: if it is zero or absent, the
-%  @ref{SetGlossesDisabled} function will not be available, while if it is
-%  non-zero, @ref{SetGlossesDisabled} will be available and the player will be
-%  able to enable and disable glosses at runtime.
-%
-%  <colour> will be used as an index to @iref{COLOR_TABLE} to set the text colour
-%  for active links: if it is a variable, then that variable becomes a gloss
-%  colour variable, and subsequent changes to it will be reflected in displayed
-%  glosses, again permitting runtime customisation. There is no default value -
-%  if <colour> is not supplied, links will not be coloured at all.
-%
-%  If you wish to use glosses in your project, you must call this function after
-%  the Textout library has been loaded.  Typical usage would be as follows:
-%  \begin{lstlisting}
-%    rlcSetAllocation (...) // configure memory management
-%    #load 'Textout'
-%    int GlossColour        // define a variable for configurable colour
-%    TextoutEnableGlosses (1, GlossColour)
-%  \end{lstlisting}
-%  \noindent Note that this must all be done at the start of \emph{every} file in
-%  the project, or preferably in \file{global.kh}: this is \emph{not} the same
-%  case as @ref{rlcInit}, which should be called only once at the first
-%  entrypoint called when the interpreter is started, but \emph{after} the above
-%  initialisation code.
-%@}
-%
-%@fun/GlossesDisabled/
-%@def/GlossesDisabled(): integer/
-%@{
-%  Returns 0 if glosses are being displayed, and 1 if they are not.
-%@}
-%
-%@fun/SetGlossesDisabled/
-%@def/SetGlossesDisabled(<flag>)/
-%@{
-%  If the <optional> parameter to @ref{TextoutEnableGlosses} was non-zero, this function
-%  can be used to enable or disable glosses at runtime.
-%@}

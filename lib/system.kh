@@ -118,9 +118,19 @@
     __str_alloc_first__ = __sfirst__,
     __str_alloc_last__  = __slast__;
 
+#inline stralloc (__str, __len):
+  {- Ensures a string has room for [len] bytes. -}
+  store = 8, __str = '        '
+  while store < __len:
+    __str += __str
+    store *= 2;;
+
 #inline rlcInit ():
   {- Must be called at the start of a program to enable some RTL
      functionality. -}
+  #ifdef __initialise_utility_dll
+    __initialise_utility_dll
+  #endif
   #if default (__DynamicLineation__, 0)
     __initialise_dynamic_textout
   #endif;
