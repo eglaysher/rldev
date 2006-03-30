@@ -36,6 +36,23 @@ and token_regular     = Text.of_arr [| 0x0a |]
 (* 0b - 1e are available *)
 and token_begingloss  = Text.of_arr [| 0x1f |]
 
+let rec flatten_nested_glosses rv s =
+  (* The dynamic gloss code probably won't handle nested glosses, unlike the static version
+     in Kpac.  We solve the problem for now by flattening nested glosses with brackets:
+     i.e. "\g{foo}={bar \g{baz}={yomuna} quux}" -> "\g{foo}={bar baz (yomuna) quux}". *)
+  DynArray.iter
+    (function
+      | `Gloss (_, `Gloss, tokens, `Closed (_, nested))
+         -> DynArray.append tokens rv;
+            DynArray.add rv (`Space (nowhere, 1));
+            DynArray.add rv (`Text (nowhere, `Sbcs, Text.of_arr [| 0x28 |]));
+            ignore (flatten_nested_glosses rv nested);
+            DynArray.add rv (`Text (nowhere, `Sbcs, Text.of_arr [| 0x29 |]))
+      | other
+         -> DynArray.add rv other)
+    s;
+  rv
+
 let rec compile
   ?(with_kidoku = true)
   ?(f_start = "__vwf_TextoutStart")
@@ -180,7 +197,7 @@ let rec compile
          -> if Memory.defined (Text.ident "__EnableGlosses__") then (
               let gloss_loc, gloss_str =
                 match str with
-                  | `Closed (l, s) -> l, s
+                  | `Closed (l, s) -> l, flatten_nested_glosses (DynArray.create ()) s
                   | `ResStr _ -> assert false (* should have been normalised away *)
               in
               DynArray.add b (`Text (loc, `Sbcs, token_begingloss));

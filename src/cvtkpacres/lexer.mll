@@ -122,7 +122,7 @@ and simparg withclose b =
   parse
     | '}' { if withclose then Buffer.add_char b '}' }
     | "{-" { comment lexbuf; simparg withclose b lexbuf }
-    | "\\}" 
+    | "\\}" { Buffer.add_string b "}"; simparg withclose b lexbuf }
     | "\\\\"
     | sjs1 sjs2 
     | _ { Buffer.add_string b (lexeme lexbuf); simparg withclose b lexbuf }

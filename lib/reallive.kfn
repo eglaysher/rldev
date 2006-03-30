@@ -1,7 +1,7 @@
 //
 //                   RealLive Function Definition File ver 1.35
 //
-//  Contents are copyright (c) 2005 Haeleth.  This file is part of RLdev, which
+//  Contents are copyright (c) 2006 Haeleth.  This file is part of RLdev, which
 //  is distributed under the GNU General Public License.  Please refer to the
 //  RLdev documentation for details.
 //
@@ -280,16 +280,50 @@ module 004 = Sys // System functions
 
   fun PauseCursor             <1:Sys:00364, 0> ('index')
 
-  fun GetWindowPos            <1:Sys:00400, 0> ('index', int 'origin', int 'x', int 'y')
-  fun SetWindowPos            <1:Sys:00401, 0> ('index', 'origin', 'x', 'y')
-  fun WindowResetPos          <1:Sys:00402, 0> ('index')
-  fun GetDefaultWindowPos     <1:Sys:00403, 0> ('index', int 'origin', int 'x', int 'y')
+  fun GetWindowPos            <1:Sys:00400, 0> ('window', int 'origin', int 'x', int 'y')
+  fun SetWindowPos            <1:Sys:00401, 0> ('window', 'origin', 'x', 'y')
+  fun WindowResetPos          <1:Sys:00402, 0> ('window')
+  fun GetDefaultWindowPos     <1:Sys:00403, 0> ('window', int 'origin', int 'x', int 'y')
+  fun SetDefaultWindowPos     <1:Sys:00404, 0> ('window', intC, intC, intC) // UNDOCUMENTED, untested. (And makes
+  fun DefaultWindowResetPos   <1:Sys:00405, 0> ('window')                   // UNDOCUMENTED, untested.  no sense...)
 
   fun GetWakuAll      (store) <1:Sys:00410, 0> ()
   fun SetWakuAll              <1:Sys:00411, 0> ('index')
   fun GetWaku         (store) <1:Sys:00412, 0> ('window')          // UNDOCUMENTED
   fun SetWaku                 <1:Sys:00413, 0> ('window', 'index') // UNDOCUMENTED
+  fun GetWakuMod      (store) <1:Sys:00414, 0> ('window')          // UNDOCUMENTED
+  fun __dwm SetWakuMod        <1:Sys:00415, 0> ('window', ='0')    // UNDOCUMENTED
+  fun __ewm SetWakuMod        <1:Sys:00416, 0> ('window', ='1')    // UNDOCUMENTED
 
+  fun GetWindowAttr2          <1:Sys:00420, 0> (int 'r', int 'g', int 'b', int 'alpha', int '?') // UNDOCUMENTED, buggy - final param is always interpreted as in intA[]!
+  fun SetWindowAttr2          <1:Sys:00421, 0> ('r', 'g', 'b', 'alpha', 'filter') // UNDOCUMENTED
+
+  fun GetWindowModAttr        <1:Sys:00422, 0> ('window', int 'r', int 'g', int 'b', int 'alpha', int 'filter') // UNDOCUMENTED
+  fun SetWindowModAttr        <1:Sys:00423, 0> ('window', 'r', 'g', 'b', 'alpha', 'filter') // UNDOCUMENTED
+  fun GetWindowAttrMod (store)<1:Sys:00424, 0> ('window') // UNDOCUMENTED
+  fun __sam0 SetWindowAttrMod <1:Sys:00425, 0> ('window', ='0') // UNDOCUMENTED
+  fun __sam1 SetWindowAttrMod <1:Sys:00426, 0> ('window', ='1') // UNDOCUMENTED
+  fun __sam2 SetWindowAttrMod <1:Sys:00427, 0> ('window', ='2') // UNDOCUMENTED
+
+  fun                 (store) <1:Sys:00430, 0> () // UNKNOWN: get
+  fun                         <1:Sys:00431, 0> () // UNKNOWN: enable
+  fun                         <1:Sys:00432, 0> () // UNKNOWN: disable
+  fun                 (store) <1:Sys:00435, 0> () // UNKNOWN: get
+  fun                         <1:Sys:00436, 0> () // UNKNOWN: enable
+  fun                         <1:Sys:00437, 0> () // UNKNOWN: disable
+  fun                 (store) <1:Sys:00440, 0> () // UNKNOWN: get
+  fun                         <1:Sys:00441, 0> () // UNKNOWN: enable
+  fun                         <1:Sys:00442, 0> () // UNKNOWN: disable
+  fun                 (store) <1:Sys:00445, 0> () // UNKNOWN: get
+  fun                         <1:Sys:00446, 0> () // UNKNOWN: enable
+  fun                         <1:Sys:00447, 0> () // UNKNOWN: disable
+  fun                 (store) <1:Sys:00450, 0> () // UNKNOWN: get
+  fun                         <1:Sys:00451, 0> () // UNKNOWN: enable
+  fun                         <1:Sys:00452, 0> () // UNKNOWN: disable
+  fun                 (store) <1:Sys:00455, 0> (intC) // UNKNOWN: get. intC is 0..7?
+  fun                         <1:Sys:00456, 1> (intC) () // UNKNOWN: enable
+  fun                         <1:Sys:00457, 1> (intC) () // UNKNOWN: disable
+  
   fun EnableWindowAnm         <1:Sys:00460, 0> ('window')
   fun DisableWindowAnm        <1:Sys:00461, 0> ('window')
   fun GetOpenAnmMod   (store) <1:Sys:00462, 0> ('window')

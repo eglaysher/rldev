@@ -1,5 +1,12 @@
 {-# enc CP932 #-
   rlapi.kh: wrapper functions in Kepago for Kepago/RealLive API functions.
+  
+  The wrappers have various different purposes.  Some (such as CallDLL) attempt 
+  to hide incompatibilities between different interpreter versions.  Some (such 
+  as GetCursorPos) rationalise the API by combining multiple opcodes into single 
+  logical functions.  Others provide for removing debugging code automatically, 
+  for evaluating special cases at compile-time, or for supporting syntactic
+  sugar such as array variables.
 
   This file is loaded automatically.  You should not need to link to it
   yourself.
@@ -103,6 +110,28 @@
     __dwaRGB (__r, __g, __b)
   #endif;
 
+#inline GetWindowAttr2 (__r, __g, __b, __a, __f):
+  #if __addr(__f) >> 16 != MEMARR_A
+    #warn at (__CALLER_FILE__, __CALLER_LINE__, 'called GetWindowAttr2() with filter outside intA[]. Memory will be clobbered. If this is not what you want, use GetWindowAttr() instead.')
+  #endif
+  GetWindowAttr2 (__r, __g, __b, __a, __f);
+
+#inline SetWakuMod (__win, __mod):
+  if __mod, __ewm (__win) else __dwm (__win);
+
+#inline SetWindowAttrMod (__win, __mod):
+  case __mod
+  of 0, __sam0 (__win) break
+  of 1, __sam1 (__win) break
+  of 2, __sam2 (__win) break
+  other
+    #if __ConstantCase__
+      #error at (__CALLER_FILE__, __CALLER_LINE__, 'invalid mode for SetWindowAttrMod')
+    #else
+      rlcError ('invalid mode for SetWindowAttrMod')
+    #endif
+  ecase;
+  
 #inline ShakeScreen (__dir, __extent, __speed, __rep, __faderep):
   case __dir
   of UP         __shkup (__extent, __speed, __rep, __faderep)  break

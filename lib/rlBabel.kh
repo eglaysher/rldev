@@ -165,7 +165,7 @@ str __rlb_buffer, __rlb_empty
   #endif
   #if !__variable? (__text)
     str s
-    if integer? (__text), s = itoa (__text), else s = __text
+    if integer? (__text), s = itoa (__text) else s = __text
     CallDLL (rlBabelDLL, dllMessageBox, __addr(s), tval)
   #else
     CallDLL (rlBabelDLL, dllMessageBox, __addr(__text), tval)
