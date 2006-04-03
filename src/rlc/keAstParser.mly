@@ -304,6 +304,7 @@ sel_cond:
   | expression
       { match $1 with
           | `Func (_, str, text, [`Simple (_, expr)], None) -> `NonCond (_loc(), str, text, expr)
+          | `VarOrFn (_, str, text) -> `Flag (_loc(), str, text)
           | _ -> raise Parse_error }
   | expression IF expression
       { match $1 with

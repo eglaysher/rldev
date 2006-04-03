@@ -108,6 +108,7 @@ let get_op l s t =
     | "colour"         -> '0'
     | "title" | "grey" -> '1'
     | "hide"           -> '2'
+    | "blank"          -> '3'
     | "cursor"         -> '4'
     | _ -> ksprintf (error l) "unknown effect `%s' in select condition" s
 
@@ -133,8 +134,12 @@ let compile (loc, dest, s, opcode, window, params) =
             Output.add_line l ~force:true
       | `Special (l, cl, e)
          -> Output.add_code nowhere "(";
+            let use_line = ref true in
             List.iter 
               (function
+                | `Flag (l, s, t)
+                   -> ksprintf (Output.add_code nowhere) "%c" (get_op l s t);
+                      use_line := (try string_of_strtokens (Global.expr__normalise_and_get_str e ~abort_on_fail:false) <> "" with _ -> true)
                 | `NonCond (l, s, t, e) 
                    -> ksprintf (Output.add_code nowhere) "%c%s" (get_op l s t) (code_of_expr e)
                 | `Cond (l, s, t, p, c) 
@@ -142,7 +147,7 @@ let compile (loc, dest, s, opcode, window, params) =
                       Option.may (fun e -> Output.add_code nowhere (code_of_expr e)) p)
               cl;
             Output.add_code nowhere ")";
-            handle l e;
+            if !use_line then handle l e;
             Output.add_line l ~force:true)
     params;
   Output.add_code nowhere "}";

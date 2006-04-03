@@ -1073,6 +1073,8 @@ these functions much, so this documentation is probably even less reliable.
   \item @def/hide/
     The option is not presented at all, although a return value is still allocated
     for it.  This is probably only meaningful with conditions.
+  \item @dev/blank/
+    A blank, non-selectable line is presented in place of the option.
   \item @def/colour(<colour>)/
     Displays the option in the given colour, which is an index to @iref{COLOR_TABLE}
     in \gameexe.
@@ -3571,7 +3573,7 @@ there are also equivalents operating on ranges of objects (\texttt{objRange} and
 @}
 
 @fun/objDispCorner,objBgDispCorner,objRangeDispCorner,objBgRangeDispCorner/
-@def/objDispCorner(<buf>, @[<x>, <y>@]/
+@def/objDispCorner(<buf>, @[<x>, <y>@])/
 @{
   As @ref{objDispArea}, but the clipping window is defined as (0, 0)-($x$, $y$).
 @}

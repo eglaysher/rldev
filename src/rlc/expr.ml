@@ -132,6 +132,7 @@ let map_sel_param f aux =
     | `Special (l, cl, e) 
        -> let g =
             function
+              | `Flag _ as flag -> flag
               | `NonCond (l, s, t, e) -> `NonCond (l, s, t, f aux e)
               | `Cond (l, s, t, p, e) -> `Cond (l, s, t, Option.map (f aux) p, f aux e)
           in
@@ -570,6 +571,7 @@ and traverse_select ~reject aux (l, s, i, w, p) =
         | `Special (ll, cl, e)
            -> let f =
                 function
+                  | `Flag _ as flag -> flag
                   | `NonCond (l, s, t, e) 
                      -> `NonCond (l, s, t, traverse aux e ~reject:`Str)
                   | `Cond (l, s, t, e, c) 
@@ -792,6 +794,7 @@ let normalise_select (`Select (loc, dest, s_ident, opcode, window, params)) =
         | `Special (ll, cl, e)
            -> let f =
                 function
+                  | `Flag _ as flag -> flag
                   | `NonCond (l, s, t, e) -> `NonCond (l, s, t, traverse aux e ~reject:`Str)
                   | `Cond (l, s, t, e, c) -> `Cond (l, s, t, Option.map (traverse aux ~reject:`Str) e,
                                                              traverse aux (conditional_unit c) ~reject:`Str ~as_cond:true)

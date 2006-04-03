@@ -68,7 +68,8 @@ and 'expression __sel_parameter =
   | `Special of location * 'expression __sel_special list * 'expression ]
   
 and 'expression __sel_special =
-  [ `NonCond of location * string * Text.t * 'expression
+  [ `Flag    of location * string * Text.t
+  | `NonCond of location * string * Text.t * 'expression
   | `Cond    of location * string * Text.t * 'expression option * 'expression ]
 
 type strtoken_non_expr =
@@ -448,6 +449,7 @@ let rec exists_in_expr f (expr: [expression | assignable]) =
               | `Special (_, l, e) -> exists_in_expr f e 
                                    || List.exists 
                                         (function
+                                          | `Flag _ -> false
                                           | `Cond (_, _, _, None, e)
                                           | `NonCond (_, _, _, e) -> exists_in_expr f e
                                           | `Cond (_, _, _, Some d, e) -> exists_in_expr f d || exists_in_expr f e)
@@ -576,6 +578,7 @@ and string_of_sel_param : sel_parameter -> string =
     | `Special (_, l, e) 
      -> let f = 
           function
+            | `Flag (_, s, _) -> s
             | `NonCond (_, s, _, e) -> sprintf "%s(%s)" s (string_of_expr e)
             | `Cond (_, s, _, None, e) -> sprintf "%s if %s" s (string_of_expr e)
             | `Cond (_, s, _, Some v, e) -> sprintf "%s(%s) if %s" s (string_of_expr v) (string_of_expr e)

@@ -809,6 +809,7 @@ let read_select =
                   | 0x30 -> "colour", true
                   | 0x31 -> "title", true
                   | 0x32 -> "hide", false
+                  | 0x33 -> "blank", false
                   | 0x34 -> "cursor", true
                   | c -> ksprintf (error lexbuf) "unknown function %c in read_select" (char_of_int c)
               in
@@ -833,12 +834,13 @@ let read_select =
           then sprintf "[%s]: " (Buffer.contents b)
           else*) sprintf "%s: " (Buffer.contents b)
         in
+        (* Allow for blank options ^^; *)
         let cond =            
           if peek_is (Char.code '(') lexbuf
           then get_cond lexbuf
           else "" 
         in
-        cond ^ get_data ~sep_str:options.separate_strings lexbuf)
+        cond ^ (if peek_is 0x0a lexbuf then "''" else get_data ~sep_str:options.separate_strings lexbuf))
     in
     skip_debug_info mode lexbuf;
     expect lexbuf '}' "read_select";

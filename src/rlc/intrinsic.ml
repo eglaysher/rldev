@@ -205,6 +205,15 @@ and __addr =
         | _ -> error loc "the `__addr' intrinsic must be passed a single variable")
     (make_unignorable_as_code "__addr")
 
+and __ident =
+  buildin "__ident"
+    (fun loc ->
+      function
+        | [`Simple (_, id)] -> let s = StrTokens.to_string (Global.expr__normalise_and_get_str id) ~enc:"UTF-8"
+                               in `VarOrFn (loc, s, Text.of_string "UTF-8" s)
+        | _ -> error loc "the `__ident' intrinsic function must be passed a single string constant")
+    (make_unignorable_as_code "__ident")
+
 and at =
   buildin "at"
     (fun loc ->
