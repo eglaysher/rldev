@@ -103,9 +103,7 @@ str __rlb_buffer, __rlb_empty
        dllMessageBox      = 105
                           
 // Function IDs: Select   
-#const dllSelectInit      = 200,
-       dllSelectAdd       = 201,
-       dllSelectCleanup   = 202
+#const dllSelectAdd       = 200
 
 // Return values
 #const getcError       = 0,
@@ -224,23 +222,23 @@ str __rlb_buffer, __rlb_empty
     // Old versions unload the DLL when a saved game is loaded.  We have to
     // check for such failures and force it to be reloaded when necessary.
     #if defined?(__string3)
-      while !CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1), __addr(__string2), __addr(__string3)) __vwf_TryLoad
+      while !CallDLL (rlBabelDLL, dllSelectAdd, __window, __addr(__string1), __addr(__string2), __addr(__string3)) __vwf_TryLoad
     #elseif defined?(__string2)
-      while !CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1), __addr(__string2)) __vwf_TryLoad
+      while !CallDLL (rlBabelDLL, dllSelectAdd, __window, __addr(__string1), __addr(__string2)) __vwf_TryLoad
     #elseif defined?(__string1)
-      while !CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1)) __vwf_TryLoad
+      while !CallDLL (rlBabelDLL, dllSelectAdd, __window, __addr(__string1)) __vwf_TryLoad
     #else
-      while !CallDLL (rlBabelDLL, dllSelectInit, __window) __vwf_TryLoad
+      while !CallDLL (rlBabelDLL, dllSelectAdd, __window) __vwf_TryLoad
     #endif
   #else
     #if defined?(__string3)
-      CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1), __addr(__string2), __addr(__string3))
+      CallDLL (rlBabelDLL, dllSelectAdd, __window, __addr(__string1), __addr(__string2), __addr(__string3))
     #elseif defined?(__string2)
-      CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1), __addr(__string2))
+      CallDLL (rlBabelDLL, dllSelectAdd, __window, __addr(__string1), __addr(__string2))
     #elseif defined?(__string1)
-      CallDLL (rlBabelDLL, dllSelectInit, __window, __addr(__string1))
+      CallDLL (rlBabelDLL, dllSelectAdd, __window, __addr(__string1))
     #else
-      CallDLL (rlBabelDLL, dllSelectInit, __window)
+      CallDLL (rlBabelDLL, dllSelectAdd, __window)
     #endif
   #endif;
 
@@ -256,9 +254,8 @@ str __rlb_buffer, __rlb_empty
   #endif;
   
 #inline __vwf_SelectCleanup (__dest = store):
-  CallDLL (rlBabelDLL, dllSelectCleanup, __dest)
   EnableAutoSavepoints
-  return store;
+  return __dest;
 
 
 // DLL wrappers: glosses
