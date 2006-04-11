@@ -46,6 +46,8 @@ manual.tex: manual.tex.in $(version_file)
       value $(verstr)
     close($(stdout))
 
+.PHONY: alldoc clean dochtml docpdf
+
 if $(ENABLE_HEVEA)
   dochtml: $(addsuffix .tex,$(TEXFILES))
     hevea -fix -moreentities -O -noiso manual
@@ -56,10 +58,10 @@ else
 if $(ENABLE_PDFLATEX)
   docpdf: $(addsuffix .tex,$(TEXFILES))
     pdflatex manual
-    $(MAKEINDEX) manual
-    $(MAKEINDEX) manual.cdx -o manual.cnd
-    $(MAKEINDEX) manual.fdx -o manual.fnd
-    $(MAKEINDEX) manual.gdx -o manual.gnd
+    makeindex manual
+    makeindex manual.cdx -o manual.cnd
+    makeindex manual.fdx -o manual.fnd
+    makeindex manual.gdx -o manual.gnd
     pdflatex manual
     pdflatex manual
 else
@@ -67,8 +69,6 @@ else
     @echo PDF documentation disabled by configure
 
 alldoc: dochtml docpdf
-
-.PHONY: alldoc clean dochtml docpdf
 
 clean:
   $(RM) *.omc $(GENERATED) $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ),$(FILES)) $(PROGRAM)$(EXE)
