@@ -4861,6 +4861,30 @@ effort to comply with the terms of the LGPL.
       can do this automatically: it should be available from the same sources as 
       \package.
 
+    \lsubsubsection{Using hypertext with dynamic formatting}
+    
+      When dynamic formatting is enabled, it is also possible to use hypertext 
+      with the \ccref{g} control code.  There is some overhead involved in
+      hypertext processing, so this is disabled by default: you must
+      enable it explicitly by adding the line
+      \begin{lstlisting}
+        #define __EnableGlosses__
+      \end{lstlisting}
+      before you load the rlBabel library.
+      
+      When a hyperlink is clicked on, rlBabel fills a string variable with the
+      text associated with the link and passes it to a handler.  By default,
+      this simply displays the text in a standard Windows message box.  You can
+      override this behaviour by defining a custom handler.  The syntax for this
+      is
+      \begin{lstlisting}
+        #inline rlBabelGlossCallback (gloss_var):
+          // your code
+          ;
+      \end{lstlisting}
+      where <gloss_var> is bound to the string variable containing the text.
+      This should also be defined before the rlBabel library is loaded.
+
     \lsubsubsection{Additional features provided in the dynamic formatting library}
     
       Text can be italicised by using the new \ccref{b} and \ccref{u} control codes

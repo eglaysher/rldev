@@ -984,79 +984,19 @@ programming tasks.
     the speaker name to the player is the code \lstinline|\{\m{A}}|.
 
   \lsubsection{Glosses}\maketarget{ccode}{g}\ccidx{g}\index[concept]{hypertext}\index[concept]{glosses}
-%    Since translations from Japanese often require copious notes, \compiler{}
-%    includes a facility to generate hypertext glosses automatically.  This is
-%    done with the control code \lstinline|\g|.
-%
-%    {GLOSS\_HIGHLIGHT}
-%    \begin{cmdesc}
-%      Index to \ivarref[COLOR:TABLE]{COLOR\_TABLE} to use for hyperlinks.
-%      Default: 6, which in \opus{Clannad} is a tasteful pale blue.
-%    \end{cmdesc}
-%
-%    \noindent The basic syntax is \lstinline|\g|\rawlbrace\metavar{base}%
-%    \lstinline|}=|\metavar{gloss}, where \metavar{base} is the link text and
-%    \metavar{gloss} is the text to be displayed when the link is clicked.
-%    \metavar{gloss} can have one of two possible formats: it can be normal text
-%    surrounded by braces, or a resource string identifier surrounded by angle
-%    brackets.\footnote{For a special case of this latter format, see the note
-%    under \ref{item:resglosses}.}  In the former case, the contents are text in
-%    the same format as the rest of the string\,\textemdash\,they do not need to
-%    be enclosed in quotation marks\,\textemdash\,and control codes can happily
-%    be used within \metavar{gloss} (though not in \metavar{base}), although you
-%    will have to escape any unmatched braces.
-%
-%    It is possible to include multiple glosses in one string, and it is also
-%    possible to nest glosses.
-%
-%    An example of typical usage, adapted from \opus{Kanon: a translation}; this
-%    is in resource file syntax (see below, \ref{sec:resources}):
-%    \begin{lstlisting}[basicstyle=\ttfamily,stringstyle=\color{black}]
-%      <$23d> \{\m{A}} "Did you put any \g{dashi}=<g_dashi> in?"
-%      <g_dashi> Dashi: soup stock, typically made from \g{konbu}=
-%        {Konbu: kelp} and \g{bonito}={Bonito: dried flaked tunny}
-%    \end{lstlisting}
-%
-%    A contrived example where control codes are used within the gloss:
-%    \begin{lstlisting}
-%      '\g{Frobnication}={Not a gloss, a \c{2}very\c{} contrived \ ^^
-%       example} is a useful word in programming examples.'
-%    \end{lstlisting}
-%
-%    There are several critical limitations in the current implementation.
-%    Firstly, glosses are only generated for strings that have been formatted
-%    with \compiler's automatic lineation routine. This means you cannot use glosses
-%    in strings that contain any Japanese characters; while I hope to relax this
-%    in future versions, at present it is recommended that you use \ccref{ruby}
-%    codes if you want to gloss words in Japanese text.  Secondly, control codes
-%    and name variable references are not processed properly in the base text of
-%    a gloss; this is trivial to implement, I just haven't got round to it yet,
-%    but for now you'd better try to avoid using them.  Thirdly, all strings
-%    containing glosses are assumed to be followed with a \fnref{pause} command;
-%    that is, lines ending \ccref{p}, or followed by \fnref{spause} or
-%    \fnref{page} calls, will have \emph{extra} pauses added after them, and
-%    lines not intended to end in a paragraph break will do so regardless.
-%
-%    Where a gloss appears in a window for which \inivar{R\_COMMAND\_MOD} is in
-%    use, the hyperlink will not function correctly unless \ccref{assume} codes
-%    are used to ensure that all lines of text are aware of it, and the gloss
-%    window \emph{must} be set to a different window than the text window.  This
-%    can be achieved by using another internal variable:
-%
-%    {GLOSS\_SEP\_WINDOW}
-%    \begin{cmdesc}
-%      Sets the index of a message window to use to display the gloss.  The
-%      default is the current window.  In the current implementation, the value
-%      must be the current window when \inivar{R\_COMMAND\_MOD} is not set, and
-%      a different window when it is.
-%    \end{cmdesc}
-%
-%    Note that as a result of this, glosses cannot be nested in novel-type games.
-    Kepago provides for hypertext glosses using a control code \lstinline|\g|.
 
-    These are not currently implemented in \compiler.  If you desperately need
-    this feature, it is available in the old \package{} version 1.03, but you
-    would be better advised to wait for its reimplementation than to downgrade.
+    Kepago provides for hypertext glosses using a control code \lstinline|\g|.
+    The syntax is
+    \lstinline|\g|\rawlbrace\metavar{text}\lstinline|}=|\rawlbrace\metavar{gloss}\lstinline|}|.
+    \metavar{text} is arbitrary text, which is always output in the normal way,
+    and may be highlighted in some way.  When it is clicked on, the value of
+    \metavar{gloss} is passed as a string to a handler routine, which would
+    typically display it in a subsidiary window.
+
+    Support for these is limited in \compiler.  The control code is always
+    accepted, but it is only processed when the rlBabel library is in use for
+    dynamic lineation (see \ref{lib:rlBabel:lineation}); in all other cases,
+    \metavar{text} is simply displayed as normal text.
 
   \lsubsection{Lineation}\label{sec:lineation}\index[concept]{lineation}
 
@@ -1067,11 +1007,12 @@ programming tasks.
     adopts.  It is therefore necessary, when using English text, to implement
     lineation specially.
 
-    Versions of \package\ up to 1.03 implemented static lineation.  Since this
-    is impossible to do correctly, however, this feature has been removed and
-    replaced with a dynamic lineation engine, which ensures that text is always
-    correctly lineated even in the presence of variable-length elements.  This
-    is disabled by default; see section \ref{lib:textout} for usage details.
+    Versions of \package\ up to 1.03 implemented static lineation.  Since this 
+    is impossible to do correctly, however, this feature has been removed and 
+    replaced with various dynamic lineation techniques, which ensure that text 
+    is always correctly lineated even in the presence of variable-length 
+    elements.  These are implemented as libraries, and disabled by default; see 
+    section \ref{libs:extra} for usage details.
 
 \lsection{Resource files and resource strings}\label{sec:resources}\index[concept]{resources!files}
 

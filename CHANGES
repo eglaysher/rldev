@@ -10,14 +10,10 @@
 
 -- 1.35 - unreleased --
 
-  Numerous bug fixes.  The Textout library now works properly, having been
-  tested more thoroughly in Polyphonica.
+  Numerous bug fixes.  The Textout library now works properly.
 
-  rlBabel is now mature enough for limited use (it supports the features Kanon 
-  needs).  Note that rlBabel 1.20 uses a slightly more complete map file: map 
-  files for 1.00 should work, but some features will be broken.  rlBabel-GenMap 
-  has of course been updated, as have the pregenerated maps in the rtl 
-  directory.
+  rlBabel's proportional text output is now mature enough for limited use (it 
+  supports the features Kanon needs).
 
 RLC:
 

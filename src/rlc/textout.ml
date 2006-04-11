@@ -391,7 +391,9 @@ let compile_stub addstrs loc text =
                 in
                 bprintf b "\x82%c" (char_of_int (w + 0x4f)))
               w
-      | `Gloss (l, `Gloss, _, _) -> error loc "\\g{} is not implemented in unformatted text"
+      | `Gloss (l, `Gloss, base, _) 
+         -> warning l "\\g{} is not implemented in unformatted text";
+            DynArray.iter parse base
       | `Gloss (_, `Ruby, base, gloss)
          -> let gloss = match gloss with `Closed (_, g) -> g | `ResStr _ -> (* converted to `Closed in Expr.traverse_str_tokens *) assert false in
             flush ();
