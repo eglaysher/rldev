@@ -68,10 +68,9 @@ let generic =
       | "val_0x2c" -> Global.val_0x2c := Int32.to_int (int_of_normalised_expr expr)
       | "character" -> DynArray.add Global.dramatis_personae (StrTokens.to_string (str_of_normalised_expr expr)) (* TODO: candidate for text transformation? *)
       | "entrypoint" -> let idx = Int32.to_int (int_of_normalised_expr expr) in
-                        if idx <> 0 || loc.file = "system.kh" then
-                          if idx < 0 || idx >= 100 
-                          then ksprintf (error loc) "invalid entrypoint #Z%02d: valid values are 0..99" idx
-                          else Output.add_entry idx
+                        if idx < 0 || idx >= 100 
+                        then ksprintf (error loc) "invalid entrypoint #Z%02d: valid values are 0..99" idx
+                        else Output.add_entry idx
       | "kidoku_type" -> ini_set (loc, "KIDOKU_TYPE", Text.norm (Text.of_sjs "kidoku_type"), expr)
       | "file"
          -> if !App.outfile = "" then App.outfile := as_string expr ~enc:Config.default_encoding

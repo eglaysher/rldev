@@ -18,6 +18,7 @@
 #
 
 OCAMLFLAGS = -warn-error Asxyz
+USE_OCAMLFIND = true
 
 if $(defined-env DEBUG)
   NATIVE_ENABLED = false
@@ -35,7 +36,8 @@ if $(not $(file-exists ../bin))
 EXEDIR = $(dir ../bin)
 
 .INCLUDE: config.inc
-  ./configure
+  if $(not $(file-exists config.inc)) # to work round bug in 0.9.6.9
+    ./configure
 
 OCAMLLEX += -q
 
