@@ -187,6 +187,10 @@ let options =
           descr = "specify interpreter version, as either a version number or the filename of the interpreter (default: try to auto-detect)";
           withoutarg = None;
           witharg = Some set_target_version };
+    Opt { short = ""; long = "force-transform"; argname = "ENC";
+          descr = "";
+          withoutarg = None;
+          witharg = Some (fun s -> App.force_meta := Some (TextTransforms.enc_of_string s)) };
   ]
 
 (* Main program *)

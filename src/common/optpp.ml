@@ -263,6 +263,7 @@ let display_options = function [] -> () | osl ->
   let shorts, shortlen =
     let shortlen = ref 0 in
     let short = function
+      | Opt { descr = "" } -> "\001"
       | Opt { short = "" } -> " "
       | Opt { short = x; argname = "" } -> shortlen := max !shortlen (String.length x); x
       | Opt { short = x; argname = ar } -> let x = sprintf "%s %s" x ar in shortlen := max !shortlen (String.length x); x
@@ -297,6 +298,8 @@ let display_options = function [] -> () | osl ->
         Format.force_newline ();
         Format.close_box ()
       )
+      else if s = "\001"
+      then ()
       else (
         Format.print_string s;
         Format.print_tab ();

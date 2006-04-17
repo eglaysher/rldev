@@ -88,8 +88,12 @@ let decode_kfc text =
                           and c1 = (if a2 >= 0x80 then a2 - 1 else a2) - 0x40 in
                           c1 / 2, c2 + (c1 mod 2)
                in
-               Buf.add_int b Cp936.map.db_to_uni.(c1).(c2);
-               getc (idx + 2)
+               begin try
+                 Buf.add_int b Cp936.map.db_to_uni.(c1).(c2);
+                 getc (idx + 2)
+               with Invalid_argument "index out of bounds" ->
+                 ksprintf failwith "decode_kfc: could not decode %02x%02x (-> %02x%02x)" a1 a2 c1 c2
+               end
         | '\x00'..'\x7f' -> Buf.add_char b c; getc (idx + 1)
         | _ -> failwith "decode_kfc: malformed string"
   in
@@ -200,12 +204,14 @@ let init =
     | `Western -> outenc := `Western
     | `Chinese -> outenc := `Chinese; if not !loaded_936 then (loaded_936 := true; Cp936.init ())
 
-let set_encoding enc =
+let enc_of_string enc =
   match String.uppercase enc with
-    | "" | "NONE" | "JAPANESE" | "JP" | "CP932" | "SHIFT_JIS" | "SJIS" | "SHIFT-JIS" | "SHIFTJIS" -> init `None
-    | "CHINESE" | "ZH" | "CN" | "CP936" | "GB2312" | "GBK" -> init `Chinese
-    | "WESTERN" | "ENGLISH" | "EN" | "CP1252" -> init `Western
+    | "" | "NONE" | "JAPANESE" | "JP" | "CP932" | "SHIFT_JIS" | "SJIS" | "SHIFT-JIS" | "SHIFTJIS" -> `None
+    | "CHINESE" | "ZH" | "CN" | "CP936" | "GB2312" | "GBK" -> `Chinese
+    | "WESTERN" | "ENGLISH" | "EN" | "CP1252" -> `Western
     | _ -> ksprintf failwith "unknown output transformation `%s'" enc
+  
+let set_encoding enc = init (enc_of_string enc)
 
 (* Convert a string to the format required for RealLive bytecode *)
 let to_sjs_bytecode a =

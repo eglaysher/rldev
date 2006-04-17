@@ -43,3 +43,4 @@ let enc = ref Config.default_encoding
 let auto_target = ref true
 and target_version = ref (0, 0, 0, 0)
 and target_interpreter = ref ""
+and force_meta : [`Chinese | `None | `Western] option ref = ref None

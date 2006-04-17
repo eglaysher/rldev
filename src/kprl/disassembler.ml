@@ -1,6 +1,4 @@
-(*
-   Kprl: disassembler
-   Copyright (C) 2006 Haeleth
+(* Kprl: disassembler Copyright (C) 2006 Haeleth
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -1164,9 +1162,9 @@ let disassemble fname (arr: Binarray.t) =
   let rd_handler arr = if !App.auto_target then App.target_version := arr.{7}, arr.{6}, arr.{5}, arr.{4} in
   let hdr = Bytecode.read_full_header arr ~rd_handler in
   (* Override output encoding for non-Japanese text *)
-  if hdr.Bytecode.rldev_metadata.Metadata.text_transform <> `None then (
+  if !App.force_meta <> None || hdr.Bytecode.rldev_metadata.Metadata.text_transform <> `None then (
     if !App.verbose && Encoding.enc_type !App.enc <> `Utf8 then sysInfo "Detected non-Japanese text: setting output to UTF-8";
-    TextTransforms.init hdr.Bytecode.rldev_metadata.Metadata.text_transform;
+    TextTransforms.init (Option.default hdr.Bytecode.rldev_metadata.Metadata.text_transform !App.force_meta);
     App.enc := "UTF8";
   );
   (* Get output filenames *)

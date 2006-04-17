@@ -92,7 +92,7 @@ let options =
           witharg = None };
     Break;
     Opt { short = "-o"; long = "output"; argname = "FILE";
-         descr = "override output filename";
+          descr = "override output filename";
           withoutarg = None;
           witharg = set_string App.outfile "output filename" };
     Opt { short = "-d"; long = "outdir"; argname = "DIR";
