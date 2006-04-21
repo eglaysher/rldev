@@ -100,14 +100,14 @@ let options =
           descr = "for format 2 G00s, allow cropping of transparent areas of the image regardless of their contents";
           withoutarg = set_flag App.masked_only true;
           witharg = None };
-(*  Opt { short = ""; long = "dump-format-2"; argname = "";
-          descr = "dump raw version of format 2 G00s (debugging option)";
+    Opt { short = ""; long = "dump-format-2"; argname = "";
+          descr = "" (* "dump raw version of format 2 G00s (debugging option)" *);
           withoutarg = set_flag App.debug_dump_file true;
           witharg = None };
     Opt { short = ""; long = "include-parts"; argname = "";
-          descr = "include parts in metadata for format 2 G00s (debugging option)";
+          descr = "" (* "include parts in metadata for format 2 G00s (debugging option)" *);
           withoutarg = set_flag App.include_parts true;
-          witharg = None };  *)
+          witharg = None };
   ]
 
 

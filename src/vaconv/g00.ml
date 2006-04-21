@@ -171,7 +171,7 @@ let encode_format_1 img colours rgba =
       short width
       short height
       long region_count
-      struct { int x1, y1, x2, y2, ??? = 0, ??? = 0 } regions[region_count]
+      struct { int x1, y1, x2, y2, origin_x, origin_y } regions[region_count]
       long compressed_size
       long uncompressed_size
       char data[compressed_size - 8]
@@ -188,8 +188,8 @@ let encode_format_1 img colours rgba =
   8   long block_y
   c   long block_width
  10   long block_height
- 14   long ???_x
- 18   long ???_y
+ 14   long origin_x
+ 18   long origin_y
  1c   long ???_width
  20   long ???_height
       [80 bytes of zeroes]
@@ -210,7 +210,7 @@ let encode_format_1 img colours rgba =
 *)
 
 type region =
-  { x1: int; y1: int; x2: int; y2: int;
+  { x1: int; y1: int; x2: int; y2: int; ox: int; oy: int;
     mutable parts: part list; }
 
 and part =
@@ -228,16 +228,21 @@ let xml_of_regions regions =
              "y1", string_of_int r.y1;
              "x2", string_of_int r.x2;
              "y2", string_of_int r.y2]
-            (List.map
-              (fun p ->
-                elt "part"
-                  ["x", string_of_int p.px;
-                   "y", string_of_int p.py;
-                   "w", string_of_int p.pw;
-                   "h", string_of_int p.ph;
-                   "trans", string_of_int p.trans]
-                  [])
-              r.parts))
+            (let parts =
+               List.map
+                (fun p ->
+                  elt "part"
+                    ["x", string_of_int p.px;
+                     "y", string_of_int p.py;
+                     "w", string_of_int p.pw;
+                     "h", string_of_int p.ph;
+                     "trans", string_of_int p.trans]
+                    [])
+                r.parts
+              in
+              if r.ox <> 0 || r.oy <> 0 
+              then (elt "origin" ["x", string_of_int r.ox; "y", string_of_int r.oy] []) :: parts
+              else parts))
         regions)])
 
 
@@ -263,6 +268,8 @@ let decode_format_2 arr width height =
           y1 = Binarray.get_int arr (p + 4);
           x2 = Binarray.get_int arr (p + 8);
           y2 = Binarray.get_int arr (p + 12);
+          ox = Binarray.get_int arr (p + 16);
+          oy = Binarray.get_int arr (p + 20);
           parts = []})
   in
   let h_offset = region_count * 24 + 9 in
@@ -322,7 +329,7 @@ let decode_format_2 arr width height =
     data = `RGBA rgba;
     metadata =
       (match regions with
-        | [{ x1 = 0; y1 = 0; x2 = x2; y2 = y2; parts = []}] when x2 = width - 1 && y2 = height - 1 -> None
+        | [{ x1 = 0; y1 = 0; x2 = x2; y2 = y2; ox = 0; oy = 0; parts = []}] when x2 = width - 1 && y2 = height - 1 -> None
         | _ -> Some (xml_of_regions regions)) }
 
 
@@ -356,6 +363,9 @@ let encode_format_2 img i_regions rgba =
           else rgba.{y, x, 0} != 0 || rgba.{y, x, 1} != 0 || rgba.{y, x, 2} != 0 || rgba.{y, x, 3} != 0
         in
         let x1 = ref elt.x1 and y1 = ref elt.y1 and x2 = ref elt.x2 and y2 = ref elt.y2 in
+        List.iter (fun r -> if !r < 0 then r := 0) [x1; y1; x2; y2];
+        List.iter (fun r -> if !r >= img.width then r := img.width - 1) [x1; x2];
+        List.iter (fun r -> if !r >= img.height then r := img.height - 1) [y1; y2];
         let scanline_clear y =
           let rv = ref true and x = ref !x1 in
           while !x <= !x2 && !rv do
@@ -382,7 +392,7 @@ let encode_format_2 img i_regions rgba =
         break := false;
         while !x2 >= !x1 && not !break do if column_clear !x2 then decr x2 else break := true done;
         if !x1 > !x2 then failwith "sanity check failed: block is empty horizontally but not vertically";
-        `Elt { x1 = !x1; y1 = !y1; x2 = !x2; y2 = !y2; parts = []})
+        `Elt { x1 = !x1; y1 = !y1; x2 = !x2; y2 = !y2; ox = elt.ox; oy = elt.oy; parts = []})
       n_regions
   in
   (* Create uncompressed data. *)
@@ -440,8 +450,10 @@ let encode_format_2 img i_regions rgba =
               (*???*)Binarray.put_int block 0x18 (elt.y1 - regions.(i).y1);
               (*???*)Binarray.put_int block 0x1c (elt.x2 - elt.x1 + 1);
               (*???*)Binarray.put_int block 0x20 (elt.y2 - elt.y1 + 1);     */(*"*)
-              (*!!!*)Binarray.put_int block 0x14 0;
-              (*!!!*)Binarray.put_int block 0x18 0;
+(*"*)/*       (*!!!*)Binarray.put_int block 0x14 0;
+              (*!!!*)Binarray.put_int block 0x18 0;     */(*"*)
+              (*@@@*)Binarray.put_int block 0x14 elt.ox;
+              (*@@@*)Binarray.put_int block 0x18 elt.oy;
               (*!!!*)Binarray.put_int block 0x1c (regions.(i).x2 - regions.(i).x1 + 1);
               (*!!!*)Binarray.put_int block 0x20 (regions.(i).y2 - regions.(i).y1 + 1);
 
@@ -481,8 +493,8 @@ let encode_format_2 img i_regions rgba =
       Binarray.put_int arr (0x09 + i * 24 + 0x04) r.y1;
       Binarray.put_int arr (0x09 + i * 24 + 0x08) r.x2;
       Binarray.put_int arr (0x09 + i * 24 + 0x0c) r.y2;
-      Binarray.put_int arr (0x09 + i * 24 + 0x10) 0;
-      Binarray.put_int arr (0x09 + i * 24 + 0x14) 0)
+      Binarray.put_int arr (0x09 + i * 24 + 0x10) r.ox;
+      Binarray.put_int arr (0x09 + i * 24 + 0x14) r.oy)
     regions;
   Binarray.put_int arr (0x09 + Array.length regions * 24) (compressed_size + 8);
   Binarray.put_int arr (0x0d + Array.length regions * 24) (Binarray.dim data);
@@ -520,32 +532,43 @@ let to_file img outname format =
        y1 = 0;
        x2 = img.width - 1;
        y2 = img.height - 1;
+       ox = 0;
+       oy = 0;
        parts = []}]
   in
   let parse_metadata attrs elts =
-    let parts_of_xml =
-      function
-        | Xml.PCData _ -> assert false
-        | Xml.Element (id, attrs, _)
-         -> assert (id = "part");
-            try { px = int_of_string (List.assoc "X" attrs);
-                  py = int_of_string (List.assoc "Y" attrs);
-                  pw = int_of_string (List.assoc "W" attrs);
-                  ph = int_of_string (List.assoc "H" attrs);
-                  trans = int_of_string (List.assoc "TRANS" attrs); }
-            with Failure "int_of_string" -> raise (Bad_metadata "<part> coordinates must be integers")
+    let parts_of_xml attrs =
+      try { px = int_of_string (List.assoc "X" attrs);
+            py = int_of_string (List.assoc "Y" attrs);
+            pw = int_of_string (List.assoc "W" attrs);
+            ph = int_of_string (List.assoc "H" attrs);
+            trans = int_of_string (List.assoc "TRANS" attrs); }
+      with Failure "int_of_string" -> raise (Bad_metadata "<part> coordinates must be integers")
     in
     let region_of_xml =
       function
         | Xml.PCData _ -> assert false
         | Xml.Element (id, attrs, children)
          -> assert (id = "region");
+            let parts, ox, oy =
+              List.fold_left
+                (fun (p, ox, oy) -> function
+                  | Xml.Element ("part", attrs, _) -> parts_of_xml attrs :: p, ox, oy
+                  | Xml.Element ("origin", attrs, _)
+                      -> (try p, int_of_string (List.assoc "X" attrs), int_of_string (List.assoc "Y" attrs)
+                          with Failure "int_of_string" -> raise (Bad_metadata "<origin> coordinates must be integers"))
+                  | _ -> p, ox, oy)
+                ([], 0, 0)
+                children
+            in
             try
               { x1 = int_of_string (List.assoc "X1" attrs);
                 y1 = int_of_string (List.assoc "Y1" attrs);
                 x2 = int_of_string (List.assoc "X2" attrs);
                 y2 = int_of_string (List.assoc "Y2" attrs);
-                parts = List.map parts_of_xml children; }
+                ox = ox;
+                oy = oy;
+                parts = parts; }
             with
               | Not_found -> raise (Bad_metadata "missing attribute in <region> tag")
               | Failure "int_of_string" -> raise (Bad_metadata "<region> coordinates must be integers")

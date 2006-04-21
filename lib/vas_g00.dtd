@@ -5,12 +5,17 @@
 
 <!ELEMENT regions (region+)>
 
-<!ELEMENT region (part*)>
+<!ELEMENT region (origin?,part*)>
 <!ATTLIST region
   x1 CDATA #REQUIRED
   y1 CDATA #REQUIRED
   x2 CDATA #REQUIRED
   y2 CDATA #REQUIRED>
+
+<!ELEMENT origin EMPTY>
+<!ATTLIST origin
+  x CDATA #REQUIRED
+  y CDATA #REQUIRED>
 
 <!ELEMENT part EMPTY>
 <!ATTLIST part
