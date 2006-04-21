@@ -178,7 +178,7 @@ let encode_format_1 img colours rgba =
 
     Data:
       long block_count (always == region_count?)
-      struct { int offset, length } block_index[block_count] // negative length for duplicate regions?
+      struct { int offset, length } block_index[block_count] // negative length for duplicate regions
       block_data block_data[block_count]
 
     Block data:
@@ -446,16 +446,10 @@ let encode_format_2 img i_regions rgba =
               Binarray.put_int block 0x08 (elt.y1 - regions.(i).y1);
               Binarray.put_int block 0x0c (elt.x2 - elt.x1 + 1);
               Binarray.put_int block 0x10 (elt.y2 - elt.y1 + 1);
-(*"*)/*       (*???*)Binarray.put_int block 0x14 (elt.x1 - regions.(i).x1);
-              (*???*)Binarray.put_int block 0x18 (elt.y1 - regions.(i).y1);
-              (*???*)Binarray.put_int block 0x1c (elt.x2 - elt.x1 + 1);
-              (*???*)Binarray.put_int block 0x20 (elt.y2 - elt.y1 + 1);     */(*"*)
-(*"*)/*       (*!!!*)Binarray.put_int block 0x14 0;
-              (*!!!*)Binarray.put_int block 0x18 0;     */(*"*)
-              (*@@@*)Binarray.put_int block 0x14 elt.ox;
-              (*@@@*)Binarray.put_int block 0x18 elt.oy;
-              (*!!!*)Binarray.put_int block 0x1c (regions.(i).x2 - regions.(i).x1 + 1);
-              (*!!!*)Binarray.put_int block 0x20 (regions.(i).y2 - regions.(i).y1 + 1);
+              Binarray.put_int block 0x14 elt.ox;
+              Binarray.put_int block 0x18 elt.oy;
+              Binarray.put_int block 0x1c (regions.(i).x2 - regions.(i).x1 + 1);
+              Binarray.put_int block 0x20 (regions.(i).y2 - regions.(i).y1 + 1);
 
               Binarray.fill (Binarray.sub block 0x24 80) 0;
               let sc =
