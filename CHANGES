@@ -8,11 +8,27 @@
                                    CHANGELOG
 -------------------------------------------------------------------------------
 
+-- 1.38 - 2006-4-22 --
+
+  Fix some more code-generation bugs.
+
+
+-- 1.37 - 2006-4-21 --
+
+VACONV:
+
+  Implement origin specifications in G00 format 2 regions; these are used by
+  some dialog graphics in Clannad.
+  
+  Fix fatal errors caused by failure to range-check region bounds.
+  
+
 -- 1.36 - 2006-4-17 --
 
   Fix a bug causing incorrect code generation in CLANNAD's SEEN9033.
   
   Support non-inline speaker names in rlBabel.
+
 
 -- 1.35 - 2006-4-11 --
 
