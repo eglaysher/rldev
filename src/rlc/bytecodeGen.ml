@@ -119,6 +119,15 @@ let generate () =
       | `Avg2000 -> avg2000_spec
       | `Compare _ -> assert false
   in
+  (* Remove duplicate entrypoints, always using the last definition of each. *)
+  let entrypoints = Array.make 100 ~-1 in
+  for idx = 0 to DynArray.length bytecode - 1 do
+    match DynArray.unsafe_get bytecode idx with
+      | Entrypoint i
+        -> if entrypoints.(i) != ~-1 then DynArray.unsafe_set bytecode entrypoints.(i) (Code "");
+           entrypoints.(i) <- idx  
+      | _ -> ()
+  done;
   (* Traverse bytecode structure once, gathering label locations and the like. *)
   let labels = Hashtbl.create 0
   and entrypoints = Array.make 100 0
@@ -163,7 +172,7 @@ let generate () =
         | Kidoku _
            -> ksprintf (Binarray.write buffer ~idx) "@%s" (spec.kidoku_to_str !kidoku_idx);
               incr kidoku_idx; idx + 1 + spec.kidoku_len
-        | Entrypoint _
+        | Entrypoint i
            -> ksprintf (Binarray.write buffer ~idx) "%c%s" entrypoint_char (spec.kidoku_to_str !kidoku_idx);
               incr kidoku_idx; idx + 1 + spec.kidoku_len
         | Lineref i

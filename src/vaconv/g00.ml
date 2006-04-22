@@ -303,8 +303,10 @@ let decode_format_2 arr width height =
         and block_y = Binarray.get_int block 0x08
         and block_w = Binarray.get_int block 0x0c
         and block_h = Binarray.get_int block 0x10
+        and block_ox = Binarray.get_int block 0x14
+        and block_oy = Binarray.get_int block 0x18
         in*)
-        (* ignore 0x14..0x73 for now *)
+        (* ignore 0x1c..0x73 for now *)
         let i_offs = ref 0x74 in
         for j = 0 to parts - 1 do
           let px = Binarray.get_i16 block (!i_offs) + r.x1

@@ -101,11 +101,11 @@ let options =
           withoutarg = set_flag App.masked_only true;
           witharg = None };
     Opt { short = ""; long = "dump-format-2"; argname = "";
-          descr = "" (* "dump raw version of format 2 G00s (debugging option)" *);
+          descr = "" (* dump raw version of format 2 G00s (debugging option) *);
           withoutarg = set_flag App.debug_dump_file true;
           witharg = None };
     Opt { short = ""; long = "include-parts"; argname = "";
-          descr = "" (* "include parts in metadata for format 2 G00s (debugging option)" *);
+          descr = "" (* include parts in metadata for format 2 G00s (debugging option) *);
           withoutarg = set_flag App.include_parts true;
           witharg = None };
   ]
