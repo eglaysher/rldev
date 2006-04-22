@@ -74,6 +74,7 @@ let (!!) i =
   s
 
 let to_string ?(ident = "RLdev") encoding (a,b,c,d) =
+  let ver = VERSION *. 100. in
   ksprintf (fun s -> !!(String.length s + 4) ^ s)
     "%s%s\x00\
      %s\
@@ -81,7 +82,7 @@ let to_string ?(ident = "RLdev") encoding (a,b,c,d) =
      %c"
     !!(String.length ident)
     ident
-    !!(int_of_float (VERSION *. 100.))
+    !!(int_of_float ver)
     (char_of_int a) (char_of_int b) (char_of_int c) (char_of_int d)
     (match encoding with
        | `None    -> '\x00'
