@@ -71,10 +71,14 @@ always available.
     \item[\clbarg{e}{encoding}{ENC}]\label{opt:enc}
       Selects a character encoding for output.  Valid options always include
       \texttt{cp932}\footnote{CP932 is Microsoft's version of Shift\_JIS; this
-      is \reallive{}'s native character encoding.}, \texttt{euc-jp}, and
-      \texttt{utf-8}.  Whether any additional encodings are available, and what
-      the default is, depends on how \package\ was configured; if it was built
-      with the default options, the default encoding is \texttt{cp932}.
+      is \reallive's native character encoding.}, \texttt{euc-jp}, and
+      \texttt{utf-8}.  The default is normally \texttt{cp932}, but this may be
+      configured differently depending on the settings used to build \package.
+    \item[\cllong{bom}]
+      If the output encoding is UTF-8, causes a BOM (byte-order mark) to be
+      prepended to all output files.  The default is to leave the BOM out, but
+      some programs (notably Microsoft's text editors) can not edit UTF-8 files
+      without it.
     \item[\clboth{s}{single-file}]
       By default, \archiver\ puts text strings into a separate resource file; this
       makes it much easier to translate text without being distracted by
@@ -218,8 +222,8 @@ always available.
   \item[\cllong{no-assert}]
     Disables assertions (see \fnref{assert}).
   \item[\cllong{safe-arrays}]
-    Enables runtime bounds checking for arrays.  This option has no effect if
-    \cllong{no-assert} has also been specified.
+    Enables runtime bounds checking for Kepago arrays.  This option has no effect 
+    if \cllong{no-assert} has also been specified.
   \item[\cllong{flag-labels}]
     \emph{This feature is experimental and incomplete.}
 

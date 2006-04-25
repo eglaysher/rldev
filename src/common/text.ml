@@ -185,7 +185,7 @@ let ustream enc ic =
   and f = get_getc enc in
   let strm = Stream.from (fun _ -> try Some (f chan) with IO.No_more_input -> None) in
   begin match Stream.peek strm with
-    | Some 0xfffe -> Stream.junk strm (* Ignore BOM *)
+    | Some (0xfffe | 0xfeff) -> Stream.junk strm (* Ignore BOM *)
     | _ -> ()
   end;
   strm

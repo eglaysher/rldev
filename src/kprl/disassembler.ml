@@ -1236,9 +1236,11 @@ let disassemble fname (arr: Binarray.t) =
         else oc
       in
       begin try
+        if !App.bom && Encoding.enc_type !App.enc = `Utf8 then output_string oc "\xef\xbb\xbf";
         fprintf oc "{-# cp %s #- Disassembled with %s %1.2f -}\n\n#file '%s'\n"
                    (String.lowercase !App.enc) App.app.name App.app.version bname;
         if oc <> rc then (
+          if !App.bom && Encoding.enc_type !App.enc = `Utf8 then output_string rc "\xef\xbb\xbf";
           fprintf rc "// Resources for %s\n\n" bname;
           fprintf oc "#resource '%s'\n" (Filename.basename resname)
         );

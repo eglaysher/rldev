@@ -39,6 +39,7 @@ let verbose = ref false
 let outdir = ref ""
 let names_opt = ref false
 let enc = ref Config.default_encoding
+let bom = ref false
 
 let auto_target = ref true
 and target_version = ref (0, 0, 0, 0)

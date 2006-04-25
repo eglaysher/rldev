@@ -153,6 +153,10 @@ let options =
           descr = sprintf "output text encoding (default: %s)" Config.default_encoding;
           withoutarg = None;
           witharg = Some (fun e -> App.enc := String.uppercase e) };
+    Opt { short = ""; long = "bom"; argname = "";
+          descr = "when output encoding is UTF-8, include BOM (byte-order mark)";
+          withoutarg = set_flag App.bom true;
+          witharg = None; };
     Opt { short = "-s"; long = "single-file"; argname = "";
           descr = "don't put text into a separate resource file";
           withoutarg = Some (fun () -> if Disassembler.options.separate_all then failwith "you cannot use -s and -S together";
