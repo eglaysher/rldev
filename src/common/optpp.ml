@@ -301,14 +301,14 @@ let display_options = function [] -> () | osl ->
       else if s = "\001"
       then ()
       else (
+        Format.print_tab ();
         Format.print_string s;
         Format.print_tab ();
         Format.print_string l;
         Format.print_tab ();
         Format.open_box 0;
         prettily d;
-        Format.close_box ();
-        Format.print_tab ()
+        Format.close_box ()
       );
       print_options (ss, ll, dd)
   in
@@ -320,11 +320,11 @@ let display_options = function [] -> () | osl ->
   Format.print_string (String.make (longlen + 2) ' ');
   Format.set_tab ();
   Format.print_string " ";
-  Format.print_tab ();
   print_options (shorts, longs, descrs);
   Format.close_tbox ();
   Format.close_box ();
-  Format.print_flush ()
+  Format.print_flush ();
+  print_newline ()
 
 let display_version app =
   ksprintf cliInfo "%s %.2f: %s" app.name app.version app.description;
