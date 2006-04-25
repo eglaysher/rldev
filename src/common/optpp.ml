@@ -293,6 +293,7 @@ let display_options = function [] -> () | osl ->
     | s::ss, l::ll, d::dd ->
       if s = "\000"
       then (
+        Format.force_newline ();
         Format.open_box 0;
         Format.print_string d;
         Format.force_newline ();
