@@ -32,7 +32,7 @@ open Binarray
     char[id_len + 1] compiler_identifier, null-terminated
     int (compiler_version * 100)
     int target_version
-    byte text_transform : 0 = none, 1 = Chinese, 2 = Western
+    byte text_transform : 0 = none, 1 = Chinese, 2 = Western, 3 = Korean
     
 *)
 
@@ -40,7 +40,7 @@ type t =
   { compiler_name : string;
     compiler_version : int;
     target_version : int * int * int * int;
-    text_transform : [ `None | `Chinese | `Western ]; }
+    text_transform : [ `None | `Chinese | `Western | `Korean ]; }
 
 let empty =
   { compiler_name = "";
@@ -63,6 +63,7 @@ let read arr idx =
                           | 0 -> `None
                           | 1 -> `Chinese
                           | 2 -> `Western
+                          | 3 -> `Korean
                           | _ -> prerr_endline "Warning: RLdev metadata malformed"; `None); }
 
 let (!!) i =
@@ -87,4 +88,5 @@ let to_string ?(ident = "RLdev") encoding (a,b,c,d) =
     (match encoding with
        | `None    -> '\x00'
        | `Chinese -> '\x01'
-       | `Western -> '\x02')
+       | `Western -> '\x02'
+       | `Korean  -> '\x03')

@@ -44,4 +44,4 @@ let bom = ref false
 let auto_target = ref true
 and target_version = ref (0, 0, 0, 0)
 and target_interpreter = ref ""
-and force_meta : [`Chinese | `None | `Western] option ref = ref None
+and force_meta : [`Chinese | `None | `Western | `Korean ] option ref = ref None

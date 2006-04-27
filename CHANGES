@@ -8,6 +8,15 @@
                                    CHANGELOG
 -------------------------------------------------------------------------------
 
+-- 1.39
+
+  Fix UTF-8 BOM handling.
+  
+  Improve handling of the case where a scenario ends with a label.
+  
+  Add support for Korean text (KS X 1001).
+
+
 -- 1.38 - 2006-4-22 --
 
   Fix some more code-generation bugs.

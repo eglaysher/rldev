@@ -1270,11 +1270,17 @@ let disassemble fname (arr: Binarray.t) =
             if not (!skipping || cmd.hidden) then print_cmd labels oc cmd;
             if options.suppress_uncalled && cmd.is_jmp then skipping := true)
           commands;
-
+        ISet.iter 
+          (fun x -> 
+            if x = amax - aorg
+            then try fprintf oc "\n  @%d\n" (IMap.find x labels) with Not_found -> assert false
+            else ksprintf sysWarning "label %08x not inserted" x)
+          !pointers;
         close_out oc;
-        DynArray.iter (fun s -> fprintf rc "%s\n" (Text.sjs_to_enc !App.enc s)) resstrs;
-        if rc <> oc then close_out rc;
-        ISet.iter (fun x -> ksprintf sysWarning "label at %08x not inserted" x) !pointers
+        if rc <> oc then (
+          DynArray.iter (fun s -> fprintf rc "%s\n" (Text.sjs_to_enc !App.enc s)) resstrs;
+          close_out rc;
+        )
       with
         e -> (try close_out oc with _ -> ());
              (try close_out rc with _ -> ());

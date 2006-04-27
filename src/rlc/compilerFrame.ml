@@ -520,6 +520,15 @@ let compile fname =
   (* Hardwired while we don't have proper functions. *)
   Textout.finalise ();
 
+  (* Finish off file. *)
+  if !App.debug_info then 
+    Output.add_code nowhere
+      "\x82\x72\x82\x85\x82\x85\x82\x8e\x82\x64\x82\x8e\x82\x84\xff\xff\xff\xff\xff\
+       \xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\
+       \xff\xff\xff\xff\xff\xff\xff\xff"
+  else
+    Output.add_code nowhere "\x00";
+
   (* Postconditions *)
   assert (Stack.length Memory.scope = 1);
 

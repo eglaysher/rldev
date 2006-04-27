@@ -32,11 +32,11 @@ GENERATED = kfnParser.mli kfnParser.ml kfnLexer.ml
 OCamlGeneratedFiles($(GENERATED))
 OCamlLibrary(rlkfn, $(KFNFILES))
 
-CFGFILES = avlTree iSet iMap encoding config cp932 cp936 text textTransforms
+CFGFILES = avlTree iSet iMap encoding config cp932 cp936 cp949 text textTransforms
 OCamlLibrary(appconfig, $(CFGFILES))
 
 # Build marshalled data files
-MDFFILES = cp932_in cp936_in mkdatamain
+MDFFILES = cp932_in cp936_in cp949_in mkdatamain
 OCamlProgram(mkdatafiles, avlTree iMap $(MDFFILES))
 all: mkdatafiles$(EXE)
   ./mkdatafiles$(EXE) ../../lib
