@@ -242,7 +242,7 @@ let decode_hangul text =
                  ksprintf failwith "decode_hangul: could not decode %02x%02x (-> %02x%02x)" a1 a2 c1 c2
                end
         | '\x00'..'\x7f' -> Buf.add_char b c; getc (idx + 1)
-        | _ -> failwith "decode_hangul: malformed string"
+        | _ -> ksprintf failwith "decode_hangul: malformed string (code 0x%02x)" (int_of_char c)
   in
   getc 0
 
