@@ -4805,6 +4805,24 @@ effort to comply with the terms of the LGPL.
     are already being used.    
   \end{nicelist}
 
+  Since the codeset detection code requires access to details of the internal 
+  interpreter state which are not directly exposed to extension DLLs, it is 
+  also necessary to provide rlBabel with a \emph{map file} which identifies 
+  the memory addresses to query.  Ready-defined map files for about 20 
+  different interpreters are supplied in the \file{rtl/} directory: for 
+  example, if your game runs in \reallive\ 1.3.1.0, you need to copy the file
+  \file{rtl/1.3.1.0.map} to the game directory for dynamic formatting to
+  work.
+    
+  If you are using an interpreter for which no map is available, you will have 
+  to generate one.  There is a program called "rlBabel-GenMap" which can do 
+  this automatically: it should be available from the same sources as 
+  \package.
+
+  Note that map files are not necessary for the 1.2.3.5 interpreter supplied 
+  with \cite{Clannad} or for the 1.2.6.8 interpreter supplied with 
+  \cite{Kanon}, as the mappings for these two versions are built into the DLL.
+
   \lsubsection{Dynamic lineation and proportional text}\label{lib:rlBabel:lineation}
 
     \emph{This functionality is currently experimental; remember to test your
@@ -4847,20 +4865,6 @@ effort to comply with the terms of the LGPL.
       or at the top of \emph{every} source file that allocates variables, and
       in all cases \emph{before} loading the library.
         
-      Since the lineation code requires access to details of the internal 
-      interpreter state which are not directly exposed to extension DLLs, it is 
-      also necessary to provide rlBabel with a \emph{map file} which identifies 
-      the memory addresses to query.  Ready-defined map files for about 20 
-      different interpreters are supplied in the \file{rtl/} directory: for 
-      example, if your game runs in \reallive\ 1.3.1.0, you need to copy the file
-      \file{rtl/1.3.1.0.map} to the game directory for dynamic formatting to
-      work.
-      
-      If you are using an interpreter for which no map is available, you will 
-      have to generate one.  There is a program called "rlBabel-GenMap" which 
-      can do this automatically: it should be available from the same sources as 
-      \package.
-
     \lsubsubsection{Using hypertext with dynamic formatting}
     
       When dynamic formatting is enabled, it is also possible to use hypertext 
