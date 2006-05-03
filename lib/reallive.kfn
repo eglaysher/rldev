@@ -140,8 +140,8 @@ module 003 = Msg // Text output
 
   fun __doruby                <0:Msg:00120, 1> (strC) () // Special case: do not document
 
-  ver >= 1.3.8 // is this the correct version? is the argument optional?
-    fun msgHide               <0:Msg:00151, 0> (?intC) // UNDOCUMENTED (the intC is, that is)
+  ver >= 1.3.8 // TODO: check: is this the correct version? is the argument optional?
+    fun msgHide               <0:Msg:00151, 0> ? // UNDOCUMENTED (one optional intC argument?)
   end
   ver < 1.3.8
     fun msgHide               <0:Msg:00151, 0> ()
