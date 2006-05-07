@@ -233,8 +233,8 @@ let print_cmd labels oc cmd =
       | P i -> try
                  let i' = IMap.find i labels in
                  fprintf oc " @%d" i'
-               with
-                 Not_found -> fprintf oc " @unknown%d" i)
+               with Not_found -> 
+                 fprintf oc " @unknown%d" i)
     cmd.kepago;
   fprintf oc "\n%!"
 
@@ -930,7 +930,7 @@ let read_soft_function mode version cmd opcode argc fndef_gen lexbuf =
         (* Warn if some parameters were required. *)
         if List.exists 
           (fun (_, flags) -> 
-            not (List.exists (function Uncount | Fake | Argc -> true | _ -> false) flags)) 
+            not (List.exists (function Uncount | Fake | Argc | Optional -> true | _ -> false) flags)) 
           params 
         then ksprintf (warning lexbuf) "expected %d args to %s, but argc = 0" (List.length params) fndef.fn_ident;
         "",
@@ -945,7 +945,7 @@ let read_soft_function mode version cmd opcode argc fndef_gen lexbuf =
       (* Case 2: parameters given. *)
       else
         let pre = ref "" in
-        if argc = 0 && List.exists (fun (_, flags) -> not (List.exists (function Uncount | Fake | Argc -> true | _ -> false) flags)) params then
+        if argc = 0 && List.exists (fun (_, flags) -> not (List.exists (function Optional | Uncount | Fake | Argc -> true | _ -> false) flags)) params then
           ksprintf (warning lexbuf) "expected %d args to %s, but argc = 0" (List.length params) fndef.fn_ident;
         let rec loop b not_first argc lexbuf =
           function

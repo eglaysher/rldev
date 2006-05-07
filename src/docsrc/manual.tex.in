@@ -16,7 +16,7 @@
 %HEVEA \newstyle{BODY}{font-family: "palatino linotype", palatino, palladio, serif;}
 
 \title{RLdev: a visual novel development kit}
-\author{Peter Jolly (H\ae leth)}
+\author{H\ae leth}
 \date{Version !!VERSION!! \ifhevea\@print{&mdash;}\else\textemdash\fi\ !!DATE!!}
 
 \newindex{concept}{cdx}{cnd}{Concept index}
@@ -34,7 +34,7 @@
 
 \maketitle
 
-{\small\package\ program and documentation copyright \copyright\ 2006 Peter Jolly.
+{\small\package\ program and documentation copyright \copyright\ 2006 H\ae leth.
 
 The programs, code, documentation, and data files in this package are 
 distributed without warranty under the terms of the GNU General Public License; 
