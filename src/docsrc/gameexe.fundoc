@@ -241,7 +241,7 @@ off examining what's done in actual games and copying details from there...
 @}
 
 
-\subsection{Global font settings}
+\subsection{Global font settings}\label{sec:inifontsettings}
 
 @ivar1/INIT_FONT_TYPE/type/
 @{
@@ -264,9 +264,6 @@ off examining what's done in actual games and copying details from there...
   
   If @iref{INIT_FONT_TYPE} is 2, then <font> is used as the default font for
   the game.
-  
-  Due to the way \gameexe\ is parsed, font names that are not in Japanese
-  or English may not be recognised.
 @}
 
 @ivar1/INIT_FONT_QUALITY/quality/

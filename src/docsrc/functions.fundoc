@@ -4823,6 +4823,26 @@ effort to comply with the terms of the LGPL.
   with \cite{Clannad} or for the 1.2.6.8 interpreter supplied with 
   \cite{Kanon}, as the mappings for these two versions are built into the DLL.
 
+  \lsubsection{Configuring fonts and international names}
+  
+    \reallive\ will normally select a Japanese font, and interpret the default 
+    names (defined with @iref{NAME} and @iref{LOCALNAME} in \gameexe) as being 
+    in the default Japanese encoding.  Neither of these is likely to be a 
+    desirable effect if you are using a different codepage.  To solve these 
+    issues, rlBabel introduces some extensions to \gameexe.
+    
+    The extensions to the font setting system (which are generally useful) 
+    are described in \ref{sec:inifontsettings}.
+    
+    To provide default names in a non-Japanese encoding, simply enter the names
+    you wish to use as text in the normal Windows encoding for that codepage,
+    and add one additional variable:
+
+@ivar1/NAME_ENC/enc/
+@{
+  <enc> indicates the encoding used: 1 is Chinese, 2 is Western, and 3 is Korean.  
+@}
+
   \lsubsection{Dynamic lineation and proportional text}\label{lib:rlBabel:lineation}
 
     \emph{This functionality is currently experimental; remember to test your
