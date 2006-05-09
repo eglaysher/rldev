@@ -17,7 +17,7 @@
 #  Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-OCAMLFLAGS = -warn-error Asxyz
+OCAMLFLAGS = -warn-error Asxyz -cc $(CXX)
 USE_OCAMLFIND = true
 
 if $(defined-env DEBUG)
@@ -36,7 +36,7 @@ if $(not $(file-exists ../bin))
 EXEDIR = $(dir ../bin)
 
 .INCLUDE: config.inc
-  if $(not $(file-exists config.inc)) # to work round bug in 0.9.6.9
+  if $(not $(file-exists config.inc))
     ./configure
 
 OCAMLLEX += -q
@@ -50,9 +50,6 @@ OCAMLINCLUDES += $(dir common)
 INCLUDES += $(dir common)
 OCAML_LIBS = $(file $(addprefix common/,optpp rlcmp rlkfn appconfig))
 OCAML_CLIBS = $(file common/rlprims)
-if $(not $(equal $(OSTYPE), Win32))
-  OCAML_LINK_FLAGS += -cclib -lstdc++
-  export
 
 # build programs
 

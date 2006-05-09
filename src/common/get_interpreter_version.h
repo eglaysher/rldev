@@ -1,5 +1,5 @@
 /*
-   RLdev: general C definitions
+   kprl: interface to Win32 version query functions (and substitute for other platforms)
    Copyright (C) 2006 Haeleth.
 
    This program is free software; you can redistribute it and/or modify it under
@@ -17,17 +17,14 @@
    Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef RLDEV_H
-#define RLDEV_H
+#include "rldev.h"
 
-#include <caml/memory.h>
-#include <caml/bigarray.h>
-#include <caml/fail.h>
-#include <caml/callback.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-typedef unsigned char uchar;
+value rldev_get_interpreter_version (value filename);
 
-#define Binarray_val (uchar*) Data_bigarray_val
-#define raise_malformed caml_raise_constant (*caml_named_value("Malformed"))
-
+#ifdef __cplusplus
+}
 #endif

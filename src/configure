@@ -129,7 +129,7 @@ if test -n "$prev"; then
   exit 2
 fi
 
-check_version "Objective Caml" 3.08 "ocamlc -version"
+check_version "Objective Caml" 3.09 "ocamlc -version"
 native=false
 if check_exists "native compiler" "eval ocamlopt 2>/dev/null" optional; then echo "found"; native=true; fi
 echo -n "Checking compiler type... "
@@ -202,7 +202,7 @@ hevea=true
 if eval "hevea -version" >/dev/null 2>&1; then
   hvtest="echo `hevea -version | head -1 | sed -e 's/^hevea \([0-9+.]\+\).*$/\1/g'`"
 else hvtest="hevea -version"; fi
-check_version hevea 1.07 "$hvtest" optional || {
+check_version hevea 1.08 "$hvtest" optional || {
   echo "The \`omake dochtml' option will be disabled." >&2
   hevea=false
 }

@@ -17,7 +17,7 @@
    Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include "rldev.h"
+#include "get_interpreter_version.h"
 
 /* If we have the Windows API to use, life is relatively simple. */
 
