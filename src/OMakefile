@@ -17,7 +17,7 @@
 #  Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-OCAMLFLAGS = -warn-error Asxyz -cc $(CXX)
+OCAMLFLAGS = -warn-error Asxyz -cc $(if $(equal $(CXX),gcc),g++,$(CXX))
 USE_OCAMLFIND = true
 
 if $(defined-env DEBUG)
