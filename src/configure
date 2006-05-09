@@ -19,8 +19,14 @@
 #  Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
+# moderately portable echo
+case "`echo 'x\c'`" in
+'x\c')  echo="echo -n"   nnl= ;;       # BSD 
+*)      echo="echo"      nnl="\c" ;;   # Sys V
+esac
+
 check_exists() {
-  echo -n "Checking for $1... "
+  $echo "Checking for $1... ${nnl}"
   found=0
   if eval $2; then
     return 0
@@ -36,7 +42,7 @@ check_exists() {
 }
 
 check_version() {
-  echo -n "Checking for $1 >= $2... "
+  $echo "Checking for $1 >= $2... ${nnl}"
   if test -n "$3"; then estr="$3"; else estr="ocamlfind query $1 -format %v"; fi
   if eval $estr >/dev/null 2>&1; then
     ver=`$estr`
@@ -132,7 +138,7 @@ fi
 check_version "Objective Caml" 3.09 "ocamlc -version"
 native=false
 if check_exists "native compiler" "eval ocamlopt 2>/dev/null" optional; then echo "found"; native=true; fi
-echo -n "Checking compiler type... "
+$echo "Checking compiler type... ${nnl}"
 cat > .temp.ml <<_END_TEMP_ML
 print_endline Sys.os_type;
 match Sys.os_type with
@@ -143,7 +149,7 @@ if ocaml .temp.ml; then windows=true; else windows=false; fi
 rm -f .temp.ml
 
 check_exists findlib "ocamlfind query findlib -format %v"
-check_exists omake "omake --version | head -1 | grep -o ' [^:]*'"
+check_exists omake "omake --version | head -1 | sed -e 's/^.*\( [^:]*\).*$/\1/'"
 check_version extlib 1.4 "" optional || {
   check_version extlib 1.3
   echo "Extlib 1.4 is required to build RLdev, but some versions of 1.4 claim to be 1.3. The build may succeed, but check this if it fails."
@@ -279,9 +285,9 @@ fi
 echo "Finished configuring RLdev."
 echo
 echo "-- Configuration summary --"
-echo -n "Programs: kprl, rlc"; if $vaconv; then echo -n ", vaconv"; fi; if $rlxml; then echo ", rlxml"; else echo; fi
-echo -n "Compiler: "; if $native; then echo "native code"; else echo "bytecode"; fi
-echo -n "Manuals: "; if $hevea && $pdflatex; then echo "html, pdf"; elif $hevea; then echo "html"; elif $pdflatex; then echo "pdf"; else echo "none"; fi
+$echo "Programs: kprl, rlc${nnl}"; if $vaconv; then $echo ", vaconv${nnl}"; fi; if $rlxml; then echo ", rlxml"; else echo; fi
+$echo "Compiler: ${nnl}"; if $native; then echo "native code"; else echo "bytecode"; fi
+$echo "Manuals: ${nnl}"; if $hevea && $pdflatex; then echo "html, pdf"; elif $hevea; then echo "html"; elif $pdflatex; then echo "pdf"; else echo "none"; fi
 echo
 if test -n "$prefix"; then
   echo "Now run \`omake' and then \`omake install' to build and install the package."
