@@ -42,7 +42,12 @@ FILES []=
 
 OCAML_CLIBS += vcprims
 OCAML_LINK_FLAGS += $(mapprefix -cclib,$(PNG_LDFLAGS))
-OCAMLPACKS += xml-light
+if $(FORCE_XMLLIGHT)
+  OCAML_OTHER_LIBS += xml-light
+  export
+else
+  OCAMLPACKS += xml-light
+  export
 
 OCamlProgram($(PROGRAM), $(FILES))
 

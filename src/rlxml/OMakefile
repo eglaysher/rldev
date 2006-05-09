@@ -25,7 +25,12 @@ FILES []=
   convert
   main
 
-OCAMLPACKS += xml-light
+if $(FORCE_XMLLIGHT)
+  OCAML_OTHER_LIBS += xml-light
+  export
+else
+  OCAMLPACKS += xml-light
+  export
 
 OCamlProgram($(PROGRAM), $(FILES))
 

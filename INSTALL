@@ -49,6 +49,9 @@ any supported platform, is to use the GODI distribution of OCaml
   godi-ulex
   godi-xml-light
 
+Depending on your OS, you may need to install libpng manually, or to install
+development packages for the system libpng.
+
 To build the documentation, you will need a recent LaTeX installation.  For HTML
 output, HEVEA is recommended (see http://pauillac.inria.fr/~maranget/hevea).
 The following commands are defined to build it in the formats I use:

@@ -21,12 +21,18 @@
 
 # moderately portable echo
 case "`echo 'x\c'`" in
-'x\c')  echo="echo -n"   nnl= ;;       # BSD 
-*)      echo="echo"      nnl="\c" ;;   # Sys V
+'x\c')
+  echo_n="echo -n"
+  nobr=
+  ;;
+*)
+  echo_n="echo"
+  nobr="\c"
+  ;;
 esac
 
 check_exists() {
-  $echo "Checking for $1... ${nnl}"
+  $echo_n "Checking for $1... ${nobr}"
   found=0
   if eval $2; then
     return 0
@@ -41,13 +47,20 @@ check_exists() {
   fi
 }
 
+normalise() {
+  # Replace single digits with double: e.g. "1.2.5" -> "1.02.05", "1.2.10" -> "1.02.10".
+  echo $1 | sed 's/\.\([0-9]\)\./.0\1./g;s/\.\([0-9]\)$/.0\1/g'
+}
+
 check_version() {
-  $echo "Checking for $1 >= $2... ${nnl}"
+  $echo_n "Checking for $1 >= $2... ${nobr}"
   if test -n "$3"; then estr="$3"; else estr="ocamlfind query $1 -format %v"; fi
   if eval $estr >/dev/null 2>&1; then
     ver=`$estr`
     echo $ver
-    if test `expr "$ver" ">=" "$2"` = 0; then
+    v1=`normalise $ver`
+    v2=`normalise $2`
+    if test `expr "$v1" ">=" "$v2"` = 0; then
       if test -z $4; then
         echo "Error: $1 $2 or better is required for the build process. See INSTALL for details." >&2
         exit 2
@@ -138,7 +151,7 @@ fi
 check_version "Objective Caml" 3.09 "ocamlc -version"
 native=false
 if check_exists "native compiler" "eval ocamlopt 2>/dev/null" optional; then echo "found"; native=true; fi
-$echo "Checking compiler type... ${nnl}"
+$echo_n "Checking compiler type... ${nobr}"
 cat > .temp.ml <<_END_TEMP_ML
 print_endline Sys.os_type;
 match Sys.os_type with
@@ -170,11 +183,18 @@ case $enable_rlxml in
 esac
 
 if $vaconv || $rlxml; then
-  check_version xml-light 2.1 "" optional || {
+  if check_version xml-light 2.1 "" optional; then
+    forcexmllight=false
+  elif check_exists xml-light "[ -s `ocamlc -where`/xml-light.cma ]" optional; then
+    echo "found unknown version"
+    echo "Unable to determine version of xml-light. The build may succeed; if it fails, reconfigure with the --no-vaconv and --no-rlxml options."
+    forcexmllight=true
+  else
     echo "Unable to use xml-light; Vaconv and RlXML will not be built. See INSTALL for details." >&2
     vaconv=false
     rlxml=false
-  }
+    forcexmllight=false
+  fi
 fi
 if $vaconv; then
   checkpng() {
@@ -242,6 +262,7 @@ ENABLE_HEVEA=$hevea
 ENABLE_PDFLATEX=$pdflatex
 ENABLE_RLXML=$rlxml
 ENABLE_VACONV=$vaconv
+FORCE_XMLLIGHT=$forcexmllight
 PNG_CFLAGS=$libpng_cflags
 PNG_LDFLAGS=$libpng_ldflags
 _END_CONFIG
@@ -261,12 +282,15 @@ if test -n "$prefix"; then
 
 .PHONY: install uninstall
 install:
-  \$(INSTALL) -d $prefix/bin
-  \$(INSTALL) \$(addprefix \$(EXEDIR)/,kprl\$(EXE) rlc\$(EXE)$vaconv_exe$rlxml_exe) $prefix/bin
-  \$(INSTALL) -d $prefix/share/rldev/lib
-  \$(INSTALL) -m 644 ../lib/* $prefix/share/rldev/lib
-  -\$(INSTALL) -d $prefix/share/rldev/rtl
-  -\$(INSTALL) -m 644 ../rtl/* $prefix/share/rldev/rtl
+  ./install-sh -d $prefix/bin
+  foreach(f, \$(addprefix \$(EXEDIR)/,kprl\$(EXE) rlc\$(EXE)$vaconv_exe$rlxml_exe))
+    ./install-sh -t $prefix/bin \$(f)
+  ./install-sh -d $prefix/share/rldev/lib
+  foreach(f, \$(glob ../lib/*))
+    ./install-sh -m 644 -t $prefix/share/rldev/lib \$(f)
+  ./install-sh -d $prefix/share/rldev/rtl
+  foreach(f, \$(glob ../rtl/*))
+    ./install-sh -m 644 -t $prefix/share/rldev/rtl \$(f)
 
 uninstall:
   \$(RM) \$(addprefix $prefix/bin/,kprl\$(EXE) rlc\$(EXE)$vaconv_exe$rlxml_exe)
@@ -285,9 +309,9 @@ fi
 echo "Finished configuring RLdev."
 echo
 echo "-- Configuration summary --"
-$echo "Programs: kprl, rlc${nnl}"; if $vaconv; then $echo ", vaconv${nnl}"; fi; if $rlxml; then echo ", rlxml"; else echo; fi
-$echo "Compiler: ${nnl}"; if $native; then echo "native code"; else echo "bytecode"; fi
-$echo "Manuals: ${nnl}"; if $hevea && $pdflatex; then echo "html, pdf"; elif $hevea; then echo "html"; elif $pdflatex; then echo "pdf"; else echo "none"; fi
+$echo_n "Programs: kprl, rlc${nobr}"; if $vaconv; then $echo_n ", vaconv${nobr}"; fi; if $rlxml; then echo ", rlxml"; else echo; fi
+$echo_n "Compiler: ${nobr}"; if $native; then echo "native code"; else echo "bytecode"; fi
+$echo_n "Manuals: ${nobr}"; if $hevea && $pdflatex; then echo "html, pdf"; elif $hevea; then echo "html"; elif $pdflatex; then echo "pdf"; else echo "none"; fi
 echo
 if test -n "$prefix"; then
   echo "Now run \`omake' and then \`omake install' to build and install the package."

@@ -8,6 +8,11 @@
                                    CHANGELOG
 -------------------------------------------------------------------------------
 
+-- 1.40 - unreleased --
+
+  Fix build system for portability (it now works in Darwin and Solaris)
+
+
 -- 1.39 - 2006-5-1 --
 
   Fix UTF-8 BOM handling.
