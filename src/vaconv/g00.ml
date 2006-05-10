@@ -105,7 +105,7 @@ let decode_format_1 arr width height =
     palette_len 4
   and bytes = reshape_2
     (genarray_of_array1 (Binarray.sub data (palette_len * 4 + 2) (width * height)))
-    width height
+    height width
   and rgba = new_rgba width height
   in
   (* Expand data *)
