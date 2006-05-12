@@ -170,11 +170,21 @@ let decode_cp1252 text =
   else Buf.contents b
 
 
-(* For Korean text, we take advantage of the fact that CP949 is based on EUC-KR.  We can
-   almost simply apply the standard EUC-JP <-> Shift_JIS transformation! 
-   (In practice, we must modify the transformation to take into account the characters
-   that need to be inserted as their actual CP932 equivalents: these are the same as
-   for the Chinese encoding above.) *)
+(* For Korean text, we encode all of KS X 1001 except hanja, plus 4000-odd extra 
+   hangul from Unicode 1.1.  This involves encoding ranges from CP949 with the
+   following characteristics:
+   
+      Byte 1: 0x81..0xc8
+      Byte 2: 0x41..0x5a, 0x61..0x7a, 0x81..0xfe
+
+   This is a total of 12,816 codepoints, although only 7642 of these are actually
+   encoded.  The encoding is as follows:
+
+      8141-9ffe: remap onto 8101-9685
+      a1a1-c8fe: remap onto 9701-e6be
+      Remainder: translate/remap onto e701-e9a9 
+      CP932 equivalents: collisions mapped onto ea40-ea42
+*)
 let encode_hangul fail text =
   let b = Buffer.create 0 in
   Text.iter
@@ -189,54 +199,75 @@ let encode_hangul fail text =
           then 0x20
           else (fail ch; assert false)
       in
-      assert (hach >= 0 && hach <= 0xfdfe);
       if hach < 0x80 then
         Buffer.add_char b (char_of_int hach)
-      else 
-        match hach with
-        (* Special cases: 
-            1. Characters we want to encode directly as their CP932 equivalents;
-            2. Characters this would collide with, which we encode in the place of other, non-existent characters *)
-          | 0xa1b8 -> Buffer.add_string b "\x81\x75" | 0xa1d6 -> Buffer.add_string b "\xef\xfa"
-          | 0xa1ba -> Buffer.add_string b "\x81\x77" | 0xa1d8 -> Buffer.add_string b "\xef\xfb"
-          | 0xa3a8 -> Buffer.add_string b "\x81\x69" | 0xa1ca -> Buffer.add_string b "\xef\xfc"
-
+      else match hach with
+        (* Special cases: characters to be encoded directly, and characters this would collide with. *)
+         | 0xa1b8 -> Buffer.add_string b "\x81\x75" | 0x81c1 -> Buffer.add_string b "\xea\x40"
+         | 0xa1ba -> Buffer.add_string b "\x81\x77" | 0x81c3 -> Buffer.add_string b "\xea\x41"
+         | 0xa3a8 -> Buffer.add_string b "\x81\x69" | 0x81b5 -> Buffer.add_string b "\xea\x42"
         (* General case *)
-          | _ -> let c1 = hach lsr 8 land 0xff - 0x80
-                 and c2 = hach land 0xff - 0x80 in
-                 let c1 = (c1 + 1) lsr 1 + if c1 < 0x5f then 0x70 else 0xb0
-                 and c2 = c2 + if c1 mod 2 = 0 then 0x7e else if c2 > 0x5f then 0x20 else 0x1f in
-                 Buffer.add_char b (char_of_int c1);
-                 Buffer.add_char b (char_of_int c2))
+         | _ -> let c1 = hach lsr 8 land 0xff
+                and c2 = hach land 0xff in
+                let c1, c2 =
+                  if c1 <= 0x9f then
+                    let c1 = c1 - 0x81
+                    and c2 = c2 - if c2 < 0x5b then 0x41 else if c2 < 0x7b then 0x47 else 0x4d in
+                    let idx = c1 * 177 + c2 in
+                    0x81 + idx / 255, 0x01 + idx mod 255
+                  else if c1 >= 0xa1 && c2 >= 0xa1 then
+                    let c1 = c1 - 0xa1 and c2 = c2 - 0xa1 in 
+                    let idx = c1 * 94 + c2 in
+                    let c1 = 0x97 + idx / 255 in
+                    (if c1 > 0x9f then c1 + 0x41 else c1), 0x01 + idx mod 255
+                  else
+                    try 
+                      let idx = IMap.find hach Cp949.transform.encode in
+                      0xe7 + idx / 255, 0x01 + idx mod 255
+                    with Not_found ->
+                      if !force_encode
+                      then 0x97, 0xdb (* encoded full-width question mark *)
+                      else (fail ch; assert false)
+                in
+                bprintf b "%c%c" (char_of_int c1) (char_of_int c2))
     text;
   Buffer.contents b
-
+  
 let decode_hangul text =
   let b = Buf.create 0 in
   let rec getc idx =
     if idx = String.length text then
       Buf.contents b
     else
-      let c = text.[idx] in
+      let c = String.unsafe_get text idx in
       match c with
-        | '\x81'..'\x9f' | '\xe0'..'\xef' | '\xf0'..'\xfc' when idx + 1 < String.length text
-            -> let a1 = int_of_char c and a2 = int_of_char text.[idx + 1] in
+        | '\x81'..'\x9f' | '\xe0'..'\xfc' when idx + 1 < String.length text
+            -> let a1 = int_of_char c and a2 = int_of_char (String.unsafe_get text (idx + 1)) in
                let c1, c2 =
                  match (a1 lsl 8) lor a2 with
-                   | 0x8175 -> 0x21, 0x38
-    	           | 0x8177 -> 0x21, 0x3a
-    	           | 0x8169 -> 0x23, 0x28
-    	           | 0xeffa -> 0x21, 0x56
-    	           | 0xeffb -> 0x21, 0x58
-    	           | 0xeffc -> 0x21, 0x4a
-                   | _ -> let c1 = ((if a1 < 0xe0 then a1 - 0x71 else a1 - 0xb1) lsl 1) + 1 
-                          and c2 = if a2 > 0x7f then a2 - 1 else a2 in
-                          if c2 >= 0x9e
-                          then c1 + 1, c2 - 0x7d
-                          else c1, c2 - 0x1f
+                   | 0x8175 -> 0xa1, 0xb8
+                   | 0x8177 -> 0xa1, 0xba
+                   | 0x8169 -> 0xa3, 0xa8
+                   | 0xea40 -> 0x81, 0xc1
+                   | 0xea41 -> 0x81, 0xc3
+                   | 0xea42 -> 0x81, 0xb5
+                   | _ -> if a1 <= 0x96 then
+                            let idx = (a1 - 0x81) * 255 + a2 - 1 in
+                            let a2 = idx mod 177 in
+                            0x81 + idx / 177, a2 + if a2 < 0x1a then 0x41 else if a2 < 0x34 then 0x47 else 0x4d
+                          else if a1 <= 0xe6 then
+                            let idx = (a1 - if a1 <= 0x9f then 0x97 else 0xd8) * 255 + a2 - 1 in
+                            0xa1 + idx / 94, 0xa1 + idx mod 94
+                          else
+                            let idx = (a1 - 0xe7) * 255 + a2 - 1 in
+                            try
+                              let ench = IMap.find idx Cp949.transform.decode in
+                              ench lsr 8, ench land 0xff
+                            with Not_found ->
+                              ksprintf failwith "decode_hangul: could not decode %02x%02x" a1 a2
                in
                begin try
-                 Buf.add_int b Cp949.map.db_to_uni.(c1 - 0x21).(c2 - 0x21);
+                 Buf.add_int b Cp949.map.db_to_uni.(c1 - 0x81).(c2 - 0x41);
                  getc (idx + 2)
                with Invalid_argument "index out of bounds" ->
                  ksprintf failwith "decode_hangul: could not decode %02x%02x (-> %02x%02x)" a1 a2 c1 c2
@@ -244,8 +275,7 @@ let decode_hangul text =
         | '\x00'..'\x7f' -> Buf.add_char b c; getc (idx + 1)
         | _ -> ksprintf failwith "decode_hangul: malformed string (code 0x%02x)" (int_of_char c)
   in
-  getc 0
-
+  getc 0  
 
 (* Output transformations *)
 let outenc = ref `None

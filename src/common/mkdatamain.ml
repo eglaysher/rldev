@@ -27,7 +27,7 @@ let oc = open_out_bin (Filename.concat Sys.argv.(1) "cp936.dat") in
 Marshal.to_channel oc tables [];
 close_out oc;
 
-let tables = Cp949_in.db_to_uni, Cp949_in.uni_to_db in
+let tables = Cp949_in.db_to_uni, Cp949_in.uni_to_db, Cp949_in.map_encode, Cp949_in.map_decode in
 let oc = open_out_bin (Filename.concat Sys.argv.(1) "cp949.dat") in
 Marshal.to_channel oc tables [];
 close_out oc;

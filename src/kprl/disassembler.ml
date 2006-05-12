@@ -542,12 +542,12 @@ and get_string ?(in_ruby = false) sep_str lexbuf =
       | '\\' -> Buffer.add_string b "\\\\"; quot lexbuf
       | '\'' -> Buffer.add_string b (if sep_str then "\'" else "\\'"); quot lexbuf
       | '\"' -> unquot lexbuf
-      | (sjs1 sjs2)+ | _ -> Buffer.add_string b (latin1_lexeme lexbuf); quot lexbuf
+      | (sjs1 _)+ | _ -> Buffer.add_string b (latin1_lexeme lexbuf); quot lexbuf
   and unquot =
     lexer
       | eof -> Buffer.contents b
       | '\"' -> quot lexbuf
-      | (sjs1 sjs2 | ['A'-'Z' '0'-'9' '?' '_'])+ -> Buffer.add_string b (latin1_lexeme lexbuf); unquot lexbuf
+      | (sjs1 _ | ['A'-'Z' '0'-'9' '?' '_'])+ -> Buffer.add_string b (latin1_lexeme lexbuf); unquot lexbuf
       | "###PRINT"
           -> expect lexbuf '(' "get_string.print";
              let e = get_expression lexbuf in
@@ -650,7 +650,7 @@ let read_textout cmd lexbuf =
       | "//" -> Buffer.add_string b (if options.separate_strings then "\\//" else "//"); quot lexbuf
       | "{-" -> Buffer.add_string b (if options.separate_strings then "{\\-" else "{-"); quot lexbuf
       | '\"'  -> unquot lexbuf
-      | sjs1 sjs2 | _ -> Buffer.add_string b (latin1_lexeme lexbuf); quot lexbuf
+      | sjs1 _ | _ -> Buffer.add_string b (latin1_lexeme lexbuf); quot lexbuf
   and unquot =
     lexer
       (* Special characters *)

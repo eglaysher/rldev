@@ -70,14 +70,19 @@ A number of people have been of great help to me in my efforts to understand and
 document the \reallive\ system: Jagarl, on whose \opus{scn2kdump} utility, now 
 developed into \opus{xclannad}, I built much of my work; roxfan, whose 
 additional reverse-engineering work has revealed the details of the DLL plugin 
-system and many other built-in functions and functionality; Ed Keyes of insani, 
-who tested an earlier version to its limits with \opus{Planetarian}, also generously 
-giving permission for me to incorporate his \file{g00} compression code into 
-\converter; Soulfang, my first user, who spurred me to develop the program into
-something more than a toy; and, not least, the careless programmers of \reallive\ 
-games themselves, whose consistent and inexplicable failure to remove vast 
-quantities of debugging code from their software on release has been 
-\emph{extremely} enlightening.
+system and many other built-in functions and functionality; and, not least, the 
+careless programmers of \reallive\ games themselves, whose consistent and 
+inexplicable failure to remove vast quantities of debugging code from their 
+software on release has been \emph{extremely} enlightening.
+
+My thanks are also due to those users who have contributed in various ways to 
+\package's development: Ed Keyes of insani, who tested an earlier version to its 
+limits with \opus{Planetarian}, also generously giving permission for me to 
+incorporate his \file{g00} compression code into \converter; 258-shi, whose 
+introduction of \package\ to a large userbase uncovered numerous bugs; MetaFX, 
+who helped develop the Chinese support, and Arte, who helped with Korean 
+support; and Soulfang, my first user, without whose request the program might 
+never have become anything more than a toy.
 
 \ifhevea
   \@print{<H1 CLASS="chapter">}\aname{pref}{Preface}\@print{</H1>}

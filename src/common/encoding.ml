@@ -21,6 +21,10 @@ type unicode_mapping =
   { mutable db_to_uni : int array array;
     mutable uni_to_db : int IMap.t; }
 
+type generic_mapping =
+  { mutable encode : int IMap.t;
+    mutable decode : int IMap.t; }
+
 let enc_type =
   function
     | "SHIFTJIS" | "SHIFT_JIS" | "SHIFT-JIS" | "SJS" | "SJIS" | "CP932" -> `Sjs

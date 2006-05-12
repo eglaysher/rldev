@@ -750,8 +750,11 @@ programming tasks.
       the GB2312 character set (roughly the same encoding as the Key Fans Club's 
       \opus{Clannad} translation, but with a few subtle differences).
     \item[Korean]
-      For Korean text. The output uses a non-standard encoding of the KS~X~1001
-      character set.
+      For Korean text. The output uses a non-standard encoding and character set.
+      The characters encoded comprise the non-hanja parts of KS~X~1001, plus the
+      4000-odd additional precomposed hangul from the ill-fated Unicode 1.1: this 
+      appears to be the simplest practical compromise for encoding modern Korean
+      text, though the encoding could potentially be expanded further if necessary.
     \item[Western]
       For Western European text. The output uses a non-standard encoding of
       the Windows CP1252 character set (ISO-8859-1 with extensions).

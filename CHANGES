@@ -12,7 +12,9 @@
 
   Fix build system for portability (it now works in Darwin and Solaris)
 
-  Add support for rlBabel-encoded default names.  Fix Korean support.
+  Add support for rlBabel-encoded default names.
+  
+  Modify Korean support, replacing the hanja with more hangul.
 
 VACONV:
 
