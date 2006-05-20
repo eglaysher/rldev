@@ -538,8 +538,8 @@ and get_string ?(in_ruby = false) sep_str lexbuf =
   let rec quot =
     lexer
       | eof -> raise End_of_file
-      | "\\\"" -> Buffer.add_char b '\"'; quot lexbuf
-      | '\\' -> Buffer.add_string b "\\\\"; quot lexbuf
+      | "\\\"" -> Buffer.add_char b '\"'; quot lexbuf (* FIXME: I think this is not actually true. *)
+      | '\\' -> Buffer.add_string b "\\\\"; quot lexbuf (* FIXME: Not sure about this one. *)
       | '\'' -> Buffer.add_string b (if sep_str then "\'" else "\\'"); quot lexbuf
       | '\"' -> unquot lexbuf
       | (sjs1 _)+ | _ -> Buffer.add_string b (latin1_lexeme lexbuf); quot lexbuf
@@ -791,7 +791,6 @@ let read_select =
           has_conds := true;
           expect lexbuf '(' "read_select.get_cond";
           let b = Buffer.create 0 in
-          let needdelim = ref false in
           let rec loop () =
             if peek_isn't (Char.code ')') lexbuf then
               let cond =
@@ -817,10 +816,7 @@ let read_select =
                   sprintf "(%s)" (get_expression lexbuf)
                 else ""
               in
-              if Buffer.length b > 0 then (
-                needdelim := true;
-                Buffer.add_string b "; "
-              );
+              if Buffer.length b > 0 then Buffer.add_string b "; ";
               Buffer.add_string b func;
               Buffer.add_string b arg;
               Buffer.add_string b cond;
@@ -828,11 +824,9 @@ let read_select =
           in
           loop ();
           expect lexbuf ')' "read_select.get_cond";
-          (*if !needdelim 
-          then sprintf "[%s]: " (Buffer.contents b)
-          else*) sprintf "%s: " (Buffer.contents b)
+          sprintf "%s: " (Buffer.contents b)
         in
-        (* Allow for blank options ^^; *)
+        (* Allow for blank options *)
         let cond =            
           if peek_is (Char.code '(') lexbuf
           then get_cond lexbuf

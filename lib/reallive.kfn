@@ -249,7 +249,7 @@ module 004 = Sys // System functions
     fun GetCursorPos2         <1:Sys:00138, 0> (int 'X', int 'Y')
   end
 
-  fun                         <1:Sys:00151, 0> (<int, intC) // UNDOCUMENTED; intC is probably intC+
+  fun                         <1:Sys:00151, 0> (<int, intC+) // UNDOCUMENTED; intC is probably intC+
 
   fun KeyMouseOn              <1:Sys:00200, 0> ()
   fun KeyMouseOff             <1:Sys:00201, 0> ()
@@ -295,7 +295,7 @@ module 004 = Sys // System functions
   fun __dwm SetWakuMod        <1:Sys:00415, 0> ('window', ='0')    // UNDOCUMENTED
   fun __ewm SetWakuMod        <1:Sys:00416, 0> ('window', ='1')    // UNDOCUMENTED
 
-  fun GetWindowAttr2          <1:Sys:00420, 0> (int 'r', int 'g', int 'b', int 'alpha', int '?') // UNDOCUMENTED, buggy - final param is always interpreted as in intA[]!
+  fun GetWindowAttr2          <1:Sys:00420, 0> (int 'r', int 'g', int 'b', int 'alpha', int '?') // UNDOCUMENTED, buggy - [in some versions?] final param is always interpreted as in intA[]!
   fun SetWindowAttr2          <1:Sys:00421, 0> ('r', 'g', 'b', 'alpha', 'filter') // UNDOCUMENTED
 
   fun GetWindowModAttr        <1:Sys:00422, 0> ('window', int 'r', int 'g', int 'b', int 'alpha', int 'filter') // UNDOCUMENTED
@@ -372,6 +372,7 @@ module 004 = Sys // System functions
   ver > 1.2.3.5 // not sure exactly when, but present in 1.2.6.4 IIRC
     fun index_series  (store) <1:Sys:00800, 0> (<'index', <'offset', <'init', special(0:{'val'}, 1:{'start', 'end', 'endval'}, 2:{'start', 'end', 'endval', 'mode'})+)
   end
+  fun                         <1:Sys:00801, 0> (<intC, <intC, <intC, special(2:{intC, intC, intC, intC})+) // UNDOCUMENTED, present in 1.4.0.1.  (store).
 
   fun rnd             (store) <1:Sys:01000, 1> ('max') ('min', 'max')
   fun pcnt            (store) <1:Sys:01001, 0> ('n', 'd')
