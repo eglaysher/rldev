@@ -40,6 +40,11 @@
     version.
     Added support for G00 compression.
     Tweaked MaxMatch again for CInfoArc and CInfoRealLive.
+    
+  2006-5-21:
+  	Adjusted data pool handling to increase efficiency (use exponential
+  	reallocation when necessary, instead of reallocating on every write).
+  	Define TESTED_BUT_SLOW to get the old behaviour.
 */
 
 /***********************************************************
@@ -115,8 +120,6 @@
 ** SUCH DAMAGE.
 **
 */
-
-#include <string.h>
 
 namespace AVG32Comp {
 
@@ -259,7 +262,8 @@ template <class CInfo> class LZComp {
 		dust_top = window_datalen;
 	}
 private:
-	int data_pool_length;
+	size_t data_pool_capacity;
+	size_t data_pool_length;
 	int data_pool_top;
 	char* data_pool;
 	int deflate_pos;
@@ -308,8 +312,9 @@ public:
 			window[info.WindowSize()+i] = info.Rand()>>5;
 		dust_top = 0;
 		/* data pool の初期化 */
-		data_pool = new char[1];
+		data_pool = new char[128];
 		data_pool_length = 0;
+		data_pool_capacity = 128;
 		data_pool_top = 0;
 		is_data_pool_end = 1;
 	}
@@ -323,6 +328,22 @@ public:
 
 template<class CInfo> void LZComp<CInfo>::WriteData(const char* new_data, int new_data_length) {
 	if (new_data_length <= 0) return;
+#ifndef TESTED_BUT_SLOW
+	if (data_pool_top + data_pool_length + new_data_length > data_pool_capacity) {
+		data_pool_capacity += std::max(data_pool_length + new_data_length, data_pool_capacity * 2);
+		char* new_data_pool = new char[data_pool_capacity];
+		memcpy(new_data_pool, data_pool+data_pool_top, data_pool_length);
+		memcpy(new_data_pool+data_pool_length, new_data, new_data_length);
+		delete[] data_pool;
+		data_pool = new_data_pool;
+		data_pool_length += new_data_length;
+		data_pool_top = 0;
+	}
+	else {
+		memcpy(data_pool+data_pool_top+data_pool_length, new_data, new_data_length);
+		data_pool_length += new_data_length;
+	}
+#else
 	char* new_data_pool = new char[data_pool_length + new_data_length];
 	memcpy(new_data_pool, data_pool+data_pool_top, data_pool_length);
 	memcpy(new_data_pool+data_pool_length, new_data, new_data_length);
@@ -330,6 +351,7 @@ template<class CInfo> void LZComp<CInfo>::WriteData(const char* new_data, int ne
 	data_pool = new_data_pool;
 	data_pool_length += new_data_length;
 	data_pool_top = 0;
+#endif
 	if (is_data_pool_end == 1 && data_pool_length > info.MinMatch()*info.DataSize()) {
 		/* ハッシュを初期化し、最初のデータをしらべておく */
 		is_data_pool_end = 0;
