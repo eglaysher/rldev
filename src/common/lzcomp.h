@@ -121,7 +121,11 @@
 **
 */
 
+#include <string.h>
+
 namespace AVG32Comp {
+	
+template <typename T> inline T max(const T& a, const T& b) { return a > b ? a : b; }
 
 const int NIL=-1;
 /*************************
@@ -262,8 +266,8 @@ template <class CInfo> class LZComp {
 		dust_top = window_datalen;
 	}
 private:
-	size_t data_pool_capacity;
-	size_t data_pool_length;
+	long data_pool_capacity;
+	long data_pool_length;
 	int data_pool_top;
 	char* data_pool;
 	int deflate_pos;
@@ -330,7 +334,7 @@ template<class CInfo> void LZComp<CInfo>::WriteData(const char* new_data, int ne
 	if (new_data_length <= 0) return;
 #ifndef TESTED_BUT_SLOW
 	if (data_pool_top + data_pool_length + new_data_length > data_pool_capacity) {
-		data_pool_capacity += std::max(data_pool_length + new_data_length, data_pool_capacity * 2);
+		data_pool_capacity += max(data_pool_length + new_data_length, data_pool_capacity * 2);
 		char* new_data_pool = new char[data_pool_capacity];
 		memcpy(new_data_pool, data_pool+data_pool_top, data_pool_length);
 		memcpy(new_data_pool+data_pool_length, new_data, new_data_length);

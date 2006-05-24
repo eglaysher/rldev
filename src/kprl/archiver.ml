@@ -44,7 +44,7 @@ let is_archive arr =
       | _, 0 -> test_idx (i + 1)
       | offset, len -> if offset + len > 80000 && offset + len <= dim arr && is_bytecode arr offset
                        then test_idx (i + 1)
-                       else false in
+                       else (*(Printf.eprintf "Archive test failed: %04d\n%!" i; false)*)false in
   dim arr >= 80000 && test_idx 0
 
 
