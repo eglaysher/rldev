@@ -30,48 +30,35 @@ type parameter =
   | `Literal of string ]
 
 
-let rec parameters_to_string buffer =
+let rec parameters_to_string buffer prev =
   function
     | [] -> ()
-    | p :: ps -> parameter_to_string buffer p; parameters_to_string buffer ps
+    | p :: ps -> parameter_to_string buffer prev p; parameters_to_string buffer (Some p) ps
 
-and parameter_to_string buffer =
+and parameter_to_string buffer prev =
   function
     | `String s
     | `Unknown s -> Buffer.add_string buffer s
-    | `List l -> Buffer.add_char buffer '('; parameters_to_string buffer l; Buffer.add_char buffer ')'
+    | `List l -> Buffer.add_char buffer '('; parameters_to_string buffer None l; Buffer.add_char buffer ')'
     | `Special (c, f, l) 
      -> bprintf buffer "a%c" c; 
         if List.mem KfnTypes.NoParens f 
-        then parameters_to_string buffer l
-        else parameter_to_string buffer (`List l)
+        then parameters_to_string buffer None l
+        else parameter_to_string buffer None (`List l)
     | `Integer s
      -> (* Precede unary operators with commas, if necessary. *)
         if s.[0] = '\\' then
-          if Buffer.length buffer > 0 then
-           (let prev = Buffer.nth buffer (Buffer.length buffer - 1)
-            and prev2 =
-              if Buffer.length buffer >= 2
-              then Buffer.nth buffer (Buffer.length buffer - 2)
-              else '\000'
-            in
-            match prev, prev2 with
-              | ('\x81'..'\x9f' | '\xe0'..'\xef' | '\xf0'..'\xfc'), ('\x40'..'\x7e' | '\x80'..'\xfc')
-              | ('A'..'Z' | '0'..'9' | '?' | '_' | '\"' | '('), _ -> ()
-              | _ -> Buffer.add_char buffer ',');
+          (match prev with
+            | None | Some (`List _ | `Literal _) -> ()
+            | Some (`Special (_, f, _)) when not (List.mem KfnTypes.NoParens f) -> ()
+            | _ -> Buffer.add_char buffer ',');
         Buffer.add_string buffer s
     | `Literal s
      -> (* Precede string literals with commas, if necessary. *)
         if Buffer.length buffer > 0 then
-         (let prev = Buffer.nth buffer (Buffer.length buffer - 1)
-          and prev2 =
-            if Buffer.length buffer >= 2
-            then Buffer.nth buffer (Buffer.length buffer - 2)
-            else '\000'
-          in
-          match prev, prev2 with
-            | ('\x81'..'\x9f' | '\xe0'..'\xef' | '\xf0'..'\xfc'), ('\x40'..'\x7e' | '\x80'..'\xfc')
-            | ('A'..'Z' | '0'..'9' | '?' | '_' | '\"'), _ -> Buffer.add_char buffer ','
+          (match prev with
+            | Some (`Literal _) -> Buffer.add_char buffer ','
+            | Some (`Special (_, f, _)) when List.mem KfnTypes.NoParens f -> Buffer.add_char buffer ','
             | _ -> ());
         Buffer.add_string buffer (if s = "" then "\"\"" else s)
 
@@ -185,7 +172,7 @@ let compile_function loc ?overload ?returnval func parameters =
   Buffer.add_string b (Codegen.code_of_opcode func.op_type func.op_module func.op_code argc' overload');
   if parameters' <> [] then (
     Buffer.add_string b "(";
-    parameters_to_string b parameters';
+    parameters_to_string b None parameters';
     Buffer.add_string b ")"
   );
   Buffer.contents b, if append = "" then None else Some append

@@ -1310,8 +1310,8 @@ module 040 = Bgr // Backgrounds
                                                (strC 'filename', '#SEL') // doesn't affect any DCs, clears stack
                                                (strC 'filename', '#SEL', intC, intC) // all very strange
 
-  fun bgrMulti                <1:Bgr:00100, 1> (<strC 'filename', special(0: copy('?'), 2: copy(strC, '?'), 4: copy(strC, '?', '?'))+) // unknown if this is correct
-                                               (<strC 'filename', <'effect', special(0: copy('?'), 2: copy(strC, '?'), 4: copy(strC, '?', '?'))+)
+  fun bgrMulti                <1:Bgr:00100, 1> (<strC 'filename', special(0: copy(strC), 2: copy(strC, '?'), 4: copy(strC, '?', '?'))+) // unknown if this is correct
+                                               (<strC 'filename', <'effect', special(0: copy(strC), 2: copy(strC, '?'), 4: copy(strC, '?', '?'))+)
 
 
 module 060 //Obj?

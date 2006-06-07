@@ -64,12 +64,16 @@ definition:
 special:
   | SHAKE DOTINT Eq ranges
       { set (sprintf "%s.%03d" $1 $2) $4 }
-  | DSTRACK Eq INT Hy INT Hy INT Eq STRING Eq STRING
+  | DSTRACK Eq inthy inthy INT Eq STRING Eq STRING
       { (* ignore for now *) }
-  | CDTRACK Eq INT Co INT Co INT Co INT Hy INT Co INT Co INT Co INT Hy INT Co INT Co INT Co INT Eq STRING
+  | CDTRACK Eq INT Co INT Co INT Co inthy INT Co INT Co INT Co inthy INT Co INT Co INT Co INT Eq STRING
       { (* ignore for now *) }
   | NAMAE Eq STRING Eq STRING Eq Lp INT Cm INT Cm INT Rp
       { (* ignore for now *) }
+
+inthy:
+  | INT {}
+  | INT Hy {}
 
 ranges: /* empty */    { [] }
   | range ranges       { `Range $1 :: $2 }
