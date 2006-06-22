@@ -8,7 +8,7 @@
                                    CHANGELOG
 -------------------------------------------------------------------------------
 
--- 1.40 - unreleased --
+-- 1.40 - 2006.6.22 --
 
   Fix build system for portability (it now works in Darwin and Solaris).
   Add support for rlBabel-encoded default names.  
@@ -22,7 +22,7 @@ RLC:
 
   Fix a potential issue with compilation of unary operations in function
  parameters.
-  Fix a bug in the parsing of #DSTRACK declarations in gameexe.ini.
+  Fix various parsing errors in gameexe.ini.
 
 
 -- 1.39 - 2006-5-1 --
