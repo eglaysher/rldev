@@ -9,6 +9,7 @@
 \newif\ifhevea\heveafalse
 \usepackage{mdwlist,multicol}
 \usepackage[british]{babel}
+\usepackage{fourier,courier}
 %END LATEX
 %HEVEA \usepackage{color}
 %HEVEA \input{urlhref.hva}

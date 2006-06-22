@@ -1071,17 +1071,22 @@ these functions much, so this documentation is probably even less reliable.
 
   \begin{itemize}
   \item @def/hide/
+  
     The option is not presented at all, although a return value is still allocated
     for it.  This is probably only meaningful with conditions.
-  \item @dev/blank/
+  \item @def/blank/
+  
     A blank, non-selectable line is presented in place of the option.
   \item @def/colour(<colour>)/
+  
     Displays the option in the given colour, which is an index to @iref{COLOR_TABLE}
     in \gameexe.
   \item @def/title([colour])/
+  
     Disables the option. If <colour> is specified, it has the same effect as the
     \texttt{colour} function as well.
   \item @def/cursor(<index>)/
+  
     Displays an icon next to the option when it is highlighted.  The icon chosen
     is defined by @iref{CURSOR}.<index> in \gameexe.
   \end{itemize}
@@ -4820,8 +4825,8 @@ effort to comply with the terms of the LGPL.
   \package.
 
   Note that map files are not necessary for the 1.2.3.5 interpreter supplied 
-  with \cite{Clannad} or for the 1.2.6.8 interpreter supplied with 
-  \cite{Kanon}, as the mappings for these two versions are built into the DLL.
+  with \opus{Clannad} or for the 1.2.6.8 interpreter supplied with 
+  \opus{Kanon}, as the mappings for these two versions are built into the DLL.
 
   \lsubsection{Configuring fonts and international names}
   
