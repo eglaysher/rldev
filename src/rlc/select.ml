@@ -54,7 +54,7 @@ let handle_parameter insert_pos s l e =
                       Text.iter (fun c -> if not (StrTokens.unquoted_char c) then raise Exit) s
                     with Exit -> quote ());
                    (try
-                      Buffer.add_string b (Text.to_sjs s)
+                      Buffer.add_string b (TextTransforms.to_bytecode s)
                     with Text.Bad_char c ->
                       ksprintf (error l) "cannot represent U+%04x in RealLive bytecode" c)
              (* Invalid codes *)
@@ -64,7 +64,7 @@ let handle_parameter insert_pos s l e =
               | `Add (l, _) -> invalid l "a"
               | `Delete l -> invalid l "d"
               | `Rewrite (l, _) -> invalid l "f"
-              | `Code (l, t, _, _) when not (StrTokens.is_output_code t) -> invalid l (Text.to_sjs t)
+              | `Code (l, t, _, _) when not (StrTokens.is_output_code t) -> invalid l (Text.to_err t)
              (* Special treatment *)
               | `Name (l, lg, i, w)
                  -> let lg = if lg = `Local then "\x81\x93" else "\x81\x96" in

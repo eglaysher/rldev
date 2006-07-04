@@ -17,6 +17,7 @@
    Place - Suite 330, Boston, MA  02111-1307, USA.
 *)
 
+module OString = String
 open ExtString
 open Printf
 open Encoding
@@ -239,10 +240,10 @@ let decode_hangul text =
     if idx = String.length text then
       Buf.contents b
     else
-      let c = String.unsafe_get text idx in
+      let c = OString.unsafe_get text idx in
       match c with
         | '\x81'..'\x9f' | '\xe0'..'\xfc' when idx + 1 < String.length text
-            -> let a1 = int_of_char c and a2 = int_of_char (String.unsafe_get text (idx + 1)) in
+            -> let a1 = int_of_char c and a2 = int_of_char (OString.unsafe_get text (idx + 1)) in
                let c1, c2 =
                  match (a1 lsl 8) lor a2 with
                    | 0x8175 -> 0xa1, 0xb8

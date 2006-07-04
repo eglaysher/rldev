@@ -8,6 +8,15 @@
                                    CHANGELOG
 -------------------------------------------------------------------------------
 
+-- [next release] --
+
+  Add support for Traditional Chinese (CP950).
+
+RLC:
+
+  Encode selections properly when using Chinese or Korean text.
+  
+
 -- 1.40 - 2006.6.22 --
 
   Fix build system for portability (it now works in Darwin and Solaris).
