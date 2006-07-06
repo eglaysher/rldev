@@ -12,12 +12,13 @@ OCAML_LIBRARY_DIR = $(shell $(OCAMLC) -where)
 GetPP(file) =
   PP =
   awk($(file))
-  case $"^[(][*]\(syntax|ppopt\) \(.*\)[*][)]"
+  case $"^[(][*]\(pp\) \(.*\)[*][)]"
     if $(OCAMLFIND)
-      PP += $(mapprefix -$1,$2)
+      PP = -syntax camlp4o $(mapprefix -ppopt,$2)
       export
     else
-      eprintln(Warning: ignoring syntax directive due to missing findlib. Build will probably fail.)
+      PP = -pp "camlp4o pa_ulex.cma $2"
+      export
     export
   value $(PP)
 

@@ -16,8 +16,7 @@
    this program; if not, write to the Free Software Foundation, Inc., 59 Temple
    Place - Suite 330, Boston, MA  02111-1307, USA.
 *)
-(*syntax camlp4o *)
-(*ppopt ./pa_matches.cmo *)
+(*pp ./pa_matches.cmo *)
 
 (* Order of evaluation of functions within an expression, and arguments within
    a function call, is undefined; it will normally be left-to-right, but this

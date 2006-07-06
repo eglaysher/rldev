@@ -19,8 +19,7 @@
    this program; if not, write to the Free Software Foundation, Inc., 59 Temple
    Place - Suite 330, Boston, MA  02111-1307, USA.
 *)
-(*syntax camlp4o *)
-(*ppopt ./pa_matches.cmo pa_macro.cmo *)
+(*pp ./pa_matches.cmo pa_macro.cmo *)
 
 open Printf
 open Ulexing
