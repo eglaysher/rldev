@@ -56,21 +56,22 @@
 #endif
 
 // DLL index... this won't apply to 1.2.3.5 etc, of course.
-#const rlBabelDLL = -1
-#if OldType
-  #set rlBabelDLL = 0
-#else
-  #for i = 0 .. 15:
+#ifndef rlBabelDLL
+  #const rlBabelDLL = -1
+  #if OldType
+    #set rlBabelDLL = 0
+  #else
+    #for i = 0 .. 15:
+      #if rlBabelDLL == -1
+        #if __equal_strings? (gameexe ('DLL.\i:3{i}', 0, ''), rlBabel)
+          #set rlBabelDLL = i
+        #endif
+      #endif;
     #if rlBabelDLL == -1
-      #if __equal_strings? (gameexe ('DLL.\i:3{i}', 0, ''), rlBabel)
-        #set rlBabelDLL = i
-      #endif
-    #endif;
-  #if rlBabelDLL == -1
-    #error 'load of ' + rlBabel + ' not found'
+      #error 'load of ' + rlBabel + ' not found'
+    #endif
   #endif
 #endif
-
 
 // Static variables
 
