@@ -245,20 +245,14 @@ let rec check_and_compile loc funname defs params =
                           | [], _ | _, [] -> false
                           | (dt, _) :: ds, l :: ls
                            -> let lt = type_of_normalised_expr l in
-(*let rv =*)
                               match dt, lt with
                                 | Any, (`Int | `Str)
                                 | (Int | IntC | IntV), `Int
                                 | (Str | StrC | StrV | ResStr), (`Str | `Literal) -> loop (ds, ls)
                                 | _ -> false
-(*in eprintf "  %s - %s : %s\n%!"
-(match dt with Any -> "any" | Int | IntC | IntV -> "int" | Str | StrC | StrV | ResStr -> "str" | _ -> "other")
-(match lt with `Int -> "int" | `Str -> "str" | _ -> "other")
-(if rv then "yes" else "no"); rv*)
                       in
                       loop (defparams, lparams)                        
                     in
-(*eprintf "%s:\n%!" funname;*)
                     match 
                       List.filter 
                         (function _, AsComplex d, _ -> lengths_and_types_match d | _ -> assert false) 

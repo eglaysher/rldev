@@ -26,7 +26,9 @@ open Bytecode
 
 (* Retrieve offset and length of a file within an archive, or the file itself *)
 let get_subfile_info archive idx =
-  get_int archive (idx * 8), get_int archive (idx * 8 + 4)
+  if Binarray.dim archive == 23
+  then 0, 0
+  else get_int archive (idx * 8), get_int archive (idx * 8 + 4)
 
 let get_subfile archive idx =
   match get_subfile_info archive idx with
@@ -38,14 +40,14 @@ let get_subfile archive idx =
    like in AVG32, so we have to test files by checking that their index table
    is sane. *)
 let is_archive arr =
-  if Binarray.read arr 0 23 = "\000Empty RealLive archive" then true else
+  if Binarray.read arr 0 23 = "\000Empty RealLive archive" then `Empty else
   let rec test_idx = function 10000 -> true | i ->
     match get_subfile_info arr i with
       | _, 0 -> test_idx (i + 1)
       | offset, len -> if offset + len > 80000 && offset + len <= dim arr && is_bytecode arr offset
                        then test_idx (i + 1)
-                       else (*(Printf.eprintf "Archive test failed: %04d\n%!" i; false)*)false in
-  dim arr >= 80000 && test_idx 0
+                       else false in
+  if dim arr >= 80000 && test_idx 0 then `Yes else `No
 
 
 (* Wrapper for actions on an existing archive *)
@@ -78,7 +80,7 @@ let process_archive require_list (process_fun : string -> Binarray.t -> ISet.t -
       failwith "no files to process"
     else
       let arc = read_input fname in
-      if is_archive arc then
+      if is_archive arc <> `No then
         process_fun fname arc to_process
       else
         ksprintf failwith "%s is not a valid RealLive archive" (Filename.basename fname)
@@ -99,7 +101,7 @@ let maybe_archive (action : string -> Binarray.t -> unit) =
     if not (Sys.file_exists first) then ksprintf sysError "file `%s' not found" first;
     let f = Unix.openfile first [Unix.O_RDONLY] 0o755 in
     let process =
-      if is_archive (map_file f false ~-1)
+      if is_archive (map_file f false ~-1) <> `No
       then process_read (fun i -> action (sprintf "SEEN%04d.TXT" i))
       else List.iter (fun s -> action s (read_input s))
     in
@@ -269,17 +271,19 @@ let add =
      -> let arc, existing =
           if Sys.file_exists fname then
             let a = read_input fname in
-            if not (is_archive a) then ksprintf failwith "%s is not a valid RealLive archive" (Filename.basename fname);
-            let rec loop cv acc =
-              if cv = 10000 then
-                acc
-              else
-                loop (cv + 1)
-                     (match get_subfile_info a cv with
-                        | 0, 0 -> acc
-                        | data -> IMap.add cv (`Keep data) acc)
-            in
-            a, loop 0 IMap.empty
+            match is_archive a with
+              | `No -> ksprintf failwith "%s is not a valid RealLive archive" (Filename.basename fname);
+              | `Empty -> Binarray.create 0, IMap.empty
+              | `Yes -> let rec loop cv acc =
+                          if cv = 10000 then
+                            acc
+                          else
+                            loop (cv + 1)
+                                 (match get_subfile_info a cv with
+                                    | 0, 0 -> acc
+                                    | data -> IMap.add cv (`Keep data) acc)
+                        in
+                        a, loop 0 IMap.empty
           else
             let oc = open_out_bin fname in
             output_string oc "\000Empty RealLive archive";

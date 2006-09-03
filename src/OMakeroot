@@ -2,6 +2,7 @@
 
 open build/C
 open build/OCaml
+DefineCommandVars()
 
 OCAML_LIBRARY_DIR = $(shell $(OCAMLC) -where)
 
