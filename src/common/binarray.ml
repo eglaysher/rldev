@@ -19,15 +19,18 @@
 (*pp pa_macro.cmo *)
 
 let buffer_size = 4_194_304
+  
+let broken = Sys.os_type = "Win32"
 
 type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 let create = Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout
 let blit = Bigarray.Array1.blit
 let sub = Bigarray.Array1.sub
-let map_file fd = Bigarray.Array1.map_file fd Bigarray.int8_unsigned Bigarray.c_layout
 let dim = Bigarray.Array1.dim
 let fill = Bigarray.Array1.fill
+
+let map_file fd = Bigarray.Array1.map_file fd Bigarray.int8_unsigned Bigarray.c_layout
 
 let copy arr =
   let rv = create (dim arr) in
@@ -76,7 +79,7 @@ let get_int arr ~idx =
 
 let read_input fname : t =
   if not (Sys.file_exists fname) then Printf.ksprintf failwith "file `%s' not found" fname;
-  IFDEF WIN32 THEN
+  if broken then
     let ic = open_in_bin fname in
     let rlen = in_channel_length ic in
     let rv = create rlen in
@@ -92,7 +95,7 @@ let read_input fname : t =
         loop (idx + read) (len - read)
     in
     loop 0 (in_channel_length ic)
-  ELSE
+  else
     let fdescr =
       try
         Unix.openfile fname [Unix.O_RDONLY] 0
@@ -104,12 +107,10 @@ let read_input fname : t =
     let rv = create (dim arr) in
     blit arr rv;
     rv
-  END
 
 let map_output fname len =
   try
     assert (len > 0);
-    IFDEF WIN32 THEN Hackery.force_access fname ELSE () END;
     let f = Unix.openfile fname [Unix.O_RDWR; Unix.O_CREAT; Unix.O_TRUNC] 0o755 in
     map_file f true len, f
   with

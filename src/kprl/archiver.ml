@@ -225,11 +225,13 @@ let read_and_compress fname =
   else
     Some arr
 
+let do_arg f x = try f x with Sys_error _ -> Gc.full_major (); f x (* work around mmap() issues on Win32 *)
+
 let rebuild_arc arc fname to_process =
   let rec tfn cv = let rv = sprintf "~temp%d.seen.tmp" cv in if Sys.file_exists rv then tfn (cv + 1) else rv in
   let tfn = tfn 0 in
-  Sys.rename fname tfn;
-  let oc = try open_out_bin fname with Sys_error _ -> Gc.full_major (); open_out_bin fname in (* work around mmap() issues on Win32 *)
+  do_arg (Sys.rename fname) tfn;
+  let oc = do_arg open_out_bin fname in
   try
     seek_out oc 80000;
     let processed, _ =
@@ -260,7 +262,6 @@ let rebuild_arc arc fname to_process =
          (try Sys.remove fname with _ -> ());
          (try Sys.rename tfn fname with _ -> sysWarning "handling exception in Archiver.rebuild_arc: cleanup failed, data may be corrupt");
          raise e
-
 
 let add =
   false,
@@ -339,7 +340,7 @@ let remove =
         sysInfo "No files to remove."
       else if not !any_remain then (
         sysWarning "all archive contents removed";
-        let oc = try open_out_bin fname with Sys_error _ -> Gc.full_major (); open_out_bin fname in (* work around mmap() issues on Win32 *)
+        let oc = do_arg open_out_bin fname in
         for i = 0 to 9999 do output_string oc "\000\000\000\000\000\000\000\000" done;
         close_out oc
       )

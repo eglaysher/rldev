@@ -2291,7 +2291,7 @@ functions operating on external masks.
 @fun/recOpen,grpOpen,recMaskOpen,grpMaskOpen/
 @def/recOpen(<filename>, <effect>, [opacity])/
 @and/recOpen(<filename>, <effect>, <x>, <y>, <width>, <height>, <dx>, <dy>, [opacity])/
-@and/recOpen(<filename>, <x>, <y>, <width>, <height>, <dx>, <dy>, <steps>, <style>, <direction>, <interpolation>, <density>, <speed>, <a>, <b>, <opacity>, <c>)/
+@and/recOpen(<filename>, <x>, <y>, <width>, <height>, <dx>, <dy>, <time>, <style>, <direction>, <interpolation>, <xsize>, <ysize>, <a>, <b>, <opacity>, <c>)/
 @and/recMaskOpen~{\ldots~}/
 @{
   These functions load and display a single bitmap.  <filename> is loaded into
@@ -2305,7 +2305,7 @@ functions operating on external masks.
 
   If the third form is used, rather than reading <effect> from
   @iref{SEL}.<effect>, the transition effect used is defined by the parameters
-  <steps>, <style>, <direction>, <interpolation>, <density>, <speed>, <a>, <b>, <opacity>,
+  <time>, <style>, <direction>, <interpolation>, <xsize>, <ysize>, <a>, <b>, <opacity>,
   and <c>. These have the same meanings as in the @iref{SEL} definitions.
 
   \lstinline|grpMaskOpen| and \lstinline|recMaskOpen| are the same as 
@@ -2316,7 +2316,7 @@ functions operating on external masks.
 @fun/recOpenBg,grpOpenBg/
 @def/recOpenBg(<filename>, <effect>, [opacity])/
 @and/recOpenBg(<filename>, <effect>, <x>, <y>, <width>, <height>, <dx>, <dy>, [opacity])/
-@and/recOpenBg(<filename>, <x>, <y>, <width>, <height>, <dx>, <dy>, <steps>, <style>, <direction>, <interpolation>, <density>, <speed>, <a>, <b>, <opacity>, <c>)/
+@and/recOpenBg(<filename>, <x>, <y>, <width>, <height>, <dx>, <dy>, <time>, <style>, <direction>, <interpolation>, <xsize>, <ysize>, <a>, <b>, <opacity>, <c>)/
 @{
   As @ref{recOpen}, but with two additional effects.
 
@@ -2356,7 +2356,7 @@ functions operating on external masks.
 @fun/recDisplay,grpDisplay/
 @def/recDisplay(<dc>, <effect>, [opacity])/
 @and/recDisplay(<dc>, <effect>, <x>, <y>, <width>, <height>, <dx>, <dy>, [opacity])/
-@and/recDisplay(<dc>, <x>, <y>, <width>, <height>, <dx>, <dy>, <steps>, <style>, <direction>, <interpolation>, <density>, <speed>, <a>, <b>, <opacity>, <c>)/
+@and/recDisplay(<dc>, <x>, <y>, <width>, <height>, <dx>, <dy>, <time>, <style>, <direction>, <interpolation>, <xsize>, <ysize>, <a>, <b>, <opacity>, <c>)/
 @{
   As @ref{recOpenBg}, but taking the source from the DC <dc> instead of from a file.
   The behaviour is otherwise identical to @ref{recOpenBg}.  In particular, the
@@ -2369,7 +2369,7 @@ functions operating on external masks.
 @fun/recMulti,grpMulti/
 @def/recMulti(<source>, <effect>, [opacity], <compositors>~{\ldots~})/
 @and/recMulti(<source>, <effect>, <x>, <y>, <width>, <height>, <dx>, <dy>, [opacity], <compositors>~{\ldots~})/
-@and/recMulti(<source>, <x>, <y>, <width>, <height>, <dx>, <dy>, <steps>, <style>, <direction>, <interpolation>, <density>, <speed>, <a>, <b>, <opacity>, <c>, <compositors>~{\ldots~})/
+@and/recMulti(<source>, <x>, <y>, <width>, <height>, <dx>, <dy>, <time>, <style>, <direction>, <interpolation>, <xsize>, <ysize>, <a>, <b>, <opacity>, <c>, <compositors>~{\ldots~})/
 @{
   Loads multiple bitmaps and composes them automatically before displaying them.
   <source> is loaded into DC 1, then the <compositors> are processed in order,
