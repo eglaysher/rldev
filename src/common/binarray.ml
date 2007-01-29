@@ -22,6 +22,9 @@ let buffer_size = 4_194_304
   
 let broken = Sys.os_type = "Win32"
 
+let no_mmap = ref false
+exception MMapFailure
+
 type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 let create = Bigarray.Array1.create Bigarray.int8_unsigned Bigarray.c_layout
@@ -30,7 +33,12 @@ let sub = Bigarray.Array1.sub
 let dim = Bigarray.Array1.dim
 let fill = Bigarray.Array1.fill
 
-let map_file fd = Bigarray.Array1.map_file fd Bigarray.int8_unsigned Bigarray.c_layout
+let map_file fd b len =
+  try
+    Bigarray.Array1.map_file fd Bigarray.int8_unsigned Bigarray.c_layout b len
+  with Sys_error "No such device" ->
+    no_mmap := true;
+    raise MMapFailure      
 
 let copy arr =
   let rv = create (dim arr) in
@@ -77,9 +85,9 @@ let get_i16 arr ~idx =
 let get_int arr ~idx =
   get_i16 arr ~idx + (arr.{idx + 2} lsl 16) + (arr.{idx + 3} lsl 24)
 
-let read_input fname : t =
+let rec read_input fname : t =
   if not (Sys.file_exists fname) then Printf.ksprintf failwith "file `%s' not found" fname;
-  if broken then
+  if broken || !no_mmap then
     let ic = open_in_bin fname in
     let rlen = in_channel_length ic in
     let rv = create rlen in
@@ -96,17 +104,19 @@ let read_input fname : t =
     in
     loop 0 (in_channel_length ic)
   else
-    let fdescr =
-      try
-        Unix.openfile fname [Unix.O_RDONLY] 0
-      with
-        Unix.Unix_error (e, _, _)
-         -> Printf.ksprintf failwith "cannot read file `%s': %s" fname (String.uncapitalize (Unix.error_message e))
-    in
-    let arr = map_file fdescr false ~-1 in
-    let rv = create (dim arr) in
-    blit arr rv;
-    rv
+    try
+      let fdescr =
+	try
+          Unix.openfile fname [Unix.O_RDONLY] 0
+	with Unix.Unix_error (e, _, _) ->
+          Printf.ksprintf failwith "cannot read file `%s': %s" fname (String.uncapitalize (Unix.error_message e))
+      in
+      let arr = map_file fdescr false ~-1 in
+      let rv = create (dim arr) in
+	blit arr rv;
+	rv
+    with MMapFailure ->
+      read_input fname
 
 let map_output fname len =
   try
@@ -116,15 +126,6 @@ let map_output fname len =
   with
     | Unix.Unix_error (e, _, _)
      -> Printf.ksprintf failwith "cannot write to file `%s': %s" fname (String.uncapitalize (Unix.error_message e))
-
-let write_file arr fname =
-  let oa, od = map_output fname (dim arr) in
-  try
-    blit arr oa;
-    Unix.close od
-  with
-    e -> Unix.close od;
-         raise e
 
 let output arr oc =
   let buffer = String.create (min (dim arr) buffer_size) in
@@ -139,3 +140,25 @@ let output arr oc =
       loop (idx + left) (len - left)
   in
   loop 0 (dim arr)
+
+let rec write_file arr fname =
+  if !no_mmap then
+    let oc = open_out_bin fname in
+      try
+	output arr oc;
+	close_out oc
+      with e ->
+	close_out_noerr oc;
+	raise e
+  else
+    try
+      let oa, od = map_output fname (dim arr) in 
+	try
+	  blit arr oa;
+	  Unix.close od
+	with e ->
+	  Unix.close od;
+          raise e
+    with 
+	MMapFailure -> write_file arr fname
+      | e -> raise e
