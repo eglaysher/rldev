@@ -39,15 +39,16 @@ let get_subfile archive idx =
 (* RealLive's SEEN.TXT doesn't have a convenient PACL identifier in its header
    like in AVG32, so we have to test files by checking that their index table
    is sane. *)
-let is_archive arr =
-  if Binarray.read arr 0 23 = "\000Empty RealLive archive" then `Empty else
+let is_archive fname =
+  let arr = read_input fname in
+  if Binarray.read arr 0 23 = "\000Empty RealLive archive" then `Yes (arr, `Empty) else
   let rec test_idx = function 10000 -> true | i ->
     match get_subfile_info arr i with
       | _, 0 -> test_idx (i + 1)
       | offset, len -> if offset + len > 80000 && offset + len <= dim arr && is_bytecode arr offset
                        then test_idx (i + 1)
                        else false in
-  if dim arr >= 80000 && test_idx 0 then `Yes else `No
+  if dim arr >= 80000 && test_idx 0 then `Yes (arr, `Populated) else `No
 
 
 (* Wrapper for actions on an existing archive *)
@@ -79,11 +80,9 @@ let process_archive require_list (process_fun : string -> Binarray.t -> ISet.t -
     then
       failwith "no files to process"
     else
-      let arc = read_input fname in
-      if is_archive arc <> `No then
-        process_fun fname arc to_process
-      else
-        ksprintf failwith "%s is not a valid RealLive archive" (Filename.basename fname)
+      match is_archive fname with
+	| `Yes (arc, _) -> process_fun fname arc to_process
+	| `No -> ksprintf failwith "%s is not a valid RealLive archive" (Filename.basename fname)
 
 
 (* Wrapper for actions reading an existing archive *)
@@ -99,14 +98,9 @@ let process_read (action : int -> Binarray.t -> unit) =
 let maybe_archive (action : string -> Binarray.t -> unit) =
   function [] -> assert false | (first :: _) as files ->
     if not (Sys.file_exists first) then ksprintf sysError "file `%s' not found" first;
-    let f = Unix.openfile first [Unix.O_RDONLY] 0o755 in
-    let process =
-      if is_archive (map_file f false ~-1) <> `No
-      then process_read (fun i -> action (sprintf "SEEN%04d.TXT" i))
-      else List.iter (fun s -> action s (read_input s))
-    in
-    Unix.close f;
-    process files
+    if is_archive first <> `No
+    then process_read (fun i -> action (sprintf "SEEN%04d.TXT" i)) files
+    else List.iter (fun s -> action s (read_input s)) files
 
 
 (* Actual processing functions *)
@@ -271,25 +265,25 @@ let add =
     | fname :: files
      -> let arc, existing =
           if Sys.file_exists fname then
-            let a = read_input fname in
-            match is_archive a with
+            match is_archive fname with
               | `No -> ksprintf failwith "%s is not a valid RealLive archive" (Filename.basename fname);
-              | `Empty -> Binarray.create 0, IMap.empty
-              | `Yes -> let rec loop cv acc =
-                          if cv = 10000 then
-                            acc
-                          else
-                            loop (cv + 1)
-                                 (match get_subfile_info a cv with
-                                    | 0, 0 -> acc
-                                    | data -> IMap.add cv (`Keep data) acc)
-                        in
-                        a, loop 0 IMap.empty
+              | `Yes (_, `Empty) -> Binarray.create 0, IMap.empty
+              | `Yes (a, `Populated) ->
+		  let rec loop cv acc =
+		    if cv = 10000 then
+                      acc
+                    else
+                      loop (cv + 1)
+                        (match get_subfile_info a cv with
+                           | 0, 0 -> acc
+                           | data -> IMap.add cv (`Keep data) acc)
+                  in
+                    a, loop 0 IMap.empty
           else
             let oc = open_out_bin fname in
-            output_string oc "\000Empty RealLive archive";
-            close_out oc;
-            Binarray.create 0, IMap.empty
+              output_string oc "\000Empty RealLive archive";
+              close_out oc;
+              Binarray.create 0, IMap.empty
         in
         let contents, do_process =
           List.fold_left
