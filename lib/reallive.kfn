@@ -1,61 +1,68 @@
 //
-//                   RealLive Function Definition File ver 1.40
+//            RealLive Function Definition File ver 1.41
 //
-//  Contents are copyright (c) 2006 Haeleth.  This file is part of RLdev, which
-//  is distributed under the GNU General Public License.  Please refer to the
-//  RLdev documentation for details.
+//  Contents are copyright (c) 2006 Haeleth.  This file is part of
+//  RLdev, which is distributed under the GNU General Public License.
+//  Please refer to the RLdev documentation for details.
 //
-//  This is a compiler data file.  It is not checked for sanity; you are not
-//  advised to edit it unless you are familiar with RLdev's internals.  Refer
-//  to common/kfn{Parser.mly,Lexer.mll} for the relevant code.  Note that the
-//  limited documentation which follows in this header is primarily for my
-//  reference, not yours, and may not be quite up to date.
+//  This is a compiler data file.  It is not checked for sanity; you
+//  are not advised to edit it unless you are familiar with RLdev's
+//  internals.  Refer to common/kfn{Parser.mly,Lexer.mll} for the
+//  relevant code.  Note that the limited documentation which follows
+//  in this header is primarily for my reference, not yours, and may
+//  not be quite up to date.
 //
 //  Invariants:
-//    - All overloads of a function have a distinct number of non-repeated
-//      parameters.  (Exceptions: strout/intout, __DebugMsgBox, etc., which are
-//      handled by cheating.)
-//    - All overloads of a function have the same number of complex or special
-//      parameters.
+//    - All overloads of a function have a distinct number of
+//      non-repeated parameters.  (Exceptions: strout/intout,
+//      __DebugMsgBox, etc., which are handled by cheating.)
+//    - All overloads of a function have the same number of complex or
+//      special parameters.
 //    - All complex and special parameters are repeated.
 //    - All overloads of a function have the same return type.
-//  Note that all these must hold for the program to function properly, but they
-//  are NOT all checked.
+//  Note that all these must hold for the program to function
+//  properly, but they are NOT all checked.
 //
-//  If no identifier is given, an op<> is generated, but parameter data are
-//  parsed; I've put these in where special parsing is needed for a function of
-//  unknown purpose.  If two identifiers are given, the first is used by rlc and
-//  the second by kprl.
+//  If no identifier is given, an op<> is generated, but parameter
+//  data are parsed; I've put these in where special parsing is needed
+//  for a function of unknown purpose.  If two identifiers are given,
+//  the first is used by rlc and the second by kprl.
 //
-//  UNDOCUMENTED is used in comments beside functions not currently explained in
-//  the manual.  NEEDS DOCUMENTING is used in comments beside functions that
-//  could be (but are not yet) documented.
+//  UNDOCUMENTED is used in comments beside functions not currently
+//  explained in the manual.  NEEDS DOCUMENTING is used in comments
+//  beside functions that could be (but are not yet) documented.
 //
-//  Where `///' appears in place of `fun', the function indicated is hardwired
-//  in the disassembler and assembler.
+//  Where `///' appears in place of `fun', the function indicated is
+//  hardwired in the disassembler and assembler.
 //
 //  > before a type indicates a return value.
 //  < indicates a parameter not counted in argc.
 //  ? indicates a parameter optional in this overload.
-//  = indicates a fake parameter, ignored by rlc; its tag is printed by kprl.
-//  # indicates a parameter in which #-codes are valid (TextObject flag)
+//  = indicates a fake parameter, ignored by rlc; its tag is printed
+//    by kprl.
+//  # indicates a parameter in which #-codes are valid (TextObject
+//    flag)
 //
-//  If no type is given, a tag must be: the parameter then defaults to intC.
+//  If no type is given, a tag must be: the parameter then defaults to
+//  intC.
 //
-//  + indicates a repeated parameter - it should be read repeatedly until
-//    argc runs out.
+//  + indicates a repeated parameter - it should be read repeatedly
+//    until argc runs out.
 //
-//  "Special" definitions are a bit^W^W just plain funky.  An thou wouldst know
-//  them, use thou the Source that the GPL hath given thee.  Be warned: there
-//  are a lot of warts in the implementation.  I still think it's probably
-//  better than hardwiring everything as a special case...
+//  "Special" definitions are a bit^W^W just plain funky.  An thou
+//  wouldst know them, use thou the Source that the GPL hath given
+//  thee.  Be warned: there are a lot of warts in the implementation.
+//  I still think it's probably better than hardwiring everything as a
+//  special case...
 //
 //  Flags: jump, store, if, goto
 //  Ctrlcode defs: {} -> use function identifier
 //                 {id} -> use id
 //                 {*id} -> treat as initiating textout
-//                 {=id} -> don't append braces (for single-char codes only)
-//                 {*=id} -> don't append braces, add line break when dumping
+//                 {=id} -> don't append braces (for single-char codes
+//                          only)
+//                 {*=id} -> don't append braces, add line break when
+//                           dumping
 
 module 001 = Jmp // Flow control
 
@@ -71,8 +78,10 @@ module 001 = Jmp // Flow control
     /// gosub_on                <0:Jmp:00008, 0> (special case)
     /// gosub_case              <0:Jmp:00009, 0> (special case)
     fun ret              (jump) <0:Jmp:00010, 0> ()
-    fun jump             (jump) <0:Jmp:00011, 1> ('scenario') ('scenario', 'entrypoint')
-    fun farcall                 <0:Jmp:00012, 1> ('scenario') ('scenario', 'entrypoint')
+    fun jump             (jump) <0:Jmp:00011, 1> ('scenario')
+                                                 ('scenario', 'entrypoint')
+    fun farcall                 <0:Jmp:00012, 1> ('scenario')
+                                                 ('scenario', 'entrypoint')
     fun rtl              (jump) <0:Jmp:00013, 0> ()
   end
   ver >= 1.3
@@ -768,6 +777,9 @@ module 021 = Pcm // Sound effects
   fun wavUnMute               <1:Pcm:00013, 1> ('channel') ('channel', 'fadetime')
   fun wavMute                 <1:Pcm:00014, 1> ('channel') ('channel', 'fadetime')
   fun wavStopAll              <1:Pcm:00020, 0> ()
+
+  fun <1:Pcm:00040, 0> (<intC, (strC, intC, intC)+)
+				   
   fun wavFadeOut              <1:Pcm:00105, 0> ('channel', 'fadetime')
   fun wavFadeOut2             <1:Pcm:00106, 1> ('channel') ('channel', 'fadetime')
 
@@ -1493,7 +1505,8 @@ module 081 //Obj
   fun objTop                  <1:081:01002, 0> ('buf', 'y')
   fun objAlpha                <1:081:01003, 0> ('buf', 'alpha')
   fun objShow                 <1:081:01004, 0> ('buf', 'flag')
-  fun objDispArea             <1:081:01005, 1> ('buf') ('buf', 'x1', 'y1', 'x2', 'y2')
+  fun objDispArea             <1:081:01005, 1> ('buf')
+                                               ('buf', 'x1', 'y1', 'x2', 'y2')
   fun objAdjust               <1:081:01006, 0> ('buf', 'rep idx', 'x', 'y')
   fun objAdjustX              <1:081:01007, 0> ('buf', 'rep idx', 'x')
   fun objAdjustY              <1:081:01008, 0> ('buf', 'rep idx', 'y')

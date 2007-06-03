@@ -20,12 +20,9 @@
 %{
   open Ini
   open Printf
+
   let parse_error err_message =
-    kprintf
-      Optpp.sysError
-      "parsing GAMEEXE.INI: %s at line %d"
-      err_message
-      (Parsing.symbol_start_pos()).Lexing.pos_lnum
+    kprintf Optpp.sysError "parsing GAMEEXE.INI: %s at line %d" err_message !curr_line
 %}
 
 %token EOF
@@ -56,6 +53,7 @@ definition:
   | IDENT DOTINT DOTINT Eq parameters          { set (sprintf "%s.%03d.%03d" $1 $2 $3) $5 }
   | IDENT DOTINT DOTIDENT Eq parameters        { set (sprintf "%s.%03d.%s" $1 $2 $3) $5 }
   | IDENT DOTINT DOTINT DOTIDENT Eq parameters { set (sprintf "%s.%03d.%03d.%s" $1 $2 $3 $4) $6 }
+  | IDENT DOTIDENT DOTINT DOTIDENT Eq parameters{set (sprintf "%s.%s.%03d.%s" $1 $2 $3 $4) $6 }
   | IDENT DOTINT DOTIDENT DOTINT Eq parameters { set (sprintf "%s.%03d.%s.%03d" $1 $2 $3 $4) $6 }
   | IDENT DOTINT Dot range DOTIDENT Eq parameters
       { List.iter (fun i -> set (sprintf "%s.%03d.%03ld.%s" $1 $2 i $5) $7) $4 }

@@ -2,19 +2,20 @@
     Rlc: text output compilation (rlBabel edition)
     Copyright (C) 2006 Haeleth
 
-   This program is free software; you can redistribute it and/or modify it under
-   the terms of the GNU General Public License as published by the Free Software
-   Foundation; either version 2 of the License, or (at your option) any later
-   version.
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License as
+  published by the Free Software Foundation; either version 2 of the
+  License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful, but WITHOUT
-   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-   details.
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  General Public License for more details.
 
-   You should have received a copy of the GNU General Public License along with
-   this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-   Place - Suite 330, Boston, MA  02111-1307, USA.
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+  02111-1307, USA.
 *)
 (*pp pa_macro.cmo ./pa_matches.cmo *)
 
@@ -36,34 +37,37 @@ and token_regular     = Text.of_arr [| 0x0a |]
 and token_begingloss  = Text.of_arr [| 0x1f |]
 
 let rec flatten_nested_glosses rv s =
-  (* The dynamic gloss code probably won't handle nested glosses, unlike the static version
-     in Kpac.  We solve the problem for now by flattening nested glosses with brackets:
-     i.e. "\g{foo}={bar \g{baz}={yomuna} quux}" -> "\g{foo}={bar baz (yomuna) quux}". *)
+  (* The dynamic gloss code probably won't handle nested glosses,
+     unlike the static version in Kpac.  We solve the problem for now
+     by flattening nested glosses with brackets:
+     i.e. "\g{foo}={bar \g{baz}={yomuna} quux}" 
+       -> "\g{foo}={bar baz (yomuna) quux}". *)
   DynArray.iter
     (function
-      | `Gloss (_, `Gloss, tokens, `Closed (_, nested))
+       | `Gloss (_, `Gloss, tokens, `Closed (_, nested))
          -> DynArray.append tokens rv;
-            DynArray.add rv (`Space (nowhere, 1));
-            DynArray.add rv (`Text (nowhere, `Sbcs, Text.of_arr [| 0x28 |]));
-            ignore (flatten_nested_glosses rv nested);
-            DynArray.add rv (`Text (nowhere, `Sbcs, Text.of_arr [| 0x29 |]))
-      | other
+           DynArray.add rv (`Space (nowhere, 1));
+           DynArray.add rv (`Text (nowhere, `Sbcs, Text.of_arr [| 0x28 |]));
+           ignore (flatten_nested_glosses rv nested);
+           DynArray.add rv (`Text (nowhere, `Sbcs, Text.of_arr [| 0x29 |]))
+       | other
          -> DynArray.add rv other)
     s;
   rv
 
 let rec compile
-  ?(with_kidoku = true)
-  ?(f_start = "__vwf_TextoutStart")
-  ?(f_append = "__vwf_TextoutAppend")
-  ?(f_display = "__vwf_TextoutDisplay")
-  addstrs loc text 
-=
+    ?(with_kidoku = true)
+    ?(f_start = "__vwf_TextoutStart")
+    ?(f_append = "__vwf_TextoutAppend")
+    ?(f_display = "__vwf_TextoutDisplay")
+    addstrs loc text 
+    =
   if with_kidoku then (
     let start_lbl = unique_label loc in
-    Output.add_label start_lbl;
-    Output.add_kidoku loc;
-    Meta.call "strout" [`VarOrFn (nowhere, "__rlb_empty", Text.ident "__rlb_empty")]
+      Output.add_label start_lbl;
+      Output.add_kidoku loc;
+      Meta.call "strout" [`VarOrFn (nowhere, "__rlb_empty",
+				    Text.ident "__rlb_empty")]
   );
   let b = DynArray.create () in
   let ignore_one_space = ref false in
@@ -71,17 +75,17 @@ let rec compile
   let flush display =
     if display then 
       if !appending then (
-        appending := false;
-        Meta.call f_append [`Str (nowhere, b)];
-        Meta.call f_display []
-      )
+			   appending := false;
+			   Meta.call f_append [`Str (nowhere, b)];
+			   Meta.call f_display []
+			 )
       else Meta.call f_display [`Str (nowhere, b)]
     else 
       if !appending then Meta.call f_append [`Str (nowhere, b)]
-      else (
-        appending := true;
-        Meta.call f_start [`Str (nowhere, b)]
-      );
+    else (
+           appending := true;
+           Meta.call f_start [`Str (nowhere, b)]
+	 );
     DynArray.clear b
   in
   let rec parse elt =

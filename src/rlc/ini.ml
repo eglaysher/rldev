@@ -17,6 +17,8 @@
    Place - Suite 330, Boston, MA  02111-1307, USA.
 *)
 
+let curr_line = ref 1
+
 type deftab = (string, definition) Hashtbl.t
 and definition = value list
 and value =

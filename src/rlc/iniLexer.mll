@@ -34,7 +34,7 @@
 let nm = '-'? ['0'-'9']+
 let id = ['A'-'Z' '_' '0'-'9' '[' ']']+
 let comment = ';' [^ '\n']*
-let space   = [' ' '\t' '\r']+
+let space   = [' ' '\t']+
 let string  = '\"' [^ '\"']* '\"'
 
 rule lex =
@@ -42,9 +42,7 @@ rule lex =
     | eof    { EOF }
     | comment
     | space  { lex lexbuf }
-    | '\n'   { lexbuf.lex_curr_p  <- { lexbuf.lex_curr_p  with pos_lnum = lexbuf.lex_curr_p .pos_lnum + 1 };
-               lexbuf.lex_start_p <- { lexbuf.lex_start_p with pos_lnum = lexbuf.lex_start_p.pos_lnum + 1 };
-               lex lexbuf }
+    | '\r'? '\n' { incr Ini.curr_line; lex lexbuf }
     | "="    { Eq }
     | ","    { Cm }
     | ":"    { Co }

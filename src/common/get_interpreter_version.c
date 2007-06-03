@@ -17,7 +17,9 @@
    Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef TEST_PROGRAM
 #include "get_interpreter_version.h"
+#endif
 
 /* If we have the Windows API to use, life is relatively simple. */
 
@@ -129,6 +131,27 @@ int get_pe_versioninfo (const char *filename, long a[4])
 	return 0;
 }
 
+#ifdef TEST_PROGRAM
+
+#include "stdio.h"
+typedef unsigned char uchar;
+
+int main(int argc, char** argv)
+{
+	char* filename = argv[1];
+	long a[4];
+	if (get_pe_versioninfo(filename, a)) {
+		printf("Version %d.%d.%d.%d\n", a[0], a[1], a[2], a[3]);
+		return 0;
+	}
+	else {
+		printf("Cannot determine version\n");
+		return 1;
+	}
+}
+
+#else
+
 value rldev_get_interpreter_version (value filename)
 {
 	CAMLparam1 (filename);
@@ -149,5 +172,7 @@ value rldev_get_interpreter_version (value filename)
 	}
 	CAMLreturn (result);
 }
+
+#endif
 
 #endif

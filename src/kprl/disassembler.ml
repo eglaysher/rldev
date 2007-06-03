@@ -569,6 +569,7 @@ and get_string ?(in_ruby = false) sep_str lexbuf =
 and get_data ?(sep_str = false) =
   lexer
     | ',' -> get_data lexbuf
+    | '\n' _ _ -> get_data lexbuf
     | ['A'-'Z' '0'-'9' '?' '_' '\"'] | sjs1 | "###PRINT(" -> rollback lexbuf; get_string sep_str lexbuf
     | 'a' _
         -> let i = lexeme_char lexbuf 1 
@@ -942,7 +943,8 @@ let read_soft_function mode version cmd opcode argc fndef_gen lexbuf =
           ksprintf (warning lexbuf) "expected %d args to %s, but argc = 0" (List.length params) fndef.fn_ident;
         let rec loop b not_first argc lexbuf =
           function
-            | [] -> expect lexbuf ')' "read_soft_function";
+            | [] -> if peek_is 0x0a lexbuf then (ignore (get_byte lexbuf); ignore (get_int16 lexbuf));
+		    expect lexbuf ')' "read_soft_function";
                     if argc != 0 then
                       ksprintf (warning lexbuf) "argc = %d at end of %s call" argc fndef.fn_ident
   
@@ -954,7 +956,8 @@ let read_soft_function mode version cmd opcode argc fndef_gen lexbuf =
                 loop b true argc lexbuf ps
   
             | (ptype, pflags) :: ps when argc = 0 && List.exists (function Optional | Argc -> true | _ -> false) pflags
-             -> expect lexbuf ')' "read_soft_function"
+             -> if peek_is 0x0a lexbuf then (ignore (get_byte lexbuf); ignore (get_int16 lexbuf));
+                expect lexbuf ')' "read_soft_function"
   
             | (ptype, pflags) :: ps
              -> (* warn if out of args *)
@@ -983,7 +986,8 @@ let read_soft_function mode version cmd opcode argc fndef_gen lexbuf =
                 match ptype with
                  (* If it's a complex parameter... *)
                   | Complex defs
-                   -> expect lexbuf '(' "read_soft_function";
+                   -> if peek_is 0x0a lexbuf then (ignore (get_byte lexbuf); ignore (get_int16 lexbuf));
+		      expect lexbuf '(' "read_soft_function";
                       Buffer.add_char b '{';
                       read_complex_param b true "{" defs lexbuf;
                       Buffer.add_char b '}';
@@ -994,7 +998,8 @@ let read_soft_function mode version cmd opcode argc fndef_gen lexbuf =
                    -> expect lexbuf 'a' "read_soft_function";
                       let _, sdef, sflags = 
                         let id = get_byte lexbuf in
-                        try List.find (fun (a, _, _) -> a == id) sdefs with _ -> ksprintf (error lexbuf) "invalid special parameter in %s call" fndef.fn_ident 
+                        try List.find (fun (a, _, _) -> a == id) sdefs
+			with _ -> ksprintf (error lexbuf) "invalid special parameter in %s call" fndef.fn_ident 
                       in
                       let opens, closes, defs =
                         match sdef with
