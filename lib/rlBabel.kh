@@ -81,7 +81,7 @@
 #if default (__DebugTextout__, 0) && !defined? (__NoDebug__) #define __AllLabelled__ #endif
 
 int __rlb_glosses_active, __rlb_temp[4]
-str __rlb_buffer, __rlb_empty
+str __rlb_buffer, __rlb_empty, __rlb_nest_buffer
 
 #if default (__DebugTextout__, 0) && !defined? (__NoDebug__) #undef __AllLabelled__ #endif
 
@@ -396,21 +396,20 @@ str __rlb_buffer, __rlb_empty
       a = rlbPauseClearUnlessNovel
     @__vwf_handle_glosses__
       
-      stralloc (__rlb_empty, 2048)
+      stralloc (__rlb_nest_buffer, 2048)
       while 1:
         FlushClick
         #hiding spause, spause
         GetCursorPos (x, y, b, store)
         if b != 2, break
-        if !CallDLL (rlBabelDLL, dllTestGlosses, x, y, __addr(__rlb_empty), GetWakuAll), break
+        if !CallDLL (rlBabelDLL, dllTestGlosses, x, y, __addr(__rlb_nest_buffer), GetWakuAll), break
         #ifdef rlBabelGlossCallback
           // If the user has supplied a gloss callback, do what they want.
-          rlBabelGlossCallback (__rlb_empty)
+          rlBabelGlossCallback (__rlb_nest_buffer)
         #else
           // Default gloss behaviour: simple & sane
-          MessageBox (__rlb_empty, 1)
+          MessageBox (__rlb_nest_buffer, 1)
         #endif;
-      strclear (__rlb_empty)
       
       case a
       of rlbPauseClearUnlessNovel
