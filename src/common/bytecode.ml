@@ -49,19 +49,33 @@ let empty_header =
    in AVG32, so we have to test files by checking for known data. *)
 let is_bytecode arr idx =
   let id = read arr idx 4 
-  in List.mem id ["RDRL"; "RD2K"]
-  || List.mem id ["KPRL"; "KP2K"; "\xd0\x01\x00\x00"; "\xcc\x01\x00\x00"; "\xb8\x01\x00\x00"]
-     && get_int arr (idx + 4) = 10002
+  in List.mem id ["RDRL"; "RD2K"; "RDRM"]
+  || List.mem id ["KPRL"; "KP2K"; "KPRM"; "\xd0\x01\x00\x00"; "\xcc\x01\x00\x00"; "\xb8\x01\x00\x00"]
+     && List.mem (get_int arr (idx + 4)) [10002; (* Most games *)
+					  110002 (* Little Busters! *)]
 
 let uncompressed_header s =
-  List.mem s ["KPRL"; "KP2K"; "RDRL"; "RD2K"]
+  List.mem s ["KPRL"; (* RealLive, compiler 10002 *)
+	      "KP2K"; (* AVG2000 *)
+	      "KPRM"; (* RealLive, compiler 110002 *)
+	      "RDRL"; (* As KPRL, but following 4 bytes are version no *)
+	      "RD2K"; (* As KP2K, but following 4 bytes are version no *)
+	      "RDRM"] (* As KPRM, but following 4 bytes are version no *)
 
 (* Read a file_header_t structure.  The arr parameter should be a complete
    bytecode file: when reading an archive, pass the t returned by
    get_subfile. *)
 let read_file_header ?(rd_handler = (fun _ -> ())) arr =
   if not (is_bytecode arr 0) then failwith "not a bytecode file";
-  let cversion = if read arr 0 2 = "RD" then (rd_handler arr; 10002) else get_int arr 4 in
+  let cversion =
+    if read arr 0 2 = "RD" then begin
+      rd_handler arr;
+      if read arr 2 2 = "RM"
+      then 110002
+      else 10002
+    end
+    else get_int arr 4
+  in
   match read arr 0 4 with
     | "KP2K" | "RD2K"
     | "\xcc\x01\x00\x00"
@@ -71,7 +85,7 @@ let read_file_header ?(rd_handler = (fun _ -> ())) arr =
           data_offset       = 0x1cc + get_int arr 0x20 * 4;
           uncompressed_size = get_int arr 0x24;
           int_0x2c          = get_int arr 0x28; }
-    | "KPRL" | "RDRL"
+    | "KPRL" | "RDRL" | "KPRM" | "RDRM"
     | "\xd0\x01\x00\x00"
      -> { empty_header with
           header_version = 2;

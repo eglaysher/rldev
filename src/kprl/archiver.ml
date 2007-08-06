@@ -33,7 +33,8 @@ let get_subfile_info archive idx =
 let get_subfile archive idx =
   match get_subfile_info archive idx with
     | _, 0 -> None
-    | pos, len -> Some (sub archive pos len)
+    | pos, len -> 
+	Some (sub archive pos len)
 
 
 (* RealLive's SEEN.TXT doesn't have a convenient PACL identifier in its header
@@ -129,23 +130,36 @@ let extract =
   true,
   maybe_archive
     (fun fname arr ->
-      let oname = Filename.concat !App.outdir (Filename.basename fname ^ ".uncompressed") in
+      let oname =
+	Filename.concat !App.outdir (Filename.basename fname ^ ".uncompressed") 
+      in
       let processed, oarr =
-        try_extract (fun () -> if !App.verbose then ksprintf sysInfo "Decompressing %s to %s" fname oname) arr
+        try_extract
+	  (fun () ->
+	     if !App.verbose
+	     then ksprintf sysInfo "Decompressing %s to %s" fname oname) 
+	  arr
       in
       if processed
       then
         let ucheader =
-          match (read_file_header arr).header_version, !App.target_version with 
-            | 1, (0, 0, 0, 0) -> "KP2K" 
-            | _, (0, 0, 0, 0) -> "KPRL"
-            | 1, (a, b, c, d) -> sprintf "RD2K%c%c%c%c" (char_of_int d) (char_of_int c) (char_of_int b) (char_of_int a)
-            | _, (a, b, c, d) -> sprintf "RDRL%c%c%c%c" (char_of_int d) (char_of_int c) (char_of_int b) (char_of_int a)
-        in
+	  let hdr = read_file_header arr in 
+	  let itype =
+	    if hdr.header_version = 1 then "2K"
+	    else if hdr.compiler_version = 110002 then "RM"
+	    else "RL"
+	  in
+	  match !App.target_version with
+	    | (0, 0, 0, 0) -> sprintf "KP%s" itype
+	    | (a, b, c, d) -> sprintf "RD%s%c%c%c%c" itype (char_of_int d)
+		                      (char_of_int c) (char_of_int b)
+		                      (char_of_int a)
+	in
         write oarr 0 ucheader;
         write_file oarr oname
       else 
-        ksprintf sysInfo "Ignoring %s (not compressed)" (Filename.basename fname))
+        ksprintf sysInfo "Ignoring %s (not compressed)"
+	                 (Filename.basename fname))
 
 let break =
   true,

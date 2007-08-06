@@ -8,9 +8,15 @@
                                    CHANGELOG
 -------------------------------------------------------------------------------
 
--- [next release] --
+-- [subversion] --
 
   Add support for Traditional Chinese (CP950).
+
+KPRL:
+
+  Add support for reading the additional encryption layer used in
+  Little Busters!.  Note that rlc CANNOT currently recompile files in
+  this format - only extraction is supported.
 
 RLC:
 

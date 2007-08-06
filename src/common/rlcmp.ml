@@ -1,20 +1,21 @@
 (*
-   Kprl: SEEN.TXT archiving, encryption, and compression handling
-   Copyright (C) 2006 Haeleth
+  Kprl: SEEN.TXT archiving, encryption, and compression handling
+  Copyright (C) 2007 Haeleth
 
-   This program is free software; you can redistribute it and/or modify it under
-   the terms of the GNU General Public License as published by the Free Software
-   Foundation; either version 2 of the License, or (at your option) any later
-   version.
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License as
+  published by the Free Software Foundation; either version 2 of the
+  License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful, but WITHOUT
-   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-   details.
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  General Public License for more details.
 
-   You should have received a copy of the GNU General Public License along with
-   this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-   Place - Suite 330, Boston, MA  02111-1307, USA.
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+  02111-1307, USA.
 *)
 
 open Printf
@@ -23,7 +24,8 @@ open Bytecode
 
 
 (* Stubs for routines in C. *)
-external c_decompress: Binarray.t -> Binarray.t -> unit = "rl_prim_decompress"
+external c_decompress: Binarray.t -> Binarray.t -> bool -> unit =
+                       "rl_prim_decompress"
 external c_apply_mask: Binarray.t -> int -> unit = "rl_prim_apply_mask"
 external c_compress: Binarray.t -> int = "rl_prim_compress"
 
@@ -37,7 +39,9 @@ let decompress arr =
     | None -> arr
     | Some i -> let rv = create (hdr.data_offset + hdr.uncompressed_size) in
                 blit (sub arr 0 hdr.data_offset) (sub rv 0 hdr.data_offset);
-                c_decompress (sub arr hdr.data_offset i) (sub rv hdr.data_offset hdr.uncompressed_size);
+                c_decompress (sub arr hdr.data_offset i)
+		  (sub rv hdr.data_offset hdr.uncompressed_size)
+		  (hdr.compiler_version == 110002);
                 rv
 
 

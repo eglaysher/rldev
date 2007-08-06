@@ -73,10 +73,11 @@ distribution.
 
 * There is a complication: the rlBabel library.  This is a Windows DLL, and 
 currently the only compiler supported is Microsoft's Visual C++ command-line 
-compiler.  If you wish to build this library, therefore, you will need a Windows 
-machine with a copy of this compiler and the Win32 SDK properly installed (both 
-are free downloads).  If you can't satisfy this requirement, you can extract
-prebuilt binaries of the DLLs from any binary distribution of RLdev.
+compiler.  If you wish to build this library, therefore, you will need
+a Windows machine with a copy of this compiler and the Win32 SDK properly
+installed (both are free downloads).  If you can't satisfy this requirement,
+you can extract prebuilt binaries of the DLLs from any binary distribution
+of RLdev.
 
 If you do have the compiler installed, head into src/rlBabel and execute the
 "build" script.  Use "build -help" for details of what can be configured.  The
