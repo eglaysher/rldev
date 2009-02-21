@@ -1784,6 +1784,13 @@ Music playback operates on `tracks', which are predefined in \gameexe\ with the
   \end{lstlisting}
 @}
 
+@fun/bgmPause,bgmUnPause/
+@def/bgmPause()/
+@and/bgmUnPause()/
+@{
+  Pauses and continues paused music playback respectively.
+@}
+
 \subsection{Sound effects}
 
 \index[concept]{sound!wave files}

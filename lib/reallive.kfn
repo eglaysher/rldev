@@ -748,8 +748,8 @@ module 020 = Bgm // Music
   fun bgmStop2                <1:Bgm:00006, 0> () // bgmStop ‚Æ‚Ìˆá‚¢‚Í•s–¾
   fun bgmStatus       (store) <1:Bgm:00007, 0> ()
   fun bgmRewind               <1:Bgm:00008, 0> ()
-  fun bgmStop3                <1:Bgm:00009, 0> () // bgmStop ‚Æ‚Ìˆá‚¢‚Í•s–¾
-  fun bgmStop4                <1:Bgm:00010, 0> () // bgmStop ‚Æ‚Ìˆá‚¢‚Í•s–¾
+  fun bgmPause                <1:Bgm:00009, 0> ()
+  fun bgmUnPause              <1:Bgm:00010, 0> ()
   fun bgmVolume       (store) <1:Bgm:00011, 0> ()
   fun bgmSetVolume            <1:Bgm:00012, 1> ('volume') ('volume', 'fadetime')
   fun bgmUnMute               <1:Bgm:00013, 1> ('fadetime') ()
