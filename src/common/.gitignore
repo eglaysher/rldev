@@ -1,0 +1,6 @@
+# Generated files
+config.cfg
+kfnLexer.ml
+kfnParser.ml
+kfnParser.mli
+mkdatafiles

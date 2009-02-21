@@ -1,0 +1,12 @@
+*.cmi
+*.cmx
+*.o
+*.a
+bin/
+*.omc
+*omakedb
+*omakedb.lock
+*.cmxa
+*.cmo
+config.inc
+
