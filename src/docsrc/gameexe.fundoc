@@ -735,6 +735,19 @@ used with @ref{select_w}.
   \ref{sec:sefunctions}.
 @}
 
+\subsection{Voice Options}
+
+@ivar/KOEONOFF/
+@def/#KOEONOFF.<UseKoe id>.<koePlay id>.("ON"|"OFF")="name"/
+@def/#KOEONOFF.<UseKoe id>.(<koePlay id>,<koePlay id>).("ON"|"OFF")="name"/
+@{
+  Defines a set of voices, with "name" being displayed to the user on the right
+  click menu. These voices can be enabled or disabled as a set with the
+  @ref{SetUseKoe} function. 
+
+ Associates one or more @ref{koePlay} <character> numbers
+  with 
+@}
 
 %------------------------------------------------------------------------------%
 

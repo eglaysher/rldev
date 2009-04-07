@@ -1985,8 +1985,10 @@ Interface sounds are defined in \gameexe\ with the @iref{SE} variables.
 @fun/SetUseKoe,UseKoe/
 @def/SetUseKoe(<character>, <flag>)/
 @{
-  Set to 1 to enable voices for <character>, or 0 to disable them.  This permits
-  voice control on a per-character basis.
+  Set to 1 to enable voices for <character>, or 0 to disable them.  This
+  permits voice control on a per-character basis. Note that the <character>
+  number is not the same between the (Set)UseKoe function and the koePlay
+  function family. See @iref{KOEONOFF}.
 @}
 @def/UseKoe(<character>): store/
 @{
@@ -2039,8 +2041,10 @@ Interface sounds are defined in \gameexe\ with the @iref{SE} variables.
 @def/koePlay(<koe>, [character])/
 @and/koeDoPlay~{\ldots~}/
 @{
-  Plays voice sample <koe>.  If <character> is given, it identifies a speaker
-  for use with the @ref{UseKoe}-based selective character voice activation.
+  Plays voice sample <koe>.  If <character> is given, it identifies a speaker,
+  per the rules explained in @iref{KOEONOFF} and in the @ref{UseKoe}
+  documentation.
+
   @ref{koePlay} takes this into account, but @ref{koeDoPlay} always plays the
   voice, regardless of @def/UseKoe(<character>)/.
 @}
