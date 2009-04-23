@@ -24,6 +24,9 @@ open Optpp
 let set_target s =
   KeTypes.global_target := KeTypes.target_t_of_string (String.lowercase s) ~err:(usageError ~app:App.app);
   KeTypes.target_forced := true
+  
+let set_compiler_version s =
+	KeTypes.compiler_version := int_of_string s
 
 let enum_of_array a = (* stolen from DynArray.enum, remove if it makes it into ExtLib *)
     let rec make start =
@@ -147,6 +150,14 @@ let options =
           descr = "append labelled variable names to flag.ini";
           withoutarg = set_flag App.flag_labels true;
           witharg = None };
+    Opt { short = "-c"; long = "compiler"; argname = "";
+          descr = "Compiler version (default: 10002, CLANNAD FV and LB! are 110002)";
+          withoutarg = None;
+          witharg = Some set_compiler_version };
+    Opt { short = "-k"; long = "key"; argname = "";
+          descr = "Decoder key for compile version 110002 (default is CLANNAD FV)";
+          withoutarg = None;
+          witharg = Some (Rlcmp.set_key (fun () -> !App.verbose)) };
   (*Opt { short = "-O"; long = "optimisation"; argname = "LEV";
           descr = "set optimisation level (default 1, 0 to disable)";
           withoutarg = None;

@@ -122,7 +122,7 @@ let disassemble =
     maybe_archive
       (fun fname arr ->
         let _, oarr = try_extract (fun () -> ()) arr in
-        if !App.verbose then ksprintf sysInfo "Disassembling %s" fname;
+        if !App.verbose > 0 then ksprintf sysInfo "Disassembling %s" fname;
         Disassembler.disassemble fname oarr)
       files
 
@@ -136,7 +136,7 @@ let extract =
       let processed, oarr =
         try_extract
 	  (fun () ->
-	     if !App.verbose
+	     if !App.verbose > 0
 	     then ksprintf sysInfo "Decompressing %s to %s" fname oname) 
 	  arr
       in
@@ -166,7 +166,7 @@ let break =
   process_read
     (fun idx arr ->
       let fname = sprintf "SEEN%04d.TXT" idx in
-      if !App.verbose then ksprintf sysInfo "Extracting %s" fname;
+      if !App.verbose > 0 then ksprintf sysInfo "Extracting %s" fname;
       write_file arr (Filename.concat !App.outdir (Filename.basename fname)))
 
 let list =
@@ -210,7 +210,7 @@ let pack =
             else Filename.basename fname)
         in
         try
-          if !App.verbose then ksprintf sysInfo "Compressing %s to %s" fname oname;
+          if !App.verbose > 0 then ksprintf sysInfo "Compressing %s to %s" fname oname;
           write_file (Rlcmp.compress arr) oname
         with
           Failure e ->

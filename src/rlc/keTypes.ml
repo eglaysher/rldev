@@ -83,6 +83,7 @@ let target_t_of_string ?(err = sysError) =
 let global_target = ref `Default
 and global_version = ref (0, 0, 0, 0)
 and target_forced = ref false
+and compiler_version = ref 10002
 
 let current_version () =
   if !global_version <> (0, 0, 0, 0) then !global_version

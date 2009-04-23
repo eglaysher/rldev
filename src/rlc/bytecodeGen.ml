@@ -21,7 +21,7 @@ open Printf
 open Optpp
 open KeTypes
 
-let create_reallive bytecode bytecode_length compressed_length entrypoints kidoku_table =
+let create_reallive bytecode bytecode_length compressed_length entrypoints kidoku_table compiler_version =
   let dramatis_table =
     if !App.debug_info then
       let b = Buffer.create 0 in
@@ -40,7 +40,7 @@ let create_reallive bytecode bytecode_length compressed_length entrypoints kidok
   let dramatis_offset = 0x1d0 + DynArray.length kidoku_table * 4 in
   let bytecode_offset = dramatis_offset + String.length dramatis_table + String.length metadata in
   if !App.compress then  Binarray.put_int file 0x00 0x1d0 else Binarray.write file 0x00 "KPRL";
-  Binarray.put_int file 0x04 10002;
+  Binarray.put_int file 0x04 compiler_version;
   Binarray.put_int file 0x08 0x1d0; (* Offset of kidoku_table *)
   Binarray.put_int file 0x0c (DynArray.length kidoku_table);
   Binarray.put_int file 0x10 (DynArray.length kidoku_table * 4); (* table_1 size *)
@@ -59,7 +59,7 @@ let create_reallive bytecode bytecode_length compressed_length entrypoints kidok
   if !App.metadata then Binarray.write file (dramatis_offset + String.length dramatis_table) metadata;
   file, bytecode_offset
 
-let create_avg2000 bytecode bytecode_length _ entrypoints kidoku_table =
+let create_avg2000 bytecode bytecode_length _ entrypoints kidoku_table _ =
   let file_length = bytecode_length + DynArray.length kidoku_table * 4 + 0x1cc in
   let file = Binarray.create file_length in
   let bytecode_offset = 0x1cc + DynArray.length kidoku_table * 4 in
@@ -90,7 +90,7 @@ type target_spec =
     kidoku_to_str: int -> string;
     lineno_to_str: int -> string;
     use_LZ77: bool;
-    create_file: Binarray.t -> int -> int -> int array -> int DynArray.t -> Binarray.t * int }
+    create_file: Binarray.t -> int -> int -> int array -> int DynArray.t -> int -> Binarray.t * int }
 
 let reallive_spec =
   { kidoku_len = 2;
@@ -184,7 +184,7 @@ let generate () =
     if !App.compress then
       if spec.use_LZ77 then (
         if !App.verbose then sysInfo "Compressing and encrypting";
-        let compressed_length = Rlcmp.c_compress (Binarray.sub buffer 8 bytecode_length) + 8 in
+        let compressed_length = (Rlcmp.c_compress (Binarray.sub buffer 8 bytecode_length) (!compiler_version == 110002) (Rlcmp.prep_key())) + 8  in
         Binarray.put_int buffer 0 compressed_length;
         Binarray.put_int buffer 4 bytecode_length;
         let bytecode = Binarray.sub buffer 0 compressed_length in
@@ -202,7 +202,7 @@ let generate () =
   in
   (* Write output file. *)
   if !App.verbose then sysInfo "Writing output";
-  let file, bytecode_offset = spec.create_file bytecode bytecode_length compressed_length entrypoints kidoku_table in
+  let file, bytecode_offset = spec.create_file bytecode bytecode_length compressed_length entrypoints kidoku_table !compiler_version in
   Binarray.blit bytecode (Binarray.sub file bytecode_offset compressed_length);
   match !App.outfile with
     | "-" -> for i = 0 to Binarray.dim file - 1 do print_char (Obj.magic file.{i}) done

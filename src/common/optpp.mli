@@ -65,6 +65,11 @@ val set_string : string ref -> string -> arg_fun
 (* Option parsing *)
 
 exception Error of string
+exception Trace of string * int
+
+val startTrace : string -> 'a
+val contTrace : string -> int -> string -> 'a
+val printTrace : string -> int -> unit
 
 val display_version : app_info -> unit
 val display_help : app_info -> opt_srcp list -> 'a
@@ -80,6 +85,7 @@ val usageError : ?app:app_info -> string -> 'a
 
 val cliWarning : string -> unit
 val cliError : string -> 'a
+val cliErrorDisp : string -> unit
 
 val sysInfo : string -> unit
 val sysWarning : string -> unit

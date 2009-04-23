@@ -1,3 +1,4 @@
+
 /*
    Kprl: RealLive compressor.
    Copyright (C) 2006 Haeleth
@@ -19,6 +20,7 @@
 */
 
 #include "lzcomp.h"
+#include "stdio.h"
 extern "C" {
 #include "rldev.h"
     
@@ -51,10 +53,14 @@ static uchar xor_mask[] = {
 
 /* In some new titles, a second round of XORing is performed on a
  * block of uncompressed bytecode, using the following 16-byte key: */
-static uchar xor_mask_2[] = {
+/*static uchar xor_mask_2[] = {
     0xa8, 0x28, 0xfd, 0x66, 0xa0, 0x23, 0x77, 0x69, 0xf9, 0x45, 0xf8, 0x2c,
     0x7c, 0x00, 0xad, 0xf4
-};
+};*/
+// static uchar xor_mask_2[] = {
+    // 0xAF, 0x2F, 0xFB, 0x6B, 0xAF, 0x30, 0x77, 0x17, 0x87, 0x48, 0xFE, 0x2C, 
+	// 0x68, 0x1A, 0xB9, 0xF0
+// };
 
 /* Decrypt an "encrypted" file */
 value rl_prim_apply_mask (value array, value origin)
@@ -68,9 +74,11 @@ value rl_prim_apply_mask (value array, value origin)
 }
 
 /* Decompress an archived file. */
-value rl_prim_decompress (value src_in, value dst_in, value use_xor_2)
+value rl_prim_decompress (value src_in, value dst_in, value use_xor_2, value key)
 {
-    CAMLparam3(src_in, dst_in, use_xor_2);
+    CAMLparam4(src_in, dst_in, use_xor_2, key);
+	
+	uchar *xor_mask_2 = Binarray_val(key);
     int bit = 1;
     uchar *src = Binarray_val(src_in);
     uchar *dststart = Binarray_val(dst_in);
@@ -104,24 +112,41 @@ value rl_prim_decompress (value src_in, value dst_in, value use_xor_2)
         bit <<= 1;
     }
     if (Bool_val(use_xor_2)) {
-	dst = dststart + 256;
-	for (int i = 0; i < 257; ++i) *dst++ ^= xor_mask_2[i % 16];
+		dst = dststart + 256;
+		for (int i = 0; i < 257; ++i) {	
+			if(dst > dstend)
+				break;
+			*dst++ ^= xor_mask_2[i % 16];
+		}
     }
     CAMLreturn(Val_unit);
 }
 
-value rl_prim_compress (value arr)
+value rl_prim_compress (value src_in, value use_xor_2, value key)
 {
-    // TODO: does NOT handle cases where xor_mask_2 is needed!
-    CAMLparam1(arr);
     using namespace AVG32Comp;
+    CAMLparam3(src_in, use_xor_2, key);
+
+	uchar *xor_mask_2 = Binarray_val(key);
+    uchar *src = Binarray_val(src_in);
+    uchar *srcstart = src;
+    uchar *srcend = src + Bigarray_val(src_in)->dim[0];
+	
+    if (Bool_val(use_xor_2)) {
+		src = srcstart + 256;
+		for (int i = 0; i < 257; ++i) {	
+			if(src > srcend)
+				break;
+			*src++ ^= xor_mask_2[i % 16];
+		}
+    }
+	
     Compress<CInfoRealLive, Container::RLDataContainer> cmp;
-    char *data = (char*) Data_bigarray_val(arr);
-    cmp.WriteData (data, Bigarray_val(arr)->dim[0]);
+    cmp.WriteData ((char *)srcstart, Bigarray_val(src_in)->dim[0]);
     cmp.WriteDataEnd();
     cmp.Deflate();
     cmp.Flush();
-    memmove (data, cmp.Data(), cmp.Length());
+    memmove (srcstart, cmp.Data(), cmp.Length());
     CAMLreturn(Val_long(cmp.Length()));
 }
 

@@ -81,7 +81,7 @@ let set_target_version s =
             usageError "target version must be specified as either an interpreter filename or up to four decimal integers separated by points"
 
 (* Option definitions *)
-(* Short options used: abcdfgklnNorsStuvx *)
+(* Short options used: abcdfgklnNorsStuvxy *)
 
 let options =
   [
@@ -93,10 +93,10 @@ let options =
           descr = "display " ^ App.app.name ^ " version information";
           withoutarg = Some (fun () -> failwith "version");
           witharg = None };
-    Opt { short = "-v"; long = "verbose"; argname = "";
-          descr = "describe what " ^ App.app.name ^ " is doing";
-          withoutarg = set_flag App.verbose true;
-          witharg =  None };
+    Opt { short = "-v"; long = "verbose"; argname = "LVL";
+          descr = "describe what " ^ App.app.name ^ " is doing.  Level 2 is very verbose.";
+          withoutarg = set_flag App.verbose 1;
+          witharg = Some (fun s -> App.verbose := int_of_string s) };
     Break;
 
     Opt { short = "-a"; long = "add"; argname = "";
@@ -191,6 +191,10 @@ let options =
           descr = "specify interpreter version, as either a version number or the filename of the interpreter (default: try to auto-detect)";
           withoutarg = None;
           witharg = Some set_target_version };
+    Opt { short = "-y"; long = "key"; argname = "KEY";
+          descr = "Decoder key for compile version 110002 (default is CLANNAD FV)";
+          withoutarg = None;
+          witharg = Some (Rlcmp.set_key (fun () -> !App.verbose > 0)) };
     Opt { short = ""; long = "force-transform"; argname = "ENC";
           descr = "";
           withoutarg = None;
@@ -259,3 +263,5 @@ let main =
     | Failure "help"    -> display_help App.app options
     | Failure "version" -> display_version App.app
     | Failure e         -> sysError e
+	| Error s			-> cliErrorDisp s; exit 2
+	| Trace (s,n)		-> printTrace s n; exit 2

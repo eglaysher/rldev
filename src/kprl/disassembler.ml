@@ -23,6 +23,9 @@ open ExtString
 open Ulexing
 open KfnTypes
 
+let debug = 
+	(fun () -> !App.verbose)
+
 (* The actual ISet module appears to have issues. :/ *)
 module ISet = Set.Make (struct type t = int;; let compare = compare end)
 
@@ -309,11 +312,34 @@ let regexp sjs1 = ['\x81'-'\x9f' '\xe0'-'\xef' '\xf0'-'\xfc']
 let regexp sjs2 = ['\x40'-'\x7e' '\x80'-'\xfc']
 
 (* Lexer utility functions *)
+   
+let printbytes lexbuf n1 =
+	if n1 < 0 then ""
+	else
+		let rec readbytes_h n = (
+			match n with
+				| 0 -> ""
+				| _ -> let f = (lexer
+							| eof -> " eof"
+							| _ -> (let c = (lexeme_char lexbuf 0) in
+									let s = sprintf "0x%02x " c ^ readbytes_h (n - 1) in
+									rollback lexbuf;
+									s)) in
+							f lexbuf) in
+		readbytes_h n1
+		
 
 let error lexbuf s =
-  ksprintf sysError "%s near 0x%06x" (Text.sjs_to_err s) (lexeme_start lexbuf + !data_offset)
+	try
+		ksprintf sysError "%s near 0x%06x" (Text.sjs_to_err s) (lexeme_start lexbuf + !data_offset)
+	with
+		| Optpp.Error s ->
+			if debug() > 0 then
+				ksprintf Optpp.cliError "%s\nNext 100 bytes:\n%s" s (printbytes lexbuf 100)
+			else
+				ksprintf Optpp.cliError "%s" s
 
-and warning lexbuf s =
+let warning lexbuf s =
   ksprintf sysWarning "%s near 0x%06x" (Text.sjs_to_err s) (lexeme_start lexbuf + !data_offset)
 
 let get_int32 = lexer _ _ _ _ ->
@@ -358,8 +384,15 @@ let peek =
 
 (* Expressions. *)
 
-let variable_name lexbuf =
-  function
+let dp s = 
+	if debug() > 1 then printf "%s%!" s
+
+let pns s = 
+	dp (sprintf "%s\n" s);
+	s
+	
+let variable_name lexbuf c =
+	let decode =  function
     | 0x0a -> Config.svar_prefix ^ "K"   | 0x0b -> Config.ivar_prefix ^ "L"
     | 0x0c -> Config.svar_prefix ^ "M"   | 0x12 -> Config.svar_prefix ^ "S"
     | 0x00 -> Config.ivar_prefix ^ "A"   | 0x01 -> Config.ivar_prefix ^ "B"
@@ -383,37 +416,57 @@ let variable_name lexbuf =
     | 0x6c -> Config.ivar_prefix ^ "E8b" | 0x6d -> Config.ivar_prefix ^ "F8b"
     | 0x6e -> Config.ivar_prefix ^ "G8b" | 0x81 -> Config.ivar_prefix ^ "Z8b"
     | i -> ksprintf (warning lexbuf) "unrecognised variable index 0x%02x in variable_name" i;
-           sprintf "VAR%02x" i
+           sprintf "VAR%02x" i in
+	pns (decode c)
 
+				(*  1    2    3    4    5    6    7    8     9   10    11 *)
 let op_string = [| "+"; "-"; "*"; "/"; "%"; "&"; "|"; "^"; "<<"; ">>"; "" |]
+
 
 
 (* Kepago operator precedences differ from those used internally by RealLive, so 
    we use a recursive-descent parser to build expression trees (get_expr_*
    functions) and flatten that with appropriate parentheses in get_expression. *)
 
-let rec get_expr_token =
-  lexer
+let rec get_expr_token lexbuf =
+  let f = lexer
     | 0xff -> Int32.to_string (get_int32 lexbuf)
     | 0xc8 -> "store"
     | [^ 0xc8 0xff] '['
       -> let i = variable_name lexbuf (lexeme_char lexbuf 0) in
-         let e = get_expression lexbuf in
-         expect lexbuf ']' "get_expr_token";
-         sprintf "%s[%s]" i e
+		let e = get_expression lexbuf in
+			(try 
+				expect lexbuf ']' "get_expr_token";
+				sprintf "%s[%s]" i e
+			with
+				| Optpp.Error s -> ksprintf Optpp.startTrace "%s\nExpression so far:\n%s[%s]\n"	s i e)
     | eof -> error lexbuf "unexpected end of file in get_expr_token"
-    | _ -> ksprintf (error lexbuf) "unknown token type 0x%02x in get_expr_token" (lexeme_char lexbuf 0)
+    | _ -> ksprintf (error lexbuf) "unknown token type 0x%02x in get_expr_token" (lexeme_char lexbuf 0) in
+	try
+		f lexbuf
+	with
+		| Optpp.Trace (s, n)  -> Optpp.contTrace s n "get_expr_token"
 
-and get_expr_term =
-  lexer
-    | "$" -> `Atom (get_expr_token lexbuf)
-    | "\\\000" -> (* Unary plus?  We ignore it, anyway. *) get_expr_term lexbuf
-    | "\\\001" -> `Minus (get_expr_term lexbuf)
-    | "(" -> let c = get_expr_bool lexbuf in
-             expect lexbuf ')' "get_expr_term";
-             c
-    | eof -> error lexbuf "unexpected end of file in get_expr_term"
-    | _ -> ksprintf (error lexbuf) "expected [$\\(] in get_expr_term, found 0x%02x" (lexeme_char lexbuf 0)
+and get_expr_term lexbuf =
+	let f = lexer
+	    | "$" -> `Atom (get_expr_token lexbuf)
+	    | "\\\000" -> (* Unary plus?  We ignore it, anyway. *) get_expr_term lexbuf
+	    | "\\\001" -> `Minus (get_expr_term lexbuf)
+	    | "(" -> let c = get_expr_bool lexbuf in
+			(try 
+				expect lexbuf ')' "get_expr_term";
+				c
+			with
+				| Optpp.Error s -> ksprintf Optpp.startTrace "%s" s)
+	    | eof -> error lexbuf "unexpected end of file in get_expr_term"
+	    | _ -> (try
+					ksprintf (error lexbuf) "expected [$\\(] in get_expr_term, found 0x%02x" (lexeme_char lexbuf 0)
+				with
+					| Optpp.Error s -> ksprintf Optpp.startTrace "%s" s) in
+		try
+			f lexbuf
+		with
+			| Optpp.Trace (s, n)  -> Optpp.contTrace s n "get_expr_term"
 
 and get_expr_arith lexbuf =
   let rec loop_hi_prec tok =
@@ -435,7 +488,10 @@ and get_expr_arith lexbuf =
       | _ -> rollback lexbuf;
              tok
   in
-  loop (loop_hi_prec (get_expr_term lexbuf) lexbuf) lexbuf
+	try
+		loop (loop_hi_prec (get_expr_term lexbuf) lexbuf) lexbuf
+	with
+		| Optpp.Trace (s, n)  -> Optpp.contTrace s n "get_expr_arith"
 
 and get_expr_cond lexbuf =
   let rec loop tok =
@@ -448,7 +504,10 @@ and get_expr_cond lexbuf =
       | _ -> rollback lexbuf;
              tok
   in
-  loop (get_expr_arith lexbuf) lexbuf
+	try
+		loop (get_expr_arith lexbuf) lexbuf
+	with
+		| Optpp.Trace (s, n)  -> Optpp.contTrace s n "get_expr_cond"
 
 and get_expr_bool lexbuf =
   let rec loop_and tok =
@@ -458,7 +517,11 @@ and get_expr_bool lexbuf =
     lexer "\\=" -> loop_or (`Binary (tok, 0x3d, loop_and (get_expr_cond lexbuf) lexbuf)) lexbuf
       | eof | _ -> rollback lexbuf; tok
   in
-  loop_or (loop_and (get_expr_cond lexbuf) lexbuf) lexbuf
+	try
+		loop_or (loop_and (get_expr_cond lexbuf) lexbuf) lexbuf
+	with
+		| Optpp.Trace (s, n)  -> Optpp.contTrace s n "get_expr_bool"
+	
 
 and get_expression =
   let op_string x =
@@ -479,36 +542,40 @@ and get_expression =
   in
   let rec traverse =
     function
-      | `Atom s -> s
-      | `Minus (`Atom s) -> sprintf "-%s" s
-      | `Minus (`Minus e) -> traverse e
-      | `Minus (`Binary _ as e) -> sprintf "-(%s)" (traverse e)
+      | `Atom s -> dp "atom "; pns s
+      | `Minus (`Atom s) -> ksprintf pns "-%s" s
+      | `Minus (`Minus e) -> dp "--atom\n"; traverse e
+      | `Minus (`Binary _ as e) -> ksprintf pns "-(%s)" (traverse e)
       (* TODO: special cases *) 
       | `Binary (a, op, b) 
          -> let a' = traverse a
             and b' =
               match b with
                 | `Binary (_, bop, _) when prec bop <= prec op 
-                    -> let t = traverse b in if t.[0] = '~' then t else sprintf "(%s)" t
+                    -> let t = traverse b in if t.[0] = '~' then t else ksprintf pns "(%s)" t
                 | _ -> traverse b
             in
             if op = 0x07 && b' = "-1" then
-              sprintf "~%s" (match a with `Binary _ -> sprintf "(%s)" a' | _ -> a')
+              sprintf "~%s" (match a with `Binary _ -> ksprintf pns "(%s)" a' | _ -> a')
             else if op = 0x28 && b' = "0" then
-              sprintf "!%s" (match a with `Binary _ -> sprintf "(%s)" a' | _ -> a')
+              sprintf "!%s" (match a with `Binary _ -> ksprintf pns "(%s)" a' | _ -> a')
             else if op = 0x29 && b' = "0" then
               a'
             else
               let a'' =
                 match a with
                   | `Binary (_, aop, _) when prec aop < prec op 
-                      -> sprintf "(%s)" a'
+                      -> ksprintf pns "(%s)" a'
                   | _ -> a'
               in
-              sprintf "%s %s %s" a'' (op_string op) b'
+              ksprintf pns "%s %s %s" a'' (op_string op) b'
   in
   fun lexbuf -> 
-    traverse (get_expr_bool lexbuf)
+	try
+		traverse (get_expr_bool lexbuf)
+	with
+		| Optpp.Trace (s, n)  -> Optpp.contTrace s n "get_expression"
+		
 
 and get_assignment cmd =
   let op =
@@ -516,9 +583,9 @@ and get_assignment cmd =
       | '\\' [0x14-0x1e] -> op_string.(lexeme_char lexbuf 1 - 0x14)
       | _ -> ksprintf (error lexbuf) "expected 0x5c[14-1e], found 0x%02x in get_assignment" (lexeme_char lexbuf 0)
   in fun lexbuf ->
-    let itok = get_expr_token lexbuf in
-    let op = op lexbuf in
-    let etok = get_expression lexbuf in
+    let itok = try get_expr_token lexbuf with | Optpp.Trace (s, n) -> Optpp.contTrace s n "get_assignment" in
+    let op = op lexbuf in	
+    let etok = try get_expression lexbuf with | Optpp.Trace (s, n) -> Optpp.contTrace s n (sprintf "get_assignment: %s %s= " itok op) in
     (* Check for assignments to/from STORE and fake return values as appropriate *)
     let unstored =
       if etok = "store"  then
@@ -877,7 +944,10 @@ let read_unknown_function cmd opstr argc lexbuf =
                loop b true (n - 1) lexbuf)
       lexbuf
     in
-    expect lexbuf '(' "read_unknown_function";
+	(try
+		expect lexbuf '(' "read_unknown_function"
+	with
+		| Optpp.Error s -> ksprintf Optpp.startTrace "%s\nExpression so far:\n%s\n"	s opstr);
     let buffer = Buffer.create 0 in
     bprintf buffer "%s (" opstr;
     loop buffer false argc lexbuf;
@@ -1098,8 +1168,8 @@ let read_function mode version offset opcode argc lexbuf =
              read_unknown_function cmd opstr argc lexbuf
 
 
-let read_command hdr mode version =
-  lexer
+let read_command hdr mode version lexbuf2 =
+  let f = (lexer
     (* ends in themselves *)
     | eof -> raise End_of_file
     | '\000' -> command { base_cmd lexbuf with is_jmp = true } "halt"
@@ -1152,7 +1222,11 @@ let read_command hdr mode version =
     (* textout *)
     | _ -> let c = base_cmd lexbuf in
            rollback lexbuf;
-           read_textout c lexbuf
+           read_textout c lexbuf) in
+	try
+		f lexbuf2
+	with
+		| Optpp.Trace (s, n) -> Optpp.contTrace s n "read_command"
 
 
 let disassemble fname (arr: Binarray.t) =
@@ -1161,7 +1235,7 @@ let disassemble fname (arr: Binarray.t) =
   let hdr = Bytecode.read_full_header arr ~rd_handler in
   (* Override output encoding for non-Japanese text *)
   if !App.force_meta <> None || hdr.Bytecode.rldev_metadata.Metadata.text_transform <> `None then (
-    if !App.verbose && Encoding.enc_type !App.enc <> `Utf8 then sysInfo "Detected non-Japanese text: setting output to UTF-8";
+    if !App.verbose > 0 && Encoding.enc_type !App.enc <> `Utf8 then sysInfo "Detected non-Japanese text: setting output to UTF-8";
     TextTransforms.init (Option.default hdr.Bytecode.rldev_metadata.Metadata.text_transform !App.force_meta);
     App.enc := "UTF8";
   );
@@ -1217,7 +1291,22 @@ let disassemble fname (arr: Binarray.t) =
   try
     reset_state ();
     data_offset := aorg;
-    while true do read_command hdr mode mode_version lexbuf done
+	printf "%!";
+		while true do
+			let last_good = (lexeme_start lexbuf + !data_offset)-1 in
+				let abort_fun f s = (
+					if debug() > 0 then (
+						f ();
+						printf "!!!ERROR!!!\nFailed to parse, outputting what was found.\nLast good decode ended at 0x%06x\n!!!ERROR!!!" last_good;
+						raise End_of_file )
+					else
+						cliError s) in
+				try
+					read_command hdr mode mode_version lexbuf
+				with
+					| Optpp.Error s -> abort_fun (fun () -> cliErrorDisp s) s
+					| Optpp.Trace (s, c) -> abort_fun (fun () -> printTrace s c) s
+		done
   with
     End_of_file ->
       let _, labels =

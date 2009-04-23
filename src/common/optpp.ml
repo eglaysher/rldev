@@ -123,10 +123,31 @@ let cliWarning s =
   flush stderr;
   Format.set_formatter_out_channel stdout
 
-let cliError s =
+exception Error of string
+let abort s = raise (Error s)
+
+exception Trace of string * int
+
+let startTrace s =
+	raise (Trace ((sprintf "%s\nStack Trace:" s), 0))
+	
+let contTrace s n sn =
+	let rec gen_space n =
+		match n with
+			| 0 -> ""
+			| _ -> "   " ^ gen_space (n-1) in			
+	raise (Trace ( (s ^ (sprintf "\n") ^ gen_space(n) ^ sn), n+1))
+	
+let printTrace s n =
   Format.set_formatter_out_channel stderr;
-  cliInfo s;
-  exit 2
+  cliInfo (sprintf "%s\n%d levels traced" s n)
+
+let cliErrorDisp s =
+  Format.set_formatter_out_channel stderr;
+  cliInfo s
+
+let cliError s =
+  abort s
 
 let usageError ?(app = default_app_info) s =
   ksprintf cliError "Error: %s.\nFor basic usage information run `%s --help'" s app.exe_name
@@ -136,8 +157,6 @@ let sysWarning s = ksprintf cliWarning "Warning: %s." s
 let sysError s = ksprintf cliError "Error: %s." s
 
 
-exception Error of string
-let abort s = raise (Error s)
 
 let noshort = '\000'
 let nolong  = ""

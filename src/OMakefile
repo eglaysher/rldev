@@ -21,6 +21,7 @@ OCAMLFLAGS = -warn-error Asxyz -cc $(if $(equal $(CXX),gcc),g++,$(CXX))
 USE_OCAMLFIND = true
 
 if $(defined-env DEBUG)
+  echo "Debug mode"
   NATIVE_ENABLED = false
   BYTE_ENABLED = true
   OCAMLFLAGS += -g -custom

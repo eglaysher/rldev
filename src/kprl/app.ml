@@ -35,7 +35,7 @@ let app =
        be processed (e.g. `50 60 100-150'); if omitted, all files in the archive \
        will be processed." }
 
-let verbose = ref false
+let verbose = ref 0
 let outdir = ref ""
 let names_opt = ref false
 let enc = ref Config.default_encoding
