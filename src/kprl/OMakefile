@@ -1,6 +1,7 @@
 #
 #  Kprl: RealLive archiver and disassembler
 #  Copyright (C) 2006 Haeleth
+#  Revised 2009-2011 by Richard 23
 #
 #  This program is free software; you can redistribute it and/or modify it under
 #  the terms of the GNU General Public License as published by the Free Software
@@ -21,9 +22,16 @@ PROGRAM = $(EXEDIR)/kprl
 
 FILES []=
   app
+# rltypes
   disassembler
   archiver
   main
+
+# RLFILES = rlTypes rlParser rlLexer
+# GENFILES = rlParser.mli rlParser.ml rlLexer.ml
+# GENERATED = $(GENFILES) 
+# OCamlGeneratedFiles($(GENFILES))
+# OCamlLibrary(rl, $(RLFILES))
 
 if $(ENABLE_WIN32)
   OCAML_LINK_FLAGS += -cclib -lversion
@@ -38,5 +46,10 @@ OCamlProgram($(PROGRAM), $(FILES))
 
 all: $(PROGRAM)$(EXE)
 
+# clean:
+#   $(RM) OMakefile.omc $(GENERATED) \
+#     $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ), $(RLFILES) $(FILES)) \
+#     $(addsuffixes .cma .cmxa $(EXT_LIB),rl)
+	
 clean:
   $(RM) *.omc $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ),$(FILES))

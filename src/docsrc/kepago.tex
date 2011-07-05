@@ -337,6 +337,47 @@ programming tasks.
       \lstinline|#set foo = foo + 1|; the same goes for other arithmetic operators.
     \end{cmdesc}
 
+  \lsubsection{Inlines/Macros}\label{sec:inlines}
+  
+    {In C, \lstinline|#define| statements can be used to specify function like 
+	macros which can accept multiple parameters and which are replaced with a 
+	macro's result when expanded by the C preprocessor.
+	
+	Similar syntactic magic can be conjured up within a kepago file by making use
+	of an inline macro definition.  Note however that while it's convenient to
+	imagine that C and kepago macros are equivalent, the syntax used to define
+	such macros diverge, so it might be useful to dismiss such convenient fantasies
+	and read on.}
+	
+    \dirdef{inline}
+	\lstinline|#inline|~\metavar{IDENT}(<arg1>,<arg2>~\lstinline|=|~\metavar{EXPR}[<arg2>]~{\ldots~})~\lstinline|:|~\metavar{STMTS}~\lstinline|;|
+    \begin{cmdesc}
+      Defines a macro which can be used (as a macro call) within expressions.  
+	  The macro call is expanded during compilation and replaced inline with the
+	  resulting constant expression.  As the macro call vanishes entirely during
+	  the compilation phase it would be a mistake to confuse an inline macro call
+	  with an actual function call which generates bytecode that performs an actual
+	  call which returns a value upon completion.  So don't be a fool!
+	  
+      It might also be considered lazy thinking to conflate so-called intrinsic
+	  functions with inline macros.  While both perform feats of shapeshifting
+	  when encountered by the rlc compiler, intrinsic functions are predefined
+	  within the compiler itself rather than being defined in terms of kepago
+	  statements as inline macros are.
+	  
+	  User-defined functions remain a potential feature to possibly be implemented 
+	  in some alternate future version whose existence is only found in the shady
+	  realm of urban legends between fits of delerium tremens.
+
+	  If this has failed to clarify the situation and confusion prevails, a
+	  round of hands on coding experience and experimentation may lie in your
+	  immediate future.  May the wistful spirit of kepago be with you as you
+	  go forward into the unknown.
+	  
+	  There are plenty of inline macros to explore in library files bearing the
+	  .kh extension.  This might be a wise place to fortify your kepago skills.
+    \end{cmdesc}
+
   \lsubsection{Directives}\label{sec:directives}
 
     Like in C, directives (that is, statements which modify compiler state
@@ -388,6 +429,16 @@ programming tasks.
       contains.  The scope of its definitions extends from the
       \lstinline|#resource| directive to the end of the file; it must precede
       any \lstinline|#res| directives referencing its contents.
+    \end{cmdesc}
+
+    \dirdef{base_res}\index[concept]{resources!files}
+    \lstinline|#base_res 'FILE'|
+    \begin{cmdesc}
+      Loads the named resource file, providing access to all the strings it
+      contains for use as a base of resources in a multi-version translation
+	  project.  The scope of its definitions are limited to a resource file
+	  previously loaded using a \lstinline|#resource| directive.
+	  (New feature for version 1.45.)
     \end{cmdesc}
 
     \dirdef{res}\index[concept]{resources!strings}
@@ -952,6 +1003,29 @@ programming tasks.
       insertion point.      
     \end{cmdesc}
 
+    \ccdef{ind}
+    \lstinline|\ind|\rawlbrace\metaopt{pixels}\lstinline|}|
+    \begin{cmdesc}
+      \metavar{pixels} is optional.  If it is given, indentation will be set
+      to that value; if it is not, indentation will be reset to the default.
+    \end{cmdesc}
+
+    \ccdef{noind}
+    \lstinline|\noind|
+    \begin{cmdesc}
+      Reset indentation.
+    \end{cmdesc}
+
+    \ccdef{shake}
+    \lstinline|\shake|\rawlbrace\metavar{index}\lstinline|}|
+    \begin{cmdesc}
+      Shakes the screen, using the movements defined in \gameexe\ with the
+  variable @iref{SHAKE}.\metavar{index}. \ivarref[SHAKE]{SHAKE}.\metavar{index}.
+  
+  \metavar{pixels} is optional.  If it is given, indentation will be set
+      to that value; if it is not, indentation will be reset to the default.
+    \end{cmdesc}
+
   \lsubsection{Names}\label{sec:nameblocks}\maketarget{ccode}{name}\ccidx{name}\index[concept]{names}
     As display strings are normally used for game text, \reallive\ naturally
     provides means for identifying character names.  This is accomplished
@@ -1114,6 +1188,22 @@ programming tasks.
       \ref{sec:anonrefs} below for how multiple anonymous references are
       resolved.
     \end{cmdesc}
+    \ccdef{res}
+    \lstinline|\res|
+    \lstinline|\res|\rawlbrace\metavar{ID}\lstinline|}|
+    \begin{cmdesc}
+      Where multiple versions of a script are being produced, where a variant
+	  contains many strings in common with a base version and the resource ids
+	  vary from base to variant, it may simplify a things considerably to inherit 
+	  common resource strings from the base. 
+	  
+	  You can use \ccref{res} to specify the id of a resource string to inherit
+	  from a base resource file loaded using a \dirref{base_res} directive in 
+	  the Kepago script file.
+	  
+	  If no \dirref{base_res} directive was used, ids refer to strings within the
+	  current resource file.
+    \end{cmdesc}
 
   \lsubsection{Anonymous references}\label{sec:anonrefs}\index[concept]{resources!anonymous references}
 
@@ -1168,3 +1258,11 @@ programming tasks.
 
     To reference a resource string, use the \dirref{res} directive with the key
     of the string you wish to include.
+
+    To load a base resource file and make the strings it contains available to
+	your code, use the \dirref{resource} directive at the start of the Kepago 
+	source file.
+
+    To reference a base resource string within a resource file, use a \ccref{res}
+	control code with the key of the base resource string you wish to include.
+

@@ -1,6 +1,7 @@
 (*
    Binarray: bigarray wrapper for byte twiddling
    Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -20,6 +21,7 @@
 type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 (* Functions basically the same as Bigarray.Array1 *)
+
 val create : int -> t
 val blit : t -> t -> unit
 val sub : t -> int -> int -> t
@@ -28,6 +30,7 @@ val dim : t -> int
 val fill : t -> int -> unit
 
 (* Functions similar to the usual IO thingies *)
+
 val read : t -> idx:int -> len:int -> string
 val read_sz : t -> idx:int -> len:int -> string
 val get_int : t -> idx:int -> int
@@ -36,13 +39,16 @@ val get_int32 : t -> idx:int -> int32
 val put_int : t -> idx:int -> int -> unit
 val put_i16 : t -> idx:int -> int -> unit
 val put_int32 : t -> idx:int -> int32 -> unit
-val write : t -> idx:int -> string -> unit            (* Writes the string data 'as is' *)
-val write_sz : t -> idx:int -> len:int -> string -> unit  (* Writes the string data, pads to end of slice with zeroes *)
-
+(* Writes the string data 'as is' *)
+val write : t -> idx:int -> string -> unit            
+(* Writes the string data, pads to end of slice with zeroes *)
+val write_sz : t -> idx:int -> len:int -> string -> unit  
+(* Reads a null-terminated string direct from memory.  
+ May cause weird stuff if no null byte is found! *)
 val unsafe_read_sz : t -> idx:int -> string
-(* Reads a null-terminated string direct from memory.  May cause weird stuff if no null byte is found! *)
 
 (* Other functions *)
+
 val copy : t -> t
 val digest : t -> Digest.t
 val read_input : string -> t

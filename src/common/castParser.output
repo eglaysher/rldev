@@ -1,0 +1,96 @@
+   0  $accept : %entry% $end
+
+   1  parse : EOF
+   2        | char_def parse
+
+   3  char_def : STRING Eq STRING
+   4           | STRING Eq
+   5           | STRING
+
+   6  %entry% : '\001' parse
+
+state 0
+	$accept : . %entry% $end  (0)
+
+	'\001'  shift 1
+	.  error
+
+	%entry%  goto 2
+
+
+state 1
+	%entry% : '\001' . parse  (6)
+
+	EOF  shift 3
+	STRING  shift 4
+	.  error
+
+	parse  goto 5
+	char_def  goto 6
+
+
+state 2
+	$accept : %entry% . $end  (0)
+
+	$end  accept
+
+
+state 3
+	parse : EOF .  (1)
+
+	.  reduce 1
+
+
+state 4
+	char_def : STRING . Eq STRING  (3)
+	char_def : STRING . Eq  (4)
+	char_def : STRING .  (5)
+
+	Eq  shift 7
+	EOF  reduce 5
+	STRING  reduce 5
+
+
+state 5
+	%entry% : '\001' parse .  (6)
+
+	.  reduce 6
+
+
+state 6
+	parse : char_def . parse  (2)
+
+	EOF  shift 3
+	STRING  shift 4
+	.  error
+
+	parse  goto 8
+	char_def  goto 6
+
+
+7: shift/reduce conflict (shift 9, reduce 4) on STRING
+state 7
+	char_def : STRING Eq . STRING  (3)
+	char_def : STRING Eq .  (4)
+
+	STRING  shift 9
+	EOF  reduce 4
+
+
+state 8
+	parse : char_def parse .  (2)
+
+	.  reduce 2
+
+
+state 9
+	char_def : STRING Eq STRING .  (3)
+
+	.  reduce 3
+
+
+State 7 contains 1 shift/reduce conflict.
+
+
+6 terminals, 4 nonterminals
+7 grammar rules, 10 states

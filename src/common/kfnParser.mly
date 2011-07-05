@@ -1,6 +1,7 @@
 /*
    RLdev: function definition file parser
    Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -40,12 +41,15 @@
     in
     !handle_opcode versions ident ccstr (ccflags @ fun_flags) t m op prototypes
 
+    let perror s = Printf.eprintf "Error: parsing reallive.kfn: %s at line %d\n"
+        s (symbol_start_pos ()).Lexing.pos_lnum;
+        exit 2
 %}
 
 %token EOF
-%token MODULE FUN VER END                           /*  keywords   */
-%token Lt Gt Eq Cm Lp Rp Lbr Rbr Qu St Pl Co Pt Ha /* punctuation */
-%token INT INTC INTV STR STRC STRV RES SPECIAL    /*     types   */
+%token MODULE FUN VER END                              /*  keywords   */
+%token Lt Gt Eq Cm Lp Rp Lbr Rbr Qu St Pl Co Pt Ha Hy /* punctuation */
+%token INT INTC INTV STR STRC STRV RES SPECIAL       /*     types   */
 %token<int> INTEGER
 %token<string> IDENT STRING
 
@@ -54,10 +58,16 @@
 
 %%
 
+/*
 parse:
   | error
+
     { Printf.eprintf "Error: parsing reallive.kfn: syntax error at line %d\n" (symbol_start_pos ()).Lexing.pos_lnum;
       exit 2 }
+*/
+parse:
+  | error
+    { perror "syntax error" };
   | EOF {}
   | module_def parse {}
   | one_fun_def parse {}
@@ -108,8 +118,13 @@ module_id:
                           Hashtbl.find modules $1
                         with
                           Not_found ->
+                            (*
                             Printf.eprintf "Error: parsing reallive.kfn: undeclared module %s\n" $1;
+                            Printf.eprintf "Error: parsing reallive.kfn: undeclared module at line %d\n" 
+                                (symbol_start_pos ()).Lexing.pos_lnum;
                             exit 2 }
+                            *)
+                            Printf.kprintf perror "undeclared module %s" $1}
 
 ccode:
   | /* empty */         { `Absent, [] }
@@ -134,10 +149,19 @@ flags: /* empty */ { [] }
     { let flag =
         match String.lowercase $1 with
           | "store" -> PushStore
+          | "skip"  -> IsSkip
           | "jump"  -> IsJump
           | "goto"  -> IsGoto
           | "if"    -> IsCond
+          | "neg"   -> IsNeg
+          | "cases" -> HasCases
+          | "gotos" -> HasGotos
+          | "call"  -> IsCall
+          | "ret"   -> IsRet
+(*
           | s -> Printf.kprintf failwith "unknown flag %s in reallive.kfn" s
+*)
+          | s -> Printf.kprintf perror "unknown flag %s" s
       in
       flag :: $2 }
   
@@ -195,9 +219,50 @@ special:
   | specdef            { $1 :: [] }
   | specdef Cm special { $1 :: $3 }
 
+/*
 specdef:
   | INTEGER Co specflags Lbr complex Rbr { $1, AsComplex $5, $3 }
   | INTEGER Co specflags IDENT Lp complex Rp { $1, Named ($4, $6), $3 }
+*/
+
+/*
+specdef:
+  | specid Co specflags Lbr complex Rbr { $1, AsComplex $5, $3 }
+  | specid Co specflags IDENT Lp complex Rp { $1, Named ($4, $6), $3 }
+*/
+
+specdef:
+  | specid Co specflags Lbr complex Rbr { $1, AsComplex $5, $3 }
+  | specid Co specflags IDENT Lp complex Rp { $1, Named ($4, $6), $3 }
+
+/*
+specid:
+    INTEGER Hy INTEGER    { ID2 ($1, $3) }
+  | INTEGER                { ID $1 }
+*/
+
+/*
+specid:
+    INTEGER Hy INTEGER    { (($1 + 1) lsl 8) lor $3 }
+  | INTEGER                { $1 }
+*/
+
+specid:
+    INTEGER Hy INTEGER    { (($1 + 1) lsl 8) lor $3 }
+  | INTEGER                { $1 }
+
+
+/*
+specid:
+    INTEGER Hy INTEGER    { sprintf "%d-%d" $1 $3 }
+  | INTEGER                { sprintf "%d" $1 }
+*/
+
+/*
+specid:
+    INTEGER Hy INTEGER    { $1 :: $3 }
+  | INTEGER                { $1 :: [] }
+*/
 
 specflags:
   | /* empty */        { [] }

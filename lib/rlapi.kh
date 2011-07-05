@@ -131,8 +131,73 @@
       rlcError ('invalid mode for SetWindowAttrMod')
     #endif
   ecase;
+
+#inline SET_WINDOW_MOVEBTN (__state):
+  case __state
+  of ON, SET_WINDOW_MOVEBTN_ON() 			break
+  of OFF, SET_WINDOW_MOVEBTN_OFF()			break
+  other
+	#error at (__CALLER_FILE__, __CALLER_LINE__, 
+	  'invalid state for SET_WINDOW_MOVEBTN: expected ON or OFF')
+  ecase;
+
+#inline SET_WINDOW_AUTOMODEBTN (__state):
+  case __state
+  of ON, SET_WINDOW_AUTOMODEBTN_ON()		break
+  of OFF, SET_WINDOW_AUTOMODEBTN_OFF()		break
+  other
+	#error at (__CALLER_FILE__, __CALLER_LINE__, 
+	  'invalid state for SET_WINDOW_AUTOMODEBTN: expected ON or OFF')
+  ecase;
   
-#inline ShakeScreen (__dir, __extent, __speed, __rep, __faderep):
+#inline SET_WINDOW_CLEARBTN (__state):
+  case __state
+  of ON, SET_WINDOW_CLEARBTN_ON()			break
+  of OFF, SET_WINDOW_CLEARBTN_OFF()			break
+  other
+	#error at (__CALLER_FILE__, __CALLER_LINE__, 
+	  'invalid state for SET_WINDOW_CLEARBTN: expected ON or OFF')
+  ecase;
+  
+#inline SET_WINDOW_READJUMPBTN (__state):
+  case __state
+  of ON, SET_WINDOW_READJUMPBTN_ON()		break
+  of OFF, SET_WINDOW_READJUMPBTN_OFF()		break
+  other
+	#error at (__CALLER_FILE__, __CALLER_LINE__, 
+	  'invalid state for SET_WINDOW_READJUMPBTN: expected ON or OFF')
+  ecase;
+  
+#inline SET_WINDOW_MSGBKBTN (__state):
+  case __state
+  of ON, SET_WINDOW_MSGBKBTN_ON()			break
+  of OFF, SET_WINDOW_MSGBKBTN_OFF()			break
+  other
+	#error at (__CALLER_FILE__, __CALLER_LINE__, 
+	  'invalid state for SET_WINDOW_MSGBKBTN: expected ON or OFF')
+  ecase;
+  
+#inline SET_WINDOW_EXBTN (__state, [ __btn ]):
+  #ifdef __btn
+    case __state
+    of ON	 	SET_WINDOW_EXBTN_ON(__btn)	break
+    of OFF		SET_WINDOW_EXBTN_OFF(__btn)	break
+    other
+	  #error at (__CALLER_FILE__, __CALLER_LINE__, 
+		'invalid state for SET_WINDOW_EXBTN: expected ON or OFF')
+    ecase
+  #else
+    case __state
+    of ON		SET_WINDOW_EXBTN_ON()		break
+    of OFF		SET_WINDOW_EXBTN_OFF()		break
+    other
+	  #error at (__CALLER_FILE__, __CALLER_LINE__, 
+		'invalid state for SET_WINDOW_EXBTN: expected ON or OFF')
+    ecase
+  #endif;
+  
+  
+#inline ShakeScreen (__dir, __extent, __speed, __rep, __faderep, [__a], [__b]):
   case __dir
   of UP         __shkup (__extent, __speed, __rep, __faderep)  break
   of DOWN       __shkdn (__extent, __speed, __rep, __faderep)  break
@@ -140,7 +205,8 @@
   of RIGHT      __shkri (__extent, __speed, __rep, __faderep)  break
   of DOWNUP     __shkud (__extent, __speed, __rep, __faderep)  break
   of RIGHTLEFT  __shkrl (__extent, __speed, __rep, __faderep)  break
-  of ZOOM       __shkzm (__extent, __speed, __rep, __faderep)  break
+  of ZOOM       #ifdef __b, __shkzm (__extent, __speed, __rep, __faderep, __a, __b) 
+				#else __shkzm (__extent, __speed, __rep, __faderep) #endif break
   other
     #if __ConstantCase__
       #error at (__CALLER_FILE__, __CALLER_LINE__, 'invalid direction for ShakeScreen')
@@ -471,6 +537,24 @@
   return __retval;
   
 
+#inline MsgBox (__title__, __msg__, __type__ = ALERT_OK):
+  #sdefine __retval = store
+  #if __type__ == ALERT_OK
+    #undef __CALLER_FILE__, __CALLER_LINE__ // We don't want to override these if they were passed in __msgbox__...
+    MESSAGEBOX_OK (__title__, __msg__)
+    #define __CALLER_FILE__, __CALLER_LINE__ // ...and we don't want rlc to undefine the caller's copies, either.
+  #elseif __type__ == ALERT_OKCANCEL
+    #redef __retval = MESSAGEBOX_OKCANCEL (__title__, __msg__)
+  #elseif __type__ == ALERT_YESNO
+    #redef __retval = MESSAGEBOX_YESNO (__title__, __msg__)
+  #elseif __type__ == ALERT_YESNOCANCEL
+    #redef __retval = MESSAGEBOX_YESNOCANCEL (__title__, __msg__)
+  #else
+    #error 'invalid parameter to MsgBox: expected ALERT_OK, ALERT_OKCANCEL, ALERT_YESNO, or ALERT_YESNOCANCEL'
+  #endif
+  return __retval;
+
+
 //-- Debugging functions --
 
 {- These wrappers streamline the interface, and also eliminate these functions 
@@ -487,8 +571,10 @@
       #redef __retval = __dbmoc (__debugmsg__)
     #elseif __debugtype__ == DEBUG_YESNO
       #redef __retval = __dbmyn (__debugmsg__)
+    #elseif __debugtype__ == DEBUG_YESNOCANCEL
+      #redef __retval = __dbmync (__debugmsg__)
     #else
-      #error 'invalid parameter to __DebugMsgBox: expected DEBUG_OK, DEBUG_OKCANCEL, or DEBUG_YESNO'
+      #error 'invalid parameter to __DebugMsgBox: expected DEBUG_OK, DEBUG_OKCANCEL, DEBUG_YESNO, or DEBUG_YESNOCANCEL'
     #endif
   #endif
   return __retval;

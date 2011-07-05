@@ -54,7 +54,10 @@ let _loc pos =
 %token<[`Define | `DefineScoped | `Redefine | `Const | `Bind | `EBind]> DDEFINE
 %token DSET DUNDEF DHIDING
 %token OP USCORE RETURN IF ELSE WHILE REPEAT TILL FOR CASE OF OTHER ECASE BREAK CONTINUE RAW ENDRAW
+/*
 %token<[`Goto | `Gosub]> GOTOCASE GOTOON
+*/
+%token<[`Goto | `Gosub]> GO_CASE GO_LIST
 %token<string * int> SELECT
 %token<[ `S | `Pause ]> SPECIAL
 
@@ -566,6 +569,7 @@ sel_param:
 
 (* Special functions *)
 
+(*
 %inline
 gotofunction:
   | func = GOTOON   
@@ -577,6 +581,26 @@ gotofunction:
         `GotoOn (_loc $startpos, func, sel, labels)
       }
   | func = GOTOCASE
+    sel  = expr
+    LCUR
+      cases = separated_nonempty_list(SEMI, case) SEMI?
+    RCUR
+      {
+        `GotoCase (_loc $startpos, func, sel, cases)
+      }
+*)
+
+%inline
+gotofunction:
+  | func = GO_LIST   
+    sel  = expr 
+    LCUR
+      labels = separated_nonempty_list(COMMA, label)
+    RCUR
+      { 
+        `GotoOn (_loc $startpos, func, sel, labels)
+      }
+  | func = GO_CASE
     sel  = expr
     LCUR
       cases = separated_nonempty_list(SEMI, case) SEMI?

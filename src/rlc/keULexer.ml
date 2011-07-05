@@ -1,6 +1,7 @@
 (*
-    Rlc: Kepago lexer
-    Copyright (C) 2006 Haeleth
+   Rlc: Kepago lexer
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -16,6 +17,7 @@
    this program; if not, write to the Free Software Foundation, Inc., 59 Temple
    Place - Suite 330, Boston, MA  02111-1307, USA.
 *)
+
 (*pp *)
 
 open Printf
@@ -25,6 +27,7 @@ open Ulexing
 
 
 (* Regexp definitions *)
+
 let regexp digit = ['0'-'9']
 let regexp hex = ['0'-'9' 'a'-'f' 'A'-'F']
 let regexp decimal = digit (digit | '_')*
@@ -59,12 +62,14 @@ let regexp ident = id_start id_cont*
 
 
 (* Keywords *)
+
 let keywords = ref (
   Array.fold_left (fun m (k, v) -> PMap.add (Text.ident k) v m) PMap.empty
     [|
     (* Directives *)
       "#file",        DWITHEXPR ("file",        `Str);
       "#resource",    DWITHEXPR ("resource",    `Str);
+      "#base_res",    DWITHEXPR ("base_res",    `Str);
       "#entrypoint",  DWITHEXPR ("entrypoint",  `Int);
       "#character",   DWITHEXPR ("character",   `Str);
       "#val_0x2c",    DWITHEXPR ("val_0x2c",    `Int);
@@ -72,6 +77,9 @@ let keywords = ref (
       "#print",       DWITHEXPR ("print",       `None);
       "#error",       DWITHEXPR ("error",       `None);
       "#warn",        DWITHEXPR ("warn",        `None);
+
+      "#exclude",     DWITHEXPR ("exclude",     `Int); (* list); *)
+
       "#hiding",      DHIDING;
       "#define",      DDEFINE `Define;
       "#sdefine",     DDEFINE `DefineScoped;
@@ -87,6 +95,10 @@ let keywords = ref (
       "#sinline",     DINLINE true;
       "#load",        DLOAD;
 
+(*
+      "#pragma",      PRAGMA 
+*)
+      
     (* Keywords per se *)
       "eof", DEOF;
       "halt", DHALT;
@@ -150,16 +162,60 @@ let keywords = ref (
     Config.ivar_prefix ^ "G8b", VAR 0x6e; Config.ivar_prefix ^ "Z8b", VAR 0x81; 
 
     (* Hard functions *)
+(*    
       "goto_on",      GOTOON   (`Goto);
       "goto_case",    GOTOCASE (`Goto);
       "gosub_on",     GOTOON   (`Gosub);
       "gosub_case",   GOTOCASE (`Gosub);
+*)
+
+      "goto_on",      GO_LIST ("goto_on",     (Text.of_err "goto_on"));
+      "goto_case",    GO_CASE ("goto_case",    (Text.of_err "goto_case"));
+      "gosub_on",     GO_LIST ("gosub_on",    (Text.of_err "gosub_on"));
+      "gosub_case",   GO_CASE ("gosub_case",(Text.of_err "gosub_case"));
+      
       "select_w",     SELECT ("select_w",   0);
       "select",       SELECT ("select",     1);
       "select_s2",    SELECT ("select_s2",  2);
       "select_s",     SELECT ("select_s",   3);
       "select_w2",    SELECT ("select_w2", 10);
-    |]
+      "select_msgcancel", SELECT ("select_msgcancel", 11);
+      "select_btncancel", SELECT ("select_btncancel", 12);
+      "select_btnwkcancel", SELECT ("select_btnwkcancel", 13);
+(*
+      "select_23",    SELECT ("select_23",     0);
+*)
+
+(*
+      | 0 -> "select_w" 
+      | 1 -> "select" 
+      | 2 -> "select_s2" 
+      | 3 -> "select_s" 
+(*
+      | 4 -> "select_btnobj"
+      | 10 -> "select_w2"
+*)
+      | 10 -> "select_cancel"
+      | 11 -> "select_msgcancel"
+      | 12 -> "select_btncancel"
+      | 13 -> "select_btnwkcancel"
+(*
+      | 14 -> "select_btnobjcancel"
+      | 20 -> "select_btnobjinit"
+      | 21 -> "select_btnobjinitall"
+      | 22 -> "select_btnobjstart"
+      | 23 -> "select_btnobjend"
+      | 30 -> "select_btnobjnow_hit"
+      | 31 -> "select_btnobjnow_push"
+      | 32 -> "select_btnobjnow_decide"
+      | 33 -> "select_btnobjnow_push_left"
+      | 34 -> "select_btnobjnow_decide_left"
+      | 35 -> "select_btnobjnow_push_right"
+      | 26 -> "select_btnobjnow_decide_right"
+      | 122 -> "select_btnobjstart_with_right_click"
+*)
+*)
+      |]
   )
 
 let token_of_identifier tkn =
@@ -169,10 +225,15 @@ let token_of_identifier tkn =
     DynArray.clear gotofuncs
   );
   (* Search for token in keyword table *)
+  
+(*
+  printf "tkn: %s\n" (Text.to_sjs tkn);
+*)
+  
   try
     PMap.find (Text.norm tkn) !keywords
   with Not_found ->
-    IDENT (Text.to_sjs tkn, Text.norm tkn)
+    (* printf "  Not_found\n"; *) IDENT (Text.to_sjs tkn, Text.norm tkn)
 
 
 let lcount = Array.fold_left (fun acc c -> if c = 10 then acc + 1 else acc) 0
@@ -207,26 +268,145 @@ let lex_resstr_key lstate lexbuf =
 let lex_string sterm _ =
   StrLexer.get_string_tokens (match sterm with "'" -> `Single | "\"" -> `Double | _ -> `ResStr)
 
-
 let rec get_token lstate =
+(* printf "  get_token() @ line %d\n" lstate.line; *)
+  
   let return t = t, lstate in
+  
+(*
+  let return t = printf "token: %d\n" t; t, lstate in
+*)
+
   lexer
     | eof -> return EOF
 
     (* Whitespace and comments *)
+    
     | [" \t"]+ -> get_token lstate lexbuf
     | '\r'? '\n'  -> get_token { lstate with line = lstate.line + 1 } lexbuf
     | "//" -> (lexer [^ '\n']* ('\n' | eof) -> () | _ -> assert false) lexbuf;
+              (* printf "  '//' lexeme: '%s'\n" (Ulexing.latin1_lexeme lexbuf); *)
               get_token { lstate with line = lstate.line + 1 } lexbuf
     | "{-" -> let nstate = skip_comment lstate lstate lexbuf in
               get_token nstate lexbuf
 
     (* Lexer directives *)
+    
     | "#line" [" \t"]+ kpg_number
        -> rollback lexbuf;
           (lexer "#line" -> () | _ -> assert false) lexbuf;
           (match get_token lstate lexbuf with
             | INTEGER i, lstate' -> get_token { lstate' with line = Int32.to_int i - 1 } lexbuf
+            | _ -> assert false)
+
+    | "#res" [" \t\r\n"]* "<" [" \t\r\n"]*
+       -> let lc = lcount (lexeme lexbuf) in
+          let key, nlc = lex_resstr_key { lstate with line = lstate.line + lc } lexbuf in
+          if key = Text.empty then error nlc "anonymous resource string references not permitted in #res references";
+          DRES key, nlc
+
+    (* Symbols *)
+    
+    | "(" -> return LPAR  | ")" -> return RPAR  | "[" -> return LSQU  | "]" -> return RSQU
+    | "{" -> return LCUR  | "}" -> return RCUR
+    | ":" -> return COLON | ";" -> return SEMI  | "," -> return COMMA | "." -> return POINT
+    
+    | "+=" -> return SADD | "-=" -> return SSUB | "*=" -> return SMUL | "/=" -> return SDIV
+    | "%=" -> return SMOD | "&=" -> return SAND | "|=" -> return SOR  | "^=" -> return SXOR
+    | "<<="-> return SSHL | ">>="-> return SSHR | "="  -> return SET  | "->" -> return ARROW
+    | "+"  -> return ADD  | "-"  -> return SUB  | "*"  -> return MUL  | "/"  -> return DIV
+    | "%"  -> return MOD  | "&"  -> return AND  | "|"  -> return OR   | "^"  -> return XOR
+    | "<<" -> return SHL  | ">>" -> return SHR  | "==" -> return EQU  | "!=" -> return NEQ
+    | "<=" -> return LTE  | ">=" -> return GTE  | "<"  -> return LTN  | ">"  -> return GTN
+    | "&&" -> return LAND | "||" -> return LOR  | "!"  -> return NOT  | "~"  -> return TILDE
+
+    (* Literals *)
+    | "0x" hex (hex | '_')*
+       -> warning lstate "Kepago uses $nnn rather than 0xnnn for hexadecimal constants";
+          return (INTEGER (Int32.of_string (utf8_lexeme lexbuf)))
+
+    | kpg_number
+       -> let s = utf8_lexeme lexbuf in
+          return (INTEGER (Int32.of_string (ml_num_of_kpg_num s)))
+
+    | '\'' | '\"'
+       -> let sterm = utf8_lexeme lexbuf in
+          let s, nstate = lex_string sterm (Text.Buf.create 0) lstate lexbuf in
+          STRING s, nstate
+
+(*
+      | "hexd" 
+       -> let rv = DynArray.create () in
+          let rec loop () =
+            lexer
+                (* Whitespace and comments *)
+                | [" \t"]+ -> loop lstate lexbuf
+                | '\r'? '\n'  -> loop { lstate with line = lstate.line + 1 } lexbuf
+                | "//" -> (lexer [^ '\n']* ('\n' | eof) -> () | _ -> assert false) lexbuf;
+                          loop { lstate with line = lstate.line + 1 } lexbuf
+                | "{-" -> let nstate = skip_comment lstate lstate lexbuf in
+                          loop nstate lexbuf
+                          
+                | hex hex
+                    -> loop (DynArray.add rv (INTEGER 
+                        (Int32.of_string (utf8_lexeme lexbuf))))
+                | "endhexd"
+                    -> HEXDUMP (rv)
+                _    -> ksprintf (error lstate) 
+                        "found char 0x%02x in hexdump" 
+                        (lexeme_char lexbuf 0)
+          HEXDUMP rv, nstate in loop ()
+*)
+
+(*
+    let tkn = get_token aux lexbuf in
+    if tkn = `EOS then rv else loop (DynArray.add rv tkn)
+*)
+
+(*
+    match tkn with 
+      | `BRes id -> DynArray.append (Global.get_base_res (Text.norm id)) rv
+*)
+
+(*    
+    -> let hexd = let(lexer [^ '\n']* ('\n' | eof) -> () | _ -> assert false) lexbuf;
+        let 
+*)    
+    (* Keywords and identifiers *)
+    
+    | "__file__" -> return (STRING (DynArray.of_list [`Text (lstate, `Sbcs, Text.of_err lstate.file)]))
+    | "__line__" -> return (INTEGER (Int32.of_int lstate.line))
+    | ident -> return (token_of_identifier (Text.of_arr (lexeme lexbuf)))
+
+    (* Labels *)
+    | '@' id_cont+
+       -> let id = Text.of_arr (sub_lexeme lexbuf 1 (lexeme_length lexbuf - 1)) in
+          return (LABEL (Text.to_sjs id, Text.norm id))
+
+    | _ -> ksprintf (error lstate) "invalid character 0x%02x in source file" (lexeme_char lexbuf 0)
+
+
+(*
+let rec _get_token lstate =
+  let return t = t, lstate in
+
+  lexer
+    | eof -> return EOF
+
+    (* Whitespace and comments *)
+    | [" \t"]+ -> _get_token lstate lexbuf
+    | '\r'? '\n'  -> _get_token { lstate with line = lstate.line + 1 } lexbuf
+    | "//" -> (lexer [^ '\n']* ('\n' | eof) -> () | _ -> assert false) lexbuf;
+              _get_token { lstate with line = lstate.line + 1 } lexbuf
+    | "{-" -> let nstate = skip_comment lstate lstate lexbuf in
+              _get_token nstate lexbuf
+
+    (* Lexer directives *)
+    | "#line" [" \t"]+ kpg_number
+       -> rollback lexbuf;
+          (lexer "#line" -> () | _ -> assert false) lexbuf;
+          (match _get_token lstate lexbuf with
+            | INTEGER i, lstate' -> _get_token { lstate' with line = Int32.to_int i - 1 } lexbuf
             | _ -> assert false)
 
     | "#res" [" \t\r\n"]* "<" [" \t\r\n"]*
@@ -274,7 +454,36 @@ let rec get_token lstate =
           return (LABEL (Text.to_sjs id, Text.norm id))
 
     | _ -> ksprintf (error lstate) "invalid character 0x%02x in source file" (lexeme_char lexbuf 0)
+(*
+  in
+*)
+  
+(*
+  let sl = App.options.start_line in
+  let el = App.options.end_line in
+*)
 
+let rec get_token lstate =
+  function lexbuf ->
+(*
+  let return t = t, lstate in
+*)
+  let sl = !App.start_line in
+  let el = !App.end_line in
+  
+  if sl > -1 && lstate.line < sl then (
+    let rec loop lst = 
+      let tk, ls = _get_token lst lexbuf in
+      if ls.line < sl then loop ls
+      else tk, ls
+    in
+    loop lstate
+  ) else (
+    if el > -1 && lstate.line < el 
+    then _get_token lstate lexbuf
+    else EOF, lstate
+  )
+*)
 
 let call_parser ?(file = "no file") ?(line = 1) entrypoint lexfun lexbuf =
   let dummy = Lexing.from_function (fun _ n -> n) in
@@ -286,6 +495,7 @@ let call_parser ?(file = "no file") ?(line = 1) entrypoint lexfun lexbuf =
     rv
   in
   entrypoint lex dummy
+  
 (* Example: call_parser KeParser.statement get_token (lex_channel some_channel) ~file:"foo.ke" *)
 
 let call_parser_on_text entrypoint loc s =

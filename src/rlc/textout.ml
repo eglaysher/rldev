@@ -1,6 +1,7 @@
 (*
-    Rlc: text output compilation
-    Copyright (C) 2006 Haeleth
+   Rlc: text output compilation
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -16,6 +17,7 @@
    this program; if not, write to the Free Software Foundation, Inc., 59 Temple
    Place - Suite 330, Boston, MA  02111-1307, USA.
 *)
+
 (*pp pa_macro.cmo ./pa_matches.cmo *)
 
 open Printf
@@ -230,7 +232,7 @@ let compile addstrs loc text =
   in
   let rec parse idx =
     function
-      | `EOS | `Delete _ | `Rewrite _ -> assert false
+      | `EOS | `Delete _ | `Rewrite _ | `ResRef _ -> assert false
       | `DQuote _ -> add_nontext id_dquot 0 0
       | `LLentic _  -> add_text `Dbcs (Text.of_arr [| 0x3010 |])
       | `RLentic _  -> add_text `Dbcs (Text.of_arr [| 0x3011 |])
@@ -333,7 +335,7 @@ let compile_stub addstrs loc text =
   let rec parse elt =
     if !ignore_one_space && not (elt matches `Space _) then ignore_one_space := false;
     match elt with
-      | `EOS | `Delete _ | `Rewrite _ -> assert false
+      | `EOS | `Delete _ | `Rewrite _ | `ResRef _ -> assert false
       | `DQuote _ -> set_quotes true; Buffer.add_string b "\\\""
       | `RCur _ -> set_quotes false;
                    Buffer.add_string b "\x81\x7a";
@@ -367,7 +369,25 @@ let compile_stub addstrs loc text =
       | `Code (loc, id, _, params)
          -> flush ();
             Function.compile (loc, None, Text.to_sjs id, id, params, None) ~is_code:true
+(*
       | `Text (_, _, t) -> set_quotes true; Buffer.add_string b (TextTransforms.to_bytecode t)
+*)
+
+(*
+      | `Text (_, _, t) -> set_quotes true; ( try 
+	      Buffer.add_string b (TextTransforms.to_bytecode t)
+		with Text.Bad_char c ->
+	      ksprintf (warning loc) "cannot represent U+%04x in RealLive bytecode with %s" c (TextTransforms.describe ());
+		  raise (Text.Bad_char c)
+		)  
+*)
+
+      | `Text (_, _, t) -> set_quotes true; ( try 
+	      Buffer.add_string b (TextTransforms.to_bytecode t)
+		with Text.Bad_char c ->
+	      warning loc (TextTransforms.complain c "textout token")
+		)
+		
       | `Space (_, i) -> let j = if i > 0 && !ignore_one_space then (ignore_one_space := false; i - 1) else i in
                          Buffer.add_string b (String.make j ' ')
       | `Name (l, lg, i, w)
@@ -428,8 +448,8 @@ let handle_rewrite pause_or_page loc text =
       | KeAstParser.SPECIAL `Pause, l 
          -> (match pause_or_page with
               | `No -> ()
-              | `Pause _ -> add (KeAstParser.IDENT ("pause", Text.ident "pause")) l
-              | `Page _ -> add (KeAstParser.IDENT ("page", Text.ident "page")) l)
+              | `Pause _ -> (* printf "PAUSE1\n"; *) add (KeAstParser.IDENT ("pause", Text.ident "pause")) l
+              | `Page _ -> (* printf "PAGE1\n"; *) add (KeAstParser.IDENT ("page", Text.ident "page")) l)
       | elt -> Queue.add elt nfunc)
     func;
   Queue.add (KeAstParser.EOF, nowhere) nfunc;
@@ -458,8 +478,8 @@ let rec do_compile ?(eaddstrs = Queue.create ()) compilefun (loc, text, pause_or
   (* In all cases, finalise. *)
   Queue.transfer eaddstrs addstrs;
   (match !this_pause_or_page with
-    | `Pause l -> call "pause" []
-    | `Page l -> call (if Queue.is_empty addstrs then "page" else "pause") []
+    | `Pause l -> (* printf "PAUSE2\n"; *) call "pause" []
+    | `Page l -> (* printf "PAGE2\n"; *) call (if Queue.is_empty addstrs then "page" else "pause") []
     | `No -> ());
   if not (Queue.is_empty addstrs) then
     let _, (nextloc, nexttxt) = Queue.take addstrs in

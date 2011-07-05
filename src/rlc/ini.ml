@@ -1,6 +1,7 @@
 (*
    Rlc: GAMEEXE.INI parser type definitions
    Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -18,6 +19,7 @@
 *)
 
 let curr_line = ref 1
+and curr_file = ref ""
 
 type deftab = (string, definition) Hashtbl.t
 and definition = value list
@@ -81,7 +83,10 @@ let init parsefun lexfun srcdir =
   if filename <> "" then
     let ic = open_in filename in
     App.gameexe := filename;
+(*
     if !App.verbose then Printf.ksprintf Optpp.sysInfo "Reading INI: %s" filename;
+*)
+    if !App.verbose > 0 then Printf.ksprintf Optpp.sysInfo "Reading INI: %s" filename;
     try
       parsefun lexfun (Lexing.from_channel ic);
       close_in ic

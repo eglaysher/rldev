@@ -1,6 +1,7 @@
 /*
    Rlc: Kepago parser
    Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -33,7 +34,8 @@ open ExtList
 let _loc () =
   let pos = symbol_start_pos () in
   { file = pos.Lexing.pos_fname;
-    line = pos.Lexing.pos_lnum }
+    line = pos.Lexing.pos_lnum; }
+(*    char = lexeme_start } *)
 
 let _rhs n =
   let pos = rhs_start_pos n in
@@ -63,7 +65,13 @@ let _rhs n =
 %token<[`Define | `DefineScoped | `Redefine | `Const | `Bind | `EBind]> DDEFINE
 %token DSET DUNDEF DHIDING
 %token OP USCORE RETURN IF ELSE WHILE REPEAT TILL FOR CASE OF OTHER ECASE BREAK CONTINUE RAW ENDRAW
+/*
 %token<[`Goto | `Gosub]> GOTOCASE GOTOON
+%token<[`Goto | `Gosub]> IDENT
+%token<string * string> GOTOCASE GOTOON
+%token<string * Text.t> GOTOCASE GOTOON
+*/
+%token<string * Text.t> GO_CASE GO_LIST
 %token<string * int> SELECT
 %token<[ `S | `Pause ]> SPECIAL
 
@@ -120,7 +128,10 @@ cstatement:
   | COMMA statement { $2 }
 
 statement:
-  | error        { error (_loc()) "expected statement" }
+  | error        { error (_loc()) (Printf.sprintf 
+                    "expected statement @ %d to %d"
+                    (symbol_start ()) 
+                    (symbol_end ())) }
   | DHALT        { `Halt (_loc()) }
   | BREAK        { `Break (_loc()) }
   | CONTINUE     { `Continue (_loc()) }
@@ -129,7 +140,7 @@ statement:
   | directive    { $1 }
   | unknown_op   { $1 }
   | gotofunction { $1 }
-  | structure    { $1 }
+  | structure    { (* Printf.printf "structure\n"; *) $1 }
   | assignment   { $1 :> statement }
   | statement_expr { match $1 with
                        | `VarOrFn v -> `VarOrFn v
@@ -138,6 +149,9 @@ statement:
                        | _ -> `Return (_loc(), false, $1) }
   | RETURN expression  { `Return (_loc(), true, $2) }
   | RAW rawelts ENDRAW { `RawCode (_loc(), $2) }
+/*
+  | HEXDUMP       { `Hexdump (_loc(), $2) }
+*/
 
 rawelts: /* empty */     { [] }
   | rawelt rawelts { $1 :: $2 }
@@ -152,6 +166,25 @@ rawelt:
   | INTEGER { `Int $1 }
 
 raw_v: REG { $1 } | VAR { $1 } | SVAR { $1 }
+
+/*
+hexelts: / * empty * /     { [] }
+  | rawelt HEXBYTE { $1 } hexelts { $1 :: $2 }
+
+hexelts: / * empty * /     { [] }
+  | rawelt hexelts { $1 :: $2 }
+
+hexelt:
+  | IDENT { `Ident $1  } / * #hex = insert hex bytes; ?text = insert to_sjs(text) directly * /
+  | raw_v { `Bytes (sprintf "$%c" (char_of_int $1)) }
+  | COMMA { `Bytes "," }
+  | LPAR  { `Bytes "(" } | RPAR  { `Bytes ")" }
+  | LCUR  { `Bytes "{" } | RCUR  { `Bytes "}" }
+  | LSQU  { `Bytes "[" } | RSQU  { `Bytes "]" }
+  | INTEGER { `Int $1 }
+
+raw_v: REG { $1 } | VAR { $1 } | SVAR { $1 }
+*/
 
 structure:
   | COLON statements SEMI
@@ -171,7 +204,7 @@ structure:
   | DIF expression statements condelseorend
       { `DIf (_loc(), $2, $3, $4) }
   | DIFDEF expression statements condelseorend
-      { let cond =
+      { (* Printf.printf "DIFDEF\n"; *) let cond =
           map_expr_leaves
             (function
               | `VarOrFn (l, _, _) as leaf
@@ -239,10 +272,39 @@ module_id:
 
 sep: COLON {} | COMMA {} | POINT {} | SEMI {} | SUB {} | DIV {}
 
+/*
 gotofunction:
   | GOTOON expression LCUR labels RCUR  { `GotoOn (_loc(), $1, $2, $4) }
   | GOTOCASE expression LCUR cases RCUR { `GotoCase (_loc(), $1, $2, $4) }
+*/
 
+gotofunction:
+  | GO_LIST expression LCUR labels RCUR { `GotoOn  (_loc(), $1, $2, $4) }
+  | GO_CASE expression LCUR cases RCUR { `GotoCase (_loc(), $1, $2, $4) }
+
+/*
+gotofunction:
+  | IDENT LPAR expression RPAR LCUR labels RCUR  { `GotoOn (_loc(), $1, $3, $6) }
+  | IDENT LPAR expression RPAR LCUR cases RCUR { `GotoCase (_loc(), $1, $3, $6) }
+*/
+
+/*
+gotofunction:
+  | IDENT expression LCUR labels RCUR  { let str, txt = $1 in `Func (_loc(), str, txt, $2 :: [], Some $4) }
+  | IDENT expression LCUR cases RCUR { let str, txt = $1 in `Func (_loc(), str, txt, [$2], Some $4) }
+*/
+
+/*
+gotofunction:
+  | IDENT expression LCUR labels RCUR  { let str, txt = $1 in `GotoOn (_loc(), str, txt, $2, $4) }
+  | IDENT expression LCUR cases RCUR { let str, txt = $1 in `GotoCase (_loc(), str, txt, $2, $4) }
+*/
+
+/*
+gotofunction:
+  | IDENT expression LCUR labels RCUR  { let str, txt = $1 in `GotoOn (_loc(), (str, txt), $2, $4) }
+  | IDENT expression LCUR cases RCUR { let str, txt = $1 in `GotoCase (_loc(), (str, txt), $2, $4) }
+*/
 cases:
   | case                 { $1 :: [] }
   | case SEMI            { $1 :: [] }
@@ -255,6 +317,10 @@ case:
 functioncall:
   | IDENT LPAR param_list RPAR
       { let str, txt = $1 in `Func (_loc(), str, txt, $3, None) }
+/*
+  | IDENT LPAR expression RPAR LCUR labels RCUR  { `GotoOn (_loc(), $1, $3, $6) }
+  | IDENT LPAR expression RPAR LCUR cases RCUR { `GotoCase (_loc(), $1, $3, $6) }
+*/
   | GOTO label
       { let str, txt = $1 in `Func (_loc(), str, txt, [], Some $2) }
   | GOTO LPAR param_list RPAR label

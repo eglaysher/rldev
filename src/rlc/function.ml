@@ -1,6 +1,7 @@
 (*
-    Rlc: function typechecking and compilation
-    Copyright (C) 2006 Haeleth
+   Rlc: function typechecking and compilation
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -16,6 +17,7 @@
    this program; if not, write to the Free Software Foundation, Inc., 59 Temple
    Place - Suite 330, Boston, MA  02111-1307, USA.
 *)
+
 (*pp pa_macro.cmo ./pa_matches.cmo *)
 
 (*DEFINE DEBUG*)
@@ -49,7 +51,7 @@ let expected loc etype msg =
 (* Error function: `Func outside special context *)
 let rec undeclared_func_in_expr =
   function
-    | `Func (loc, s, _, _, _) -> ksprintf (error loc) "undeclared identifier `%s'" s
+    | `Func (loc, s, _, _, _) -> ksprintf (error loc) "undeclared identifier[5] `%s'" s
     | `Parens (_, e) -> undeclared_func_in_expr e
     | #expression -> invalid_arg "undeclared_func_in_expr"
 
@@ -82,13 +84,36 @@ let double_quote_var =
    selected: the [params] parameter is used only to disambiguate the single case in
    which two opcodes share the same name. *)
 let get_func_def ?(look_in = functions) t params =
+(*
+  ksprintf Optpp.cliWarning "get_func_def %s" (Text.to_sjs t);
+*)
+
+(*
   let defs = Hashtbl.find_all look_in t in
+*)
+  
+  let defs = match Hashtbl.find_all look_in t with
+    | [] -> raise Exit
+    | d -> List.filter valid_opcode d in
+
+(*    
+  ksprintf Optpp.cliWarning "defs: %d" (List.length defs);
+*)
+  
+(*
   if defs = [] then raise Exit;
   match List.filter valid_opcode defs with
-    | [] -> ksprintf failwith "the function `%s' is not supported in %s" (Text.to_sjs t) (current_version_string ())
+*)
+
+  match defs with
+    | [] -> ksprintf failwith "the function `%s' is not supported in %s" 
+      (Text.to_sjs t) (current_version_string ())
     | [one] -> one
-    | defs (* Currently inter-opcode overloading is only implemented sufficiently to handle grpMulti. *)
-       -> let first_param_type =
+    | defs (* Currently inter-opcode overloading is only 
+              implemented sufficiently to handle grpMulti. *)
+       -> if params <> [] then 
+          (* try *)
+          let first_param_type =
             match
               type_of_normalised_expr ~allow_invalid:false
                 (match params with `Simple (_, e) :: _ -> e | _ -> raise Not_found)
@@ -99,10 +124,17 @@ let get_func_def ?(look_in = functions) t params =
           in
           List.find
             (fun { prototypes = p } ->
-              let p1 = try fst (List.hd (Option.get (List.find Option.is_some (Array.to_list p)))) with _ -> raise Not_found
+              let p1 = try fst (List.hd (Option.get 
+                (List.find Option.is_some (Array.to_list p)))) 
+                with _ -> raise Not_found
               in (first_param_type = `Str && List.mem p1 [Str; StrC; StrV; ResStr])
               || (first_param_type = `Int && List.mem p1 [Int; IntC; IntV]))
             defs
+        else ver_fun (Text.to_sjs t) defs
+(*
+        with
+          Not_found -> ver_fun (Text.to_sjs t) defs
+*)          
 
 
 (* Eliminate prototype options, by comparison with a list of parameters, until
@@ -153,10 +185,12 @@ let choose_overload loc options params =
             | Some (t, o, hr, _)
              -> let s = ref used_lengths in
                 for i = t - o to t do
-                  if ISet.mem i used_lengths then error loc "internal error: failed choose_overload invariant 1";
+                  if ISet.mem i used_lengths then error loc 
+                    "internal error: failed choose_overload invariant 1";
                   s := ISet.add i !s
                 done;
-                if has_repeated = Some (not hr) then error loc "internal error: failed choose_overload invariant 2";
+                if has_repeated = Some (not hr) then error loc 
+                  "internal error: failed choose_overload invariant 2";
                 !s, had_nodef, Some hr
             | None
              -> if had_nodef then error loc "internal error: failed choose_overload invariant 3";
@@ -181,7 +215,8 @@ let choose_overload loc options params =
         List.find
           (function
             | None -> false
-            | Some (total, optional, _, _) -> total >= param_count && total - optional <= param_count)
+            | Some (total, optional, _, _) -> 
+              total >= param_count && total - optional <= param_count)
           overload_lengths
       with
         | Some (_, _, _, rv) -> rv
@@ -208,26 +243,33 @@ let rec check_and_compile loc funname defs params =
       let s_defs =
         match ptype with
           | Special d -> d
-          | _ -> expected ll ptype ("found " ^ match stype with `Index _ -> "special function" | `Named (s, _) -> sprintf "undeclared function `%s'" s | `AsComplex -> "tuple")
+          | _ -> expected ll ptype ("found " ^ match stype with `Index _ -> 
+            "special function" | `Named (s, _) -> 
+            sprintf "undeclared function `%s'" s | `AsComplex -> "tuple")
       in
       let s_id, s_def, s_flags =
         match stype with
           | `Index i
              -> (try List.find (fun (a, _, _) -> a == i) s_defs
-                 with Not_found -> ksprintf (error ll) "special function %d is not defined for %s" i funname)
+                 with Not_found -> ksprintf (error ll) 
+                   "special function %d is not defined for %s" i funname)
           | `Named (s, t)
              -> begin
-                  match List.filter (function _, Named (s, _), _ -> Text.ident s = t | _ -> false) s_defs
+                  match List.filter (function _, Named (s, _), _ -> 
+                    Text.ident s = t | _ -> false) s_defs
                 with
                   | [] -> ksprintf (expected ll ptype) "found undeclared function %s" s
                   | [single] -> single
                   | multiple ->
                     try
                       List.find
-                        (function _, Named (_, d), _ -> List.length d = List.length lparams | _ -> assert false)
+                        (function _, Named (_, d), _ -> 
+                        List.length d = List.length lparams 
+                        | _ -> assert false)
                         multiple
                     with Not_found ->
-                      ksprintf (error ll) "unable to find a version of the %s special function `%s' that matches these parameters" funname s
+                      ksprintf (error ll) ("unable to find a version of the %s " ^^ 
+                      "special function `%s' that matches these parameters") funname s
                 end
           | `AsComplex
              -> begin
@@ -248,7 +290,8 @@ let rec check_and_compile loc funname defs params =
                               match dt, lt with
                                 | Any, (`Int | `Str)
                                 | (Int | IntC | IntV), `Int
-                                | (Str | StrC | StrV | ResStr), (`Str | `Literal) -> loop (ds, ls)
+                                | (Str | StrC | StrV | ResStr), 
+                                  (`Str | `Literal) -> loop (ds, ls)
                                 | _ -> false
                       in
                       loop (defparams, lparams)                        
@@ -258,9 +301,11 @@ let rec check_and_compile loc funname defs params =
                         (function _, AsComplex d, _ -> lengths_and_types_match d | _ -> assert false) 
                         multiple
                     with
-                      | [] -> ksprintf (error ll) "unable to find a version of %s that accepts tuples of this type" funname
+                      | [] -> ksprintf (error ll) ("unable to find a version " ^^ 
+                        "of %s that accepts tuples of this type") funname
                       | [single] -> single
-                      | multiple -> ksprintf Optpp.sysError "internal error: function %s has ambiguous definition" funname
+                      | multiple -> ksprintf Optpp.sysError 
+                        "internal error: function %s has ambiguous definition" funname
                 end
       in
       let s_def = match s_def with Named (_, d) | AsComplex d -> Array.of_list d
@@ -274,8 +319,12 @@ let rec check_and_compile loc funname defs params =
             | `AsComplex  -> "tuple")
           (List.length lparams);
       if not (List.mem Uncount pflags) then incr argc;
+      (* printf "s_id: %d\n" s_id; *)
       `Special
+(*
          (char_of_int s_id,
+*)
+         (s_id,
           s_flags,
           List.mapi
             (fun i elt -> map_param s_def (ref 0) i (simple_of_expression elt))
@@ -322,7 +371,8 @@ let rec check_and_compile loc funname defs params =
         try
           DynArray.iter
             (function `EOS -> assert false
-              | `RCur _ | `LLentic _ | `RLentic _ | `Asterisk _ | `Percent _ | `Hyphen _ | `Text _ | `Space _ -> ()
+              | `RCur _ | `LLentic _ | `RLentic _ | `Asterisk _ 
+              | `Percent _ | `Hyphen _ | `Text _ | `Space _ -> ()
               | _ -> raise Exit)
             text;
           true
@@ -365,11 +415,13 @@ let rec check_and_compile loc funname defs params =
           (fun () -> Buffer.contents buffer),
           (fun () ->
             if Buffer.length buffer > 0 then
-              let fn = if is_cpy_or_cat <> `Strcat && !empty then "strcpy" else "strcat" in
+              let fn = if is_cpy_or_cat <> `Strcat && !empty 
+              then "strcpy" else "strcat" in
               let s = Buffer.contents buffer in
               Output.add_code nowhere
                 (FuncAsm.compile_function_str nowhere (rlfun fn)
-                  [`String (code_of_expr accum); `Literal (if !quoted then sprintf "\"%s\"" s else s)]);
+                  [`String (code_of_expr accum); `Literal 
+                    (if !quoted then sprintf "\"%s\"" s else s)]);
               empty := false;
               quoted := false;
               Buffer.clear buffer)
@@ -383,7 +435,8 @@ let rec check_and_compile loc funname defs params =
             | `Asterisk _ -> add "\x81\x96"
             | `Percent _  -> add "\x81\x93"
             | `Hyphen _   -> quote (); add "-"
-            | `Text (l, _, s)
+ (*
+           | `Text (l, _, s)
                ->(if not_quoted () then try
                    Text.iter (fun c -> if not (StrTokens.unquoted_char c) then raise Exit) s
                   with Exit -> quote ());
@@ -391,6 +444,31 @@ let rec check_and_compile loc funname defs params =
                     add (TextTransforms.to_bytecode s)
                   with Text.Bad_char c ->
                     ksprintf (error l) "cannot represent U+%04x in RealLive bytecode" c)
+*)
+
+            | `Text (l, _, s)
+               -> (try (if not_quoted () then try
+                   Text.iter (fun c -> if not (StrTokens.unquoted_char c) then raise Exit) s
+                  with Exit -> quote ());
+                    add (TextTransforms.to_bytecode s)
+                  with Text.Bad_char c ->
+                    (*
+                    ksprintf (error l) "cannot represent U+%04x in RealLive bytecode" c)
+                    *)
+                    (*
+                    ksprintf (warning l) ("cannot represent U+%04x in RealLive "
+                      ^^ "bytecode [function parameter] with %s") 
+                      c (TextTransforms.describe ());
+                    *)
+                    
+                    warning l (TextTransforms.complain c "function parameter");
+                    
+                    add " "; (* sane default for emergencies *)
+                    (*
+                    raise (Text.Bad_char c));
+                    *)
+                )
+
             | `Space (_, i) -> quote (); add (String.make i ' ')
            (* Special cases for objOfText *)
             | `Code (l, t, _, p) when List.mem TextObject pflags && StrTokens.is_object_code t
@@ -401,6 +479,7 @@ let rec check_and_compile loc funname defs params =
             | `Gloss (l, `Ruby, _, _) -> invalid l "ruby"
             | `Add (l, _) -> invalid l "a"
             | `Delete l -> invalid l "d"
+            | `ResRef (l, _) -> invalid l "res"
             | `Rewrite (l, _) -> invalid l "f"
             | `Code (l, t, _, _) when not (StrTokens.is_output_code t) -> invalid l (Text.to_sjs t)
            (* Elements requiring accumulation *)
@@ -564,7 +643,9 @@ let rec check_and_compile loc funname defs params =
           else
             (if List.exists (function Optional | Argc -> true | _ -> false) (snd elt)
              then acc
-             else IFDEF DEBUG THEN failwith "arg not optional in check_and_compile" ELSE fail loc funname END))
+             else IFDEF DEBUG THEN 
+               failwith "arg not optional in check_and_compile" 
+               ELSE fail loc funname END))
         0
         (List.filter (function _, pflags -> not (List.mem Return pflags)) defs)
     in
@@ -584,6 +665,9 @@ let rec check_and_compile loc funname defs params =
 (* Compile a function: general case.  The expressions in [params] must be normalised. *)
 and compile ?(is_code = false) (loc, dest, s, t, params, label) =
   IFDEF DEBUG THEN ksprintf (info loc) "compiling %s" s ELSE () END;
+(*
+  IFDEF DEBUG THEN ksprintf (info loc) "compiling %s %s %d %s" s (Text.to_sjs t) (List.length params) (if is_code then "true" else "false") ELSE () END;
+*)
   (* Retrieve the fndef. *)
   let def =
     try
@@ -612,7 +696,11 @@ and compile ?(is_code = false) (loc, dest, s, t, params, label) =
       | None -> List.map (fun _ -> Any, []) params
   in
   (* If this is a special-case conditional, check for and handle optimised cases. *)
+(*
   if List.mem IsCond def.flags && Goto.special_case compile loc s def.ident params label
+*)
+  if List.mem IsCond def.flags && Goto.special_case compile loc s def.ident 
+    (List.mem IsNeg def.flags) (List.mem IsCall def.flags) params label
   then () (* Case handled, do nothing more *)
   else (* Continue compiling as standard case *)
     (* Iterate through parameters, checking types and compiling expressions. *)

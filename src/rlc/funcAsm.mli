@@ -1,6 +1,7 @@
 (*
-    Rlc: function assembler
-    Copyright (C) 2006 Haeleth
+   Rlc: function assembler
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -21,7 +22,10 @@ type parameter =
     [ `Integer of string
     | `List of parameter list
     | `Literal of string
+(*
     | `Special of char * KfnTypes.special_flag list * parameter list
+*)
+    | `Special of int * KfnTypes.special_flag list * parameter list
     | `String of string
     | `Unknown of string ]
 

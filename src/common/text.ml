@@ -1,6 +1,7 @@
 (*
-    RLdev: unicode handling
-    Copyright (C) 2006 Haeleth
+   RLdev: unicode handling
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -20,6 +21,85 @@
 open Optpp
 open Printf
 open Encoding
+open Cast
+
+(*
+type text_enc =
+  [ `Sjs | `Euc | `Utf8 ]
+*)
+ 
+let badc : (int, int) Hashtbl.t = Hashtbl.create 0
+
+(*
+val string_of_encoding : bool -> string
+Return the string representation of a boolean.
+*)
+
+let string_of_encoding =
+  function
+    | `Sjs -> "Shift-JIS"
+    | `Euc -> "EUC-JP"
+    | `Utf8 -> "Utf-8"
+    | _ -> "Other"
+
+(*
+val bool_of_string : string -> bool
+Convert the given string to a boolean. 
+Raise Invalid_argument "bool_of_string" 
+if the string is not "true" or "false".
+*)
+
+let encoding_of_string s =
+  match String.uppercase s with
+    | "SHIFTJIS" | "SHIFT_JIS" | "SHIFT-JIS" 
+    | "SJS" | "SJIS" | "CP932" -> `Sjs
+    | "EUC-JP" | "EUC" | "EUC_JP" -> `Euc
+    | "UTF8" | "UTF-8" -> `Utf8
+    | _ -> raise (Invalid_argument "encoding_of_string")
+(*
+    | _ -> `Other
+*)
+
+(*
+App.bchars = Hashtbl.create () in
+*)
+
+(*
+Hashtbl.add Add.badc (try 
+  Hashtbl.find App.badc c
+  with Not_found -> 0) + 1;
+*)
+
+let sq1 = ref "'"
+and sq2 = ref "'"
+and dq1 = ref "\""
+and dq2 = ref "\""
+and ch1 = ref "<<"
+and ch2 = ref ">>"
+and hel = ref "..."
+
+(*
+let fancy ?(state = true) = 
+*)
+
+let fancy state = 
+  if state = true then (
+    sq1 := "'";
+    sq2 := "'";
+    dq1 := "\"";
+    dq2 := "\"";
+    ch1 := "<<";
+    ch2 := ">>";
+    hel := "..."
+  ) else (
+    sq1 := "\xE2\x80\x98";
+    sq2 := "\xE2\x80\x99";
+    dq1 := "\xE2\x80\x9C";
+    dq2 := "\xE2\x80\x9D";
+    ch1 := "\xC2«";
+    ch2 := "\xC2»";
+    hel := "…"
+  )
 
 exception Bad_char of int
 
@@ -112,6 +192,279 @@ let to_utf8 a =
       ))
     a;
   Buffer.contents b
+
+let sjs_to_utf8_prep s =
+  let a = (of_sjs s) in
+  let b = Buffer.create 0 in
+  let mask = 0b111111 in
+  Array.iteri
+    (fun i c ->
+      (* printf "c: %02x\n" i; *)
+      if c < 0 || c >= 0x4000000 then (
+        Buffer.add_char b (Char.chr (0xfc + (c lsr 30)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 24) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 18) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 12) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 6) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor (c land mask)))
+
+      ) else if c <= 0x7f then (
+        if c = 0x7d then (
+        let p =
+          let rec findch s i = 
+            (* printf "findch('%s', %d)\n" s i; *)
+            if i > 0 then
+              if String.sub s i 2 = "\\{" then i + 2
+              else findch s (i - 1)
+            else -1
+          in
+          findch (Buffer.contents b) (Buffer.length b - 2)
+        in
+        (* printf "p: %d\n" p; *)
+        if p > -1 then (
+          (* printf "s: %s\n" (Buffer.sub b p (Buffer.length b - p)); *)
+          match Cast.get (Buffer.sub b p (Buffer.length b - p)) with
+            | Some c2 -> let s = (Buffer.sub b 0 p) ^ c2 in
+                Buffer.reset b;
+                Buffer.add_string b s
+            | None -> ()
+        );
+        Buffer.add_char b (Char.unsafe_chr c);
+        ignore(if i + 1 < Array.length a then 
+            if a.(i + 1) <> 0x3000 && a.(i + 1) <> 0x20 then
+                Buffer.add_string b " "
+        )
+        
+        ) else (
+        Buffer.add_char b (Char.unsafe_chr c)
+        );
+(*
+      ) else if c <= 0x7f then (
+        Buffer.add_char b (Char.unsafe_chr i)
+*)
+      ) else if c <= 0x7ff then (
+        Buffer.add_char b (Char.unsafe_chr (0xc0 lor (c lsr 6)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor (c land mask)))
+      ) else if c <= 0xffff then (
+        if c = 0x8163 then Buffer.add_string b !hel
+        else if c = 0x3001 then Buffer.add_string b ", "    (* 0x8141 *)
+        else if c = 0x3002 then Buffer.add_string b "."        (* 0x8142 *)
+        else if c > 0xFF00 && c < 0xFF5F then 
+            Buffer.add_char b (Char.unsafe_chr((c land 0xFF) + 0x20))
+        else if c = 0x3008 then Buffer.add_string b "<"        (* 0x8171 *)
+        else if c = 0x3009 then Buffer.add_string b ">"        (* 0x8172 *)
+        else if c = 0x300A then Buffer.add_string b !ch1    (* 0x8173*)
+        else if c = 0x300B then Buffer.add_string b !ch2    (* 0x8174 *)
+        else if c = 0x300C then Buffer.add_string b !dq1    (* 0x8175 *)
+        else if c = 0x300D then Buffer.add_string b !dq2    (* 0x8176 *)
+        else if c = 0x300E then Buffer.add_string b !sq1    (* 0x8177 *)
+        else if c = 0x300F then Buffer.add_string b !sq2    (* 0x8178 *)
+        else (
+          Buffer.add_char b (Char.unsafe_chr (0xe0 lor (c lsr 12)));
+          Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 6) land mask)));
+          Buffer.add_char b (Char.unsafe_chr (0x80 lor (c land mask)))
+        )
+      ) else if c <= 0x1fffff then (
+        Buffer.add_char b (Char.unsafe_chr (0xf0 + (c lsr 18)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 12) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 6) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor (c land mask)))
+      ) else (
+        Buffer.add_char b (Char.unsafe_chr (0xf8 + (c lsr 24)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 18) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 12) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 6) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor (c land mask)))
+      ))
+    a;
+(*
+    (of_sjs s);
+*)
+(*
+  let a = Buffer.create 0 in
+  String.iter (fun c -> bprintf a "%02X" (int_of_char c)) (Buffer.contents b);
+  printf "hex: %s\n" (Buffer.contents a);
+  printf "buf: %s\n\n" (Buffer.contents b);
+*)
+  Buffer.contents b
+
+(*
+let sjs_to_utf8_prep s =
+  let a = (of_sjs s) in
+  let b = Buffer.create 0 in
+  let mask = 0b111111 in
+  Array.iteri
+    (fun i c ->
+      (* printf "c: %02x\n" i; *)
+      if c < 0 || c >= 0x4000000 then (
+        Buffer.add_char b (Char.chr (0xfc + (c lsr 30)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 24) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 18) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 12) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 6) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor (c land mask)))
+
+      ) else if c <= 0x7f then (
+        if c = 0x7d then (
+(*
+      ) else if i = 0x7d then (
+*)
+        let p =
+          let rec findch s i = 
+            (* printf "findch('%s', %d)\n" s i; *)
+            if i > 0 then
+              if String.sub s i 2 = "\\{" then i + 2
+              else findch s (i - 1)
+            else -1
+          in
+          findch (Buffer.contents b) (Buffer.length b - 2)
+        in
+        (* printf "p: %d\n" p; *)
+        if p > -1 then (
+          (* printf "s: %s\n" (Buffer.sub b p (Buffer.length b - p)); *)
+            
+(*
+          let c2 = Cast.find (Buffer.sub b p (Buffer.length b - p)) in
+          if c2 <> "" then
+            let s = (Buffer.sub b 0 (p - 1)) ^ c2 in
+            Buffer.reset b;
+            Buffer.add_string b s
+*)
+
+          match Cast.get (Buffer.sub b p (Buffer.length b - p)) with
+            | Some c2 -> let s = (Buffer.sub b 0 p) ^ c2 in
+                Buffer.reset b;
+                Buffer.add_string b s
+            | None -> ()
+        );
+        Buffer.add_char b (Char.unsafe_chr c);
+    (*
+        ignore (if i < Array.length a && not(a.[i + 1] = 0x3000 || a.[i + 1] = 0x20) then
+            Buffer.add_char b ' ')
+    *)
+        ignore(if i + 1 < Array.length a then 
+            if a.(i + 1) <> 0x3000 && a.(i + 1) <> 0x20 then
+                Buffer.add_string b " "
+        )
+        
+        ) else (
+        Buffer.add_char b (Char.unsafe_chr c)
+        );
+(*
+      ) else if c <= 0x7f then (
+        Buffer.add_char b (Char.unsafe_chr i)
+*)
+      ) else if c <= 0x7ff then (
+        Buffer.add_char b (Char.unsafe_chr (0xc0 lor (c lsr 6)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor (c land mask)))
+      ) else if c <= 0xffff then (
+(*
+        if c = 0x8163 then Buffer.add_string b "..."
+*)
+        if c = 0x8163 then Buffer.add_string b "…"
+(*
+        else if c = 0x8142 then Buffer.add_string b "."
+*)
+        else if c = 0x3001 then Buffer.add_string b ", "    (* 0x8141 *)
+        else if c = 0x3002 then Buffer.add_string b "."        (* 0x8142 *)
+        else if c > 0xFF00 && c < 0xFF5F then 
+          Buffer.add_char b (Char.unsafe_chr((c land 0xFF) + 0x20))
+(*
+        else if c = 0x8148 then Buffer.add_string b "?"        (* 0x8148 *)
+        else if c = 0x8149 then Buffer.add_string b "!"        (* 0x8149 *)
+*)
+        else if c = 0x3008 then Buffer.add_string b "<"        (* 0x8171 *)
+        else if c = 0x3009 then Buffer.add_string b ">"        (* 0x8172 *)
+(*
+        else if c = 0x300A then Buffer.add_string b "<<"    (* 0x8175 *)
+        else if c = 0x300B then Buffer.add_string b ">>"    (* 0x8175 *)
+*)
+(*
+        else if c = 0x300A then Buffer.add_string b "«"        (* 0x8173*)
+        else if c = 0x300B then Buffer.add_string b "»"        (* 0x8174 *)
+*)
+
+(*
+        else if c = 0x300A || c = 0x300B then (                (* 0x8173 0x8174 *)
+          Buffer.add_char b (Char.unsafe_chr (0xc2));
+(*
+          Buffer.add_char b (Char.unsafe_chr (if c = 0x300A then 0xAB else 0xBB))
+*)
+          Buffer.add_string b (if c = 0x300A then "«" else "»")
+        )
+*)
+        else if c = 0x300A then Buffer.add_string b "\xC2«"        (* 0x8173*)
+        else if c = 0x300B then Buffer.add_string b "\xC2»"        (* 0x8174 *)
+(*
+        else if c = 0x300C then Buffer.add_string b "\""    (* 0x8175 *)
+        else if c = 0x300D then Buffer.add_string b "\""    (* 0x8176 *)
+        else if c = 0x300E then Buffer.add_string b "'"        (* 0x8177 *)
+        else if c = 0x300F then Buffer.add_string b "'"        (* 0x8178 *)
+*)
+        else if c = 0x300C then Buffer.add_string b "\xE2\x80\x9C"    (* 0x8175 *)
+        else if c = 0x300D then Buffer.add_string b "\xE2\x80\x9D"    (* 0x8176 *)
+        else if c = 0x300E then Buffer.add_string b "\xE2\x80\x98"    (* 0x8177 *)
+        else if c = 0x300F then Buffer.add_string b "\xE2\x80\x99"    (* 0x8178 *)
+
+(*
+        else if c = 0x300C || c = 0x300D then (                (* 0x8175 “ 0x8176 ” *)
+          Buffer.add_char b (Char.unsafe_chr (0xe2));
+          Buffer.add_char b (Char.unsafe_chr (0x80));
+          Buffer.add_char b (Char.unsafe_chr (0x9C + (c - 0x300C)));
+        )
+        else if c = 0x300E || c == 0x300F then (            (* 0x8176 ‘ 0x8177 ’ *)
+          Buffer.add_char b (Char.unsafe_chr (0xe2));
+          Buffer.add_char b (Char.unsafe_chr (0x80));
+          Buffer.add_char b (Char.unsafe_chr (0x98 + (c - 0x300E)));
+        )
+*)
+(*
+        else if c = 0x300D then Buffer.add_string b "“"        (* 0x8176 *)
+        else if c = 0x300D then Buffer.add_string b "”"        (* 0x8176 *)
+        else if c = 0x300E then Buffer.add_string b "‘"        (* 0x8177 *)
+        else if c = 0x300F then Buffer.add_string b "’"        (* 0x8178 *)
+*)
+(*
+        else if c = 0xFF5E then Buffer.add_string b "~"        (* 0x8160 *)
+*)
+        else (
+          Buffer.add_char b (Char.unsafe_chr (0xe0 lor (c lsr 12)));
+          Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 6) land mask)));
+          Buffer.add_char b (Char.unsafe_chr (0x80 lor (c land mask)))
+        )
+      ) else if c <= 0x1fffff then (
+        Buffer.add_char b (Char.unsafe_chr (0xf0 + (c lsr 18)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 12) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 6) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor (c land mask)))
+      ) else (
+        Buffer.add_char b (Char.unsafe_chr (0xf8 + (c lsr 24)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 18) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 12) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor ((c lsr 6) land mask)));
+        Buffer.add_char b (Char.unsafe_chr (0x80 lor (c land mask)))
+      ))
+    a;
+(*
+    (of_sjs s);
+*)
+(*
+  let a = Buffer.create 0 in
+  String.iter (fun c -> bprintf a "%02X" (int_of_char c)) (Buffer.contents b);
+  printf "hex: %s\n" (Buffer.contents a);
+  printf "buf: %s\n\n" (Buffer.contents b);
+*)
+  Buffer.contents b
+*)
+
+(*
+let sjs_to_tr_prep enc s =
+  match enc_type enc with
+    | `Sjs -> s
+    | `Euc -> sjs_to_euc s
+    | `Utf8 -> to_tr_prep (of_sjs s)
+    | `Other -> ksprintf sysError "unknown encoding `%s' (valid encodings are Shift_JIS, EUC-JP, UTF-8)" enc
+*)
 
 let sjs_to_enc enc s =
   match enc_type enc with
@@ -221,3 +574,51 @@ let ident =
       let rv = of_sjs (String.lowercase s) in
       Hashtbl.add memo s rv;
       rv
+(*
+let enclog obj log =    
+  if Hashtbl.length badc > 0 then 
+    if log = "" then let log = "mapenc.kh" in
+    let oc = open_out "mapenc.kh.txt" in
+    let sz = out_channel_length oc in
+    
+    Printf.printf "obj: %s\n" obj;
+    Printf.printf "log: %s\n" log;
+    
+    if sz = 0 then (
+      output_string oc "# Specific Encoding Non-Conformity Report\n";
+      output_string oc "# Generic Remap Table for Compliant Output\n";
+      Printf.fprintf oc "# Presented in glorious %s by %s %1.2f\n"
+        (String.lowercase !App.enc) App.app.name App.app.version;
+        (*
+        (String.lowercase obj.app.enc) app.name app.version;
+
+        *)
+      output_string oc ("[ ] Customize the table as desired, rename to \n" ^
+        "\"mapenc.kh\" and move to the script or project directory.\n\n")
+  ) else (
+    seek_out oc sz
+  );
+  
+(*
+  let bada = DynArray () in
+  Hashtbl.iter (fun ch -> DynArray.add bada ch)
+*)
+  
+  let bada = Array.create () in
+  Hashtbl.iter (fun ch -> 
+    Array.append bada ch) 
+    bata;
+    
+  Array.sort bada;
+  
+  Array.iter (fun ch -> fprintf oc 
+    "U+%04x '%c' => ""    // instances: %d\n"
+    ch ch (Hashtbl.find badc ch)) bada;
+      
+  close_out oc;
+  
+  Hashtbl.length badc
+else
+  Unix.unlink "./enclog.kn.txt";
+  0
+*)

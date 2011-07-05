@@ -1,5 +1,8 @@
 (*
-   Copyright (C) 2006 Haeleth; based on code copyright (C) 2000 Alain Frisch
+   Optpp: General help, info & options features
+   Based on code copyright (C) 2000 Alain Frisch
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -29,6 +32,9 @@ type app_info =
     description: string;
     year: int;
     author: string;
+    year2: int;
+    author2: string;
+    boss: string;
     usage: string; }
 
 val default_app_info : app_info
@@ -62,12 +68,20 @@ val arg_to_flag : (string -> 'a) -> 'a ref -> string -> arg_fun
 
 val set_string : string ref -> string -> arg_fun
 
+val set_int : int ref -> string -> arg_fun
+
 (* Option parsing *)
 
 exception Error of string
+exception Trace of string * int
+
+val startTrace : string -> 'a
+val contTrace : string -> int -> string -> 'a
+val printTrace : string -> int -> unit
 
 val display_version : app_info -> unit
 val display_help : app_info -> opt_srcp list -> 'a
+val display_usage : app_info -> unit
 
 val getopt : ?app:app_info -> opt_srcp list -> (string -> 'a) -> (unit -> unit) -> unit
 
@@ -80,6 +94,7 @@ val usageError : ?app:app_info -> string -> 'a
 
 val cliWarning : string -> unit
 val cliError : string -> 'a
+val cliErrorDisp : string -> unit
 
 val sysInfo : string -> unit
 val sysWarning : string -> unit

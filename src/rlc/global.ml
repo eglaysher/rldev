@@ -1,6 +1,7 @@
 (*
-    Rlc: globally accessible data
-    Copyright (C) 2006 Haeleth
+   Rlc: globally accessible data
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -68,12 +69,19 @@ let val_0x2c = ref 0
 (* Rlc-style resources *)
 
 let resources : (Text.t, strtokens * location) Hashtbl.t = Hashtbl.create 0
+let base_res  : (Text.t, strtokens * location) Hashtbl.t = Hashtbl.create 0
 
 let get_resource loc (key, keyt) =
   try
     Hashtbl.find resources (Text.norm keyt)
   with Not_found ->
     ksprintf (error loc) "undefined resource string `%s'" key
+
+let get_base_resource loc (key, keyt) =
+  try
+    Hashtbl.find base_res (Text.norm keyt)
+  with Not_found ->
+    ksprintf (error loc) "undefined base resource string `%s'" key
 
 (* Miscellaneous *)
 

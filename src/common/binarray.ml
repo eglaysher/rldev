@@ -1,6 +1,7 @@
 (*
    Binarray: bigarray wrapper for byte twiddling
    Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -16,6 +17,7 @@
    this program; if not, write to the Free Software Foundation, Inc., 59 Temple
    Place - Suite 330, Boston, MA  02111-1307, USA.
 *)
+
 (*pp pa_macro.cmo *)
 
 let buffer_size = 4_194_304
@@ -24,6 +26,8 @@ let broken = Sys.os_type = "Win32"
 
 let no_mmap = ref false
 exception MMapFailure
+
+(* Caml type 'a, representation kind 'b, and memory layout 'c. *)
 
 type t = (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
@@ -46,7 +50,8 @@ let copy arr =
   rv
 
 external read : t -> idx:int -> len:int -> string = "string_of_binary_array"
-external unsafe_read_buf : t -> buffer:string -> idx:int -> len:int -> offs:int -> unit = "string_from_binary_array"
+external unsafe_read_buf : t -> buffer:string -> idx:int -> 
+  len:int -> offs:int -> unit = "string_from_binary_array"
 external read_sz : t -> idx:int -> len:int -> string = "cstring_of_binary_array"
 external unsafe_read_sz : t -> idx:int -> string = "unsafe_cstring_of_binary_array"
 external write : t -> idx:int -> string -> unit = "string_to_binary_array"
@@ -86,7 +91,8 @@ let get_int arr ~idx =
   get_i16 arr ~idx + (arr.{idx + 2} lsl 16) + (arr.{idx + 3} lsl 24)
 
 let rec read_input fname : t =
-  if not (Sys.file_exists fname) then Printf.ksprintf failwith "file `%s' not found" fname;
+  if not (Sys.file_exists fname) then Printf.ksprintf 
+    failwith "file `%s' not found" fname;
   if broken || !no_mmap then
     let ic = open_in_bin fname in
     let rlen = in_channel_length ic in
@@ -109,7 +115,8 @@ let rec read_input fname : t =
 	try
           Unix.openfile fname [Unix.O_RDONLY] 0
 	with Unix.Unix_error (e, _, _) ->
-          Printf.ksprintf failwith "cannot read file `%s': %s" fname (String.uncapitalize (Unix.error_message e))
+          Printf.ksprintf failwith "cannot read file `%s': %s" 
+		    fname (String.uncapitalize (Unix.error_message e))
       in
       let arr = map_file fdescr false ~-1 in
       let rv = create (dim arr) in
@@ -125,7 +132,8 @@ let map_output fname len =
     map_file f true len, f
   with
     | Unix.Unix_error (e, _, _)
-     -> Printf.ksprintf failwith "cannot write to file `%s': %s" fname (String.uncapitalize (Unix.error_message e))
+     -> Printf.ksprintf failwith "cannot write to file `%s': %s" 
+	   fname (String.uncapitalize (Unix.error_message e))
 
 let output arr oc =
   let buffer = String.create (min (dim arr) buffer_size) in
@@ -162,3 +170,94 @@ let rec write_file arr fname =
     with 
 	MMapFailure -> write_file arr fname
       | e -> raise e
+
+	(*
+let remove_duplicates comparison_fun string_list =
+  let module StringSet =
+	Set.Make(struct type t = string
+					let compare = comparison_fun end) in
+  StringSet.elements
+	(List.fold_right StringSet.add string_list StringSet.empty)
+*)
+
+(*
+module Seen =
+  struct
+(*
+	type file = string
+	type data = Binarray
+	
+	type t = Empty | file * Binarray
+*)
+
+	type t = Empty | file * Bytecode.file_header_t * Binarray.t;
+
+	  type file = None | string;
+	
+	let file = Empty
+	and header = Bytecode.empty_header 
+	and data = Binarray.create(size);
+	
+	let create = 
+		( None Bytecode.empty_header Binarray.create(size) ) t
+(*
+	  let make size = 
+		( None Bytecode.empty_header Binarray.create(size) ) t
+	  type file = None | string;
+*)
+v	
+(*
+	let hdr =
+*)
+	
+	let read = Binarray.read_input
+	let write = Binarray.write_file
+	
+	let read_header ?(rd_handler = (fun _ -> ())) full seen = 
+		(if full then read_file_header else read_header) ~rd_handler arr
+  end
+*)
+
+		
+(*
+	let is_bytecode arr idx =
+		
+		
+		?(rd_handler = (fun _ -> ())) arr =
+  end
+*)	
+	
+(*
+     type t = string
+     let compare x y = if x = y then Equal else if x < y then Less else Greater
+   end;;
+
+   
+   
+	type s
+	
+	type 'a queue = Empty | Node of priority * 'a * 'a queue * 'a queue
+     let empty = Empty
+     let rec insert queue prio elt =
+       match queue with
+         Empty -> Node(prio, elt, Empty, Empty)
+       | Node(p, e, left, right) ->
+           if prio <= p
+           then Node(prio, elt, insert right p e, left)
+           else Node(p, e, insert right prio elt, left)
+     exception Queue_is_empty
+     let rec remove_top = function
+         Empty -> raise Queue_is_empty
+       | Node(prio, elt, left, Empty) -> left
+       | Node(prio, elt, Empty, right) -> right
+       | Node(prio, elt, (Node(lprio, lelt, _, _) as left),
+                         (Node(rprio, relt, _, _) as right)) ->
+           if lprio <= rprio
+           then Node(lprio, lelt, remove_top left, right)
+           else Node(rprio, relt, left, remove_top right)
+     let extract = function
+         Empty -> raise Queue_is_empty
+       | Node(prio, elt, _, _) as queue -> (prio, elt, remove_top queue)
+   end;;
+  *)
+  

@@ -1,5 +1,7 @@
 #
-#  Optpp is based on Alain Frisch's "getopt".  The rest copyright (C) 2006 Haeleth.
+#  Optpp is based on Alain Frisch's "getopt".  
+#  The rest copyright (C) 2006 Haeleth.
+#  Revised 2009-2011 by Richard 23
 #
 #  This program is free software; you can redistribute it and/or modify it under
 #  the terms of the GNU General Public License as published by the Free Software
@@ -23,17 +25,40 @@ CFILES = lz_comp_rl binarray-c get_interpreter_version
 INCLUDES += $(OCAML_LIBRARY_DIR)
 StaticCLibrary(rlprims, $(CFILES))
 
-RLFILES = binarray metadata bytecode rlcmp
+# RLFILES = binarray metadata bytecode rlcmp
+# OCAMLPACKS += camlp4 bigarray
+# OCamlLibrary(rlcmp, $(RLFILES))
+
+RLFILES = binarray metadata bytecode game gameTypes gameParser gameLexer rlcmp
 OCAMLPACKS += camlp4 bigarray
+GENFILES = gameParser.mli gameParser.ml gameLexer.ml
+GENERATED = $(GENFILES) 
+OCamlGeneratedFiles($(GENFILES))
 OCamlLibrary(rlcmp, $(RLFILES))
 
 KFNFILES = kfnTypes kfnParser kfnLexer
-GENERATED = kfnParser.mli kfnParser.ml kfnLexer.ml
-OCamlGeneratedFiles($(GENERATED))
+GENFILES = kfnParser.mli kfnParser.ml kfnLexer.ml
+GENERATED += $(GENFILES) 
+OCamlGeneratedFiles($(GENFILES))
 OCamlLibrary(rlkfn, $(KFNFILES))
 
-CFGFILES = avlTree iSet iMap encoding config cp932 cp936 cp949 text textTransforms
+CASTFILES = cast castParser castLexer
+GENFILES = castParser.mli castParser.ml castLexer.ml
+GENERATED += $(GENFILES) 
+OCamlGeneratedFiles($(GENFILES))
+# OCamlLibrary(cast, $(CASTFILES))
+
+# GAMEFILES = game gameParser gameLexer
+# GENERATED = gameParser.mli gameParser.ml gameLexer.ml
+# OCamlGeneratedFiles($(GENERATED))
+# # OCamlLibrary(game, $(GAMEFILES))
+
+CFGFILES = avlTree iSet iMap encoding config \
+	cp932 cp936 cp949 text textTransforms
+# CFGFILES += $(CASTFILES) $(GAMEFILES)
+CFGFILES += $(CASTFILES)
 OCamlLibrary(appconfig, $(CFGFILES))
+
 
 # Build marshalled data files
 MDFFILES = cp932_in cp936_in cp949_in mkdatamain
@@ -45,6 +70,7 @@ all: mkdatafiles$(EXE)
 
 clean:
   $(RM) OMakefile.omc $(GENERATED) \
-    $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ),optpp $(RLFILES) $(KFNFILES) $(CFGFILES) $(MDFFILES)) \
-    $(addsuffixes .cma .cmxa $(EXT_LIB),optpp rlcmp rlkfn appconfig) \
+    $(addsuffixes .cmi .cmo .cmx $(EXT_OBJ),optpp \
+	$(RLFILES) $(KFNFILES) $(CFGFILES) $(MDFFILES)) \
+    $(addsuffixes .cma .cmxa $(EXT_LIB),optpp rlcmp rlkfn appconfig cast game) \
     $(addsuffix $(EXT_OBJ),$(CFILES)) rlprims$(EXT_LIB) mkdatafiles$(EXE)

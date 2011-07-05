@@ -1,6 +1,7 @@
 (*
-    Rlc: compiler directive implementation
-    Copyright (C) 2006 Haeleth
+   Rlc: compiler directive implementation
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -22,16 +23,26 @@ open KeTypes
 open KeAst
 open Codegen
 
-let resource loc expr =
+(*
+let resource loc expr res =
   let fname = StrTokens.to_string (str_of_normalised_expr expr) ~enc:Config.default_encoding in
   let ic = try open_in fname with Sys_error e -> error loc e in
   if !App.verbose then ksprintf Optpp.sysInfo "Loading resources from `%s'" fname;
   try
-    StrLexer.lex_resfile fname (KeULexer.lex_channel ic);
+    StrLexer.lex_resfile fname res (KeULexer.lex_channel ic);
     close_in ic
   with e ->
     close_in ic;
     raise e
+*)
+
+let resource loc expr res =
+  let fname = StrTokens.to_string (str_of_normalised_expr expr) ~enc:Config.default_encoding in
+(*
+  let fname = Filename.concat !App.resdir (StrTokens.to_string 
+    (str_of_normalised_expr expr) ~enc:Config.default_encoding) in
+*)
+  StrLexer.load_resfile loc fname res
 
 let getconst e =
   match !Global.expr__normalise_and_get_const e with
@@ -64,7 +75,8 @@ let generic =
       | "warn"-> warning (loc_of_expr expr) (as_string expr)
       | "error"-> error (loc_of_expr expr) (as_string expr)
       | "print" -> let loc = loc_of_expr expr in ksprintf Optpp.cliWarning "%s line %d: %s" loc.file loc.line (as_string expr)
-      | "resource" -> resource loc expr
+      | "resource" -> resource loc expr Global.resources
+      | "base_res" -> resource loc expr Global.base_res
       | "val_0x2c" -> Global.val_0x2c := Int32.to_int (int_of_normalised_expr expr)
       | "character" -> DynArray.add Global.dramatis_personae (StrTokens.to_string (str_of_normalised_expr expr)) (* TODO: candidate for text transformation? *)
       | "entrypoint" -> let idx = Int32.to_int (int_of_normalised_expr expr) in

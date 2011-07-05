@@ -166,6 +166,7 @@ always available.
 
   The following options are recognised:
 
+  \lsubsubsection{Files and Directories} 
   \begin{nicelist}
   \item[\clbarg{o}{output}{FILE}]
     Sets name of output file to \metavar{FILE}.  If no name is specified on the
@@ -174,6 +175,10 @@ always available.
     \file{rlas\_output.txt}.
   \item[\clbarg{d}{outdir}{DIR}]
     Places output file in \metavar{DIR}.
+  \item[\clbarg{r}{resdir}{DIR}]
+    Specifies a directory in which resource files are located.  If provided, 
+	\metavar{DIR} will be prepended to the filename provided by a #resource 
+	directive.
   \item[\clbarg{i}{ini}{FILE}]\label{usage:inifile}\index[concept]{gameexe.ini}
     Specifies a \gameexe\ to use, or the directory containing one.  Access to 
     the \gameexe\ that will be used at runtime is required in order to read 
@@ -181,12 +186,22 @@ always available.
     \compiler\ will look for an environment variable \file{GAMEEXE}; failing 
     that, it will look in the directory containing the source file being 
     compiled.    
+  \end{nicelist}
+
+  \lsubsubsection{Text Encoding and Transformation}
+  \begin{nicelist}
   \item[\clbarg{e}{encoding}{ENC}]
     Selects a character encoding for the input.  The options and default are the
     same as in the disassembler (see above).
   \item[\clbarg{x}{transform-output}{ENC}]
     Selects a character encoding transformation for the output. See 
     \ref{sec:encodings} for details.
+  \item[\clbarg{}{force-transform}{BOOL}]
+    If true, warning messages are issued when input text cannot be represented
+	using the encoding specified for the scenario generated in the output.
+	If false, transformation failures result in an error message is displayed
+	and compilation is aborted.  Non-fatal warnings are issued by default.
+
   \item[\clbarg{t}{target}{TARGET}]
     Specifies the output target (one of \file{reallive}, \file{avg2k}, or
     \file{kinetic}).
@@ -210,7 +225,11 @@ always available.
     defaults to version 1.0 (if the target is \avgns) or 1.2.6 (for other 
     targets). You can always use the \dirref{version} directive to override 
     this; unlike the \dirref{target} directive, \dirref{version} also overrides 
-    explicit version specifications.    
+    explicit version specifications.
+  \end{nicelist}
+
+  \lsubsubsection{Low-level Compiler Options}
+  \begin{nicelist}
   \item[\clboth{u}{uncompressed}]
     Disables automatic compression and encryption of output.  The output will be
     given a \file{.uncompressed} suffix, as though it had been compiled normally
@@ -238,6 +257,43 @@ always available.
     to make use of \file{flag.ini} features other than basic variable labels. 
     The generated labels consist of the variable's name (and, in the case of 
     arrays, its length).  All labels are placed in flag group 0.    
+  \end{nicelist}
+
+  \lsubsubsection{Game-specific Options}
+  \begin{nicelist}
+  \item[\clbarg{G}{game}{GID}]
+    Specify the \compiler game using an id which can be used to look up game
+	specific information that may be useful, if not critical, for producing
+	compatible bytecode and handling those special cases where custom encryption
+	keys are employed to keep your precious bytecode data \emph{in} and those
+	armies of perverts who want to put their hands on your privates \emph{out}.
+	
+	To this end, the modern \compiler developer is armed with a potent 
+	\file{game.info} file, a private groping hentai's worst nightmare.
+  \item[\clbarg{c}{compiler}{LONG}]
+	Provide a somewhat cryptic compiler version number (eg 10002, 110002, etc)
+	as a long integer.
+	Or pass a game id from \file{game.info} using \clopt{G} instead.
+  \item[\clbarg{k}{key}{KEY}]
+	Provide a hex string representing a game specific encryption key to further
+	obfuscate the generated scenario data.
+	Or pass a game id from \file{game.info} using \clopt{G} instead.
+
+  \end{nicelist}
+
+  \lsubsubsection{Obsessive-compulsive Minutae}
+  \begin{nicelist}
+  \item[\clbarg{F}{from}{LINE}]
+	Indicate the line number within the script file at which to begin compilation.
+  \item[\clbarg{T}{to}{LINE}]
+	Enumerate a line number within the script file at which compilation will cease.
+  \item[\clbarg{}{kfn}{FILE}]
+	Demand that the compiler use a specific RealLive Function Definition File
+	(the default is lib/reallive.kfn.
+  \item[\clbarg{}{ext}{EXT}]
+	Decree that script files to be compiled to bytecode will include have
+	the specified file extension (default is 'org' in order to make use of
+	the source code debugger available in debug mode).
   \end{nicelist}
 
 \clearpage
@@ -411,6 +467,19 @@ be sure to check this section again with each new release.
   
   You can of course use a different name for your project header, but if you do,
   you will have to load it manually.
+  
+  Overriding or extending the project header on a script by script basis may be
+  useful as well.  Auto inclusion of a script header file will occur immediately
+  after the project header where a corresponding global header \file{global****.kh}
+  can be found in the same directory as the script source file sharing the same
+  four digit index.
+  
+  Sample Output:
+  
+    Loading project header 'global.kh'
+    Loading script header 'global0010.kh'
+    Compiling script file 'seen0010.org'
+  
 
 \lsubsection{Memory allocation}\label{sec:allocation}
 

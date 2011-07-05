@@ -1,6 +1,7 @@
 (*
-    Rlc: function assembler
-    Copyright (C) 2006 Haeleth
+   Rlc: function assembler
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -26,7 +27,10 @@ type parameter =
   | `Integer of string
   | `Unknown of string
   | `List of parameter list
+(*
   | `Special of char * KfnTypes.special_flag list * parameter list
+*)
+  | `Special of int * KfnTypes.special_flag list * parameter list
   | `Literal of string ]
 
 
@@ -40,11 +44,33 @@ and parameter_to_string buffer prev =
     | `String s
     | `Unknown s -> Buffer.add_string buffer s
     | `List l -> Buffer.add_char buffer '('; parameters_to_string buffer None l; Buffer.add_char buffer ')'
+(*
     | `Special (c, f, l) 
      -> bprintf buffer "a%c" c; 
         if List.mem KfnTypes.NoParens f 
         then parameters_to_string buffer None l
         else parameter_to_string buffer None (`List l)
+*)
+    | `Special (i, f, l) 
+     -> if i > 255 then
+(*
+          let b1 = i land 0xff in
+          (* let b0 = ((i land 0xff00) lsr 8) - 1 in *)
+          let b0 = ((i lsr 8) land 0xff) - 1 in
+*)
+          let b0 = i land 0xff in
+          (* let b0 = ((i land 0xff00) lsr 8) - 1 in *)
+          let b1 = ((i lsr 8) land 0xff) - 1 in
+
+          (* printf "id: %d %d\n" b0 b1; *)
+          bprintf buffer "a%ca%c" (char_of_int b0) (char_of_int b1); 
+    (*    (((get_byte lexbuf) + 1) lsl 8) lor i1 *)
+        else bprintf buffer "a%c" (char_of_int i);
+        (* bprintf buffer "a%c" c; *)
+        if List.mem KfnTypes.NoParens f 
+        then parameters_to_string buffer None l
+        else parameter_to_string buffer None (`List l)
+
     | `Integer s
      -> (* Precede unary operators with commas, if necessary. *)
         if s.[0] = '\\' then
@@ -126,9 +152,10 @@ let choose_overload loc func argc =
     idx
   with
     Not_found ->
-      if arb_idx = -1 then
+      if arb_idx = -1 then (
+        printf "argc: %d\n" argc;
         ksprintf (error loc) "unable to find a prototype for `%s' that matches these parameters" func.ident
-      else
+      ) else
         arb_idx
 
 

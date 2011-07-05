@@ -1,6 +1,7 @@
 (*
-    Rlc: text output compilation (rlBabel edition)
-    Copyright (C) 2006 Haeleth
+  Rlc: text output compilation (rlBabel edition)
+  Copyright (C) 2006 Haeleth
+  Revised 2009-2011 by Richard 23
 
   This program is free software; you can redistribute it and/or
   modify it under the terms of the GNU General Public License as
@@ -17,6 +18,7 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
   02111-1307, USA.
 *)
+
 (*pp pa_macro.cmo ./pa_matches.cmo *)
 
 open Printf
@@ -67,31 +69,67 @@ let rec compile
       Output.add_label start_lbl;
       Output.add_kidoku loc;
       Meta.call "strout" [`VarOrFn (nowhere, "__rlb_empty",
-				    Text.ident "__rlb_empty")]
+                    Text.ident "__rlb_empty")]
   );
+  
   let b = DynArray.create () in
   let ignore_one_space = ref false in
   let appending = ref false in
+
+(*
   let flush display =
     if display then 
       if !appending then (
-			   appending := false;
-			   Meta.call f_append [`Str (nowhere, b)];
-			   Meta.call f_display []
-			 )
+               appending := false;
+(*
+               Meta.call f_append [`Str (nowhere, b)];
+               Meta.call f_display []
+*)
+               Meta.call f_append [ b ]
+             )
+(*
       else Meta.call f_display [`Str (nowhere, b)]
+*)
+      else Meta.call f_display b
     else 
+(*
       if !appending then Meta.call f_append [`Str (nowhere, b)]
+*)
+      if !appending then Meta.call f_append b
     else (
            appending := true;
+(*
            Meta.call f_start [`Str (nowhere, b)]
-	 );
+*)
+           Meta.call f_start b
+    );
+     
     DynArray.clear b
   in
+*)
+
+  let flush display =
+    if display then 
+      if !appending then (
+        appending := false;
+        Meta.call f_append [`Str (nowhere, b)];
+        Meta.call f_display []
+      ) else Meta.call f_display [`Str (nowhere, b)]
+    else 
+      if !appending then 
+        Meta.call f_append [`Str (nowhere, b)]
+      else (
+        appending := true;
+        Meta.call f_start [`Str (nowhere, b)]
+      );
+     
+    DynArray.clear b
+  in
+
   let rec parse elt =
     if !ignore_one_space && not (elt matches `Space _) then ignore_one_space := false;
     match elt with
-      | `EOS | `Delete _ | `Rewrite _ -> assert false
+      | `EOS | `Delete _ | `Rewrite _ | `ResRef _ -> assert false
       | `Add elt -> Queue.add elt addstrs
       | `Text _
       | `Hyphen _  (* we may want special handling for hyphens? *)

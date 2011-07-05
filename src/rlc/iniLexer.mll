@@ -1,6 +1,7 @@
 (*
    Rlc: GAMEEXE.INI lexer
    Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -58,4 +59,6 @@ rule lex =
     |     id { make_id (lexeme lexbuf) }
     | "." id { DOTIDENT (String.lchop (lexeme lexbuf)) }
     | string { STRING (String.slice (lexeme lexbuf) ~first:1 ~last:~-1) }
-    | _ as c { Printf.kprintf Optpp.sysError "unexpected character `%c' in GAMEEXE.INI" c }
+    | _ as c { Printf.kprintf Optpp.sysError ("unexpected character `%c' " 
+                ^^ "in GAMEEXE.INI at line %d char %d") c !Ini.curr_line 
+                (Lexing.lexeme_start lexbuf) }

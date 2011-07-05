@@ -1,6 +1,7 @@
 (*
-    Rlc: compile-time Kepago generation utility functions
-    Copyright (C) 2006 Haeleth
+   Rlc: compile-time Kepago generation utility functions
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -29,8 +30,12 @@ let assign (lhs : [assignable | expression]) op (rhs : [assignable | expression]
     | _ -> failwith "internal error"
 
 let call ?rv ?label funname args =
+(*
+  Printf.ksprintf Optpp.cliWarning "call %s\n" funname;
+*)
   parse_elt
-    (`FuncCall (nowhere, rv, funname, Text.ident funname, List.map (fun e -> `Simple (nowhere, e)) args, label))
+    (`FuncCall (nowhere, rv, funname, Text.ident funname, List.map 
+	  (fun e -> `Simple (nowhere, e)) args, label))
 
 let zero = `Int (nowhere, 0l)
 let int x = `Int (nowhere, Int32.of_int x)

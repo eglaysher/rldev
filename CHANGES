@@ -8,7 +8,153 @@
                                    CHANGELOG
 -------------------------------------------------------------------------------
 
+-- 1.45 - 2011.07.04 --
+
+  more, more, more!  
+  etc, etc, etc.
+  piko piko piko.
+  monday, monday.
+  blue monday.
+  
+  changed games.info to game.cfg... I panicked!
+  
+  NOTE: for the -G option to work properly you will need to adjust 
+    local paths for LB, LBEX and LBME in rldev-1.45/lib/rldev.cfg
+  
+  Generating a seen map now produces both txt and html output files!
+
+
+-- 1.45 - 2011.05.06 --
+
+  possibly counterintuitive rlc directory related changes.
+    added resource directory option (-r DIR / --resdir=DIR)
+    BEFORE: working directory was set to the source directory 
+	  (if specified) prior to loading script source file;
+	  this would likely cause confusion when resdir would then be 
+      interpreted as a subdirectory within the source directory
+	NOW: working directory not changed; source dir prepended to 
+	  script file path (dir or '.');  source file path loaded;
+	  working directory set to script directory AFTER script
+	  global header, seen header and script file(s) unless
+	  resdir has been defined, so that resource files are
+	  found in same directory as scripts unless overridden
+	  a little convoluted, but that's how it is ... TODAY
+	  
+	rlc auto includes "globalNNNN.kh" after global.kh for "seenNNNN.txt" if present
+	clarification (just in case): global header file(s) (if present) are 
+	  expected in same directory as script files
+
+
+-- 1.45 - 2011.04.13 --
+
+  "unable to encode" error now includes line number and file name info
+
+
+-- 1.45 - 2011.01.20 --
+
+  new action: -i --info
+  
+    resource sizes and string counts
+
+  rlc was incorrectly compiling "page" (<0:Msg:00210, 0>) 
+    to "PAGE" <0:Sys:00163, 0>.  corrected reallive.kfn.
+
+  map file generation (inter-seen cross reference of calls and gotos)
+  
+
+-- 1.45 - 2011.01.01 --
+
+
+-- 1.45 - 2010.11.07 --
+
+  Updated bytecodes and new features by Richard 23.
+
+  Introduce game definition file for defining game
+    specific encryption keys and other game info.
+	/lib/games.info
+	
+  Introduce cast of characters translation file.
+    cast.ini
+	
+  Add support for LB, LB-EX, LB-ME, FIVE
+  
+  Add support for dramatis personae translation & 
+    special jp -> en characters (translation prep).
+	
+  Major update to reallive.kfn function definition file
+    (many new functions exposed by RealLiveMax SDK).
+	Needs to be more fully tested with existing games.
+	
+  go[to|sub]_on and go[to|sub]_case are now standard cases
+  
+  source debugger '#line n' directives now written inline
+
+KPRL:
+
+  when an error occurs during disassembly a hex dump
+    file is generated which may help debugging kprl.
+	hex dump file has extension 'hex'.
+  
+  script files use file extension 'org' (was 'ke')
+    for compatibility with RealLive source debugger.
+
+  new action: -i --info
+  
+    not implemented yet
+  
+  new action: -K --check
+  
+  new action: -c --compress
+
+  new action:    --decompress
+
+  new action:    --encrypt
+
+  new action:    --decrypt
+
+  new option: -G GID --game=GID
+    specify game by id (/lib/games.info)
+	affects game-specific key, version
+  
+  new option: -Z --separate-all-strings (variant of -S)
+    inline string values use a separate numbering system
+    <Snnn> so that in-process translation isn't affected 
+	if "separate all" option is enabled after the fact.
+	
+  -S or -Z should be the default in order that substrings
+	for dynamic output aren't missed during translation.
+
+  new option: -F ADDR --from=ADDR
+    specify start address for disassembly
+
+  new option: -T ADDR --to=ADDR
+    specify end address for disassembly
+
+  new option:    --kfn=FILE
+    specify function definition file to use 
+	(default: lib/reallive.kfn)
+
+  new option:    --cast=FILE
+    specify cast of characters translation file 
+	(default: cast.ini)
+
+  new option: -p --translation-prep
+    output resource strings twice, commenting out the first
+
+  new option:    --ext=EXT
+    file extension for script files (default: org; was: ke)	
+  
+RLC:
+	
+    Fixed rlc/function.ml get_func_def() for 
+		zero param function calls (eg, page) seen2505
+  
+	rlc -v[erbose] -> -v[erbose]=LVL; was boolean, 
+		changed to integer (consistent with kprl)
+
+  
 -- [subversion] --
+-- 1.41 - 200x.x.xx --
 
   Add support for Traditional Chinese (CP950).
 

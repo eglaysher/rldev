@@ -1,6 +1,7 @@
 (*
-    Rlc: AST definition and utilities
-    Copyright (C) 2006 Haeleth
+   Rlc: AST definition and utilities
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -84,6 +85,10 @@ type strtoken_non_expr =
   | `Speaker  of location
   | `Add      of location * (location * Text.t)
   | `Delete   of location
+(*
+  | `ResRef   of location * string
+*)
+  | `ResRef   of location * (location * Text.t)
   | `Rewrite  of location * int (* key to StrLexer.rewrites X_x *)
   | `Text     of location * [ `Sbcs | `Dbcs ] * Text.t
   | `Space    of location * int ]
@@ -95,7 +100,11 @@ type 'expression __strtoken =
   | `Name  of location * [ `Local | `Global ] * 'expression * 'expression option
   | `Gloss of location * [ `Gloss | `Ruby ] * 'expression __strtokens 
             * [ `Closed  of location * 'expression __strtokens | `ResStr of res ] 
-  | `Code  of location * Text.t * 'expression option * 'expression __parameter list ]
+  | `Code  of location * Text.t * 'expression option * 'expression __parameter list 
+(*
+  | `ResRef of location * string
+*)
+  ]
 
 and 'expression __strtokens = 'expression __strtoken DynArray.t
 
@@ -145,7 +154,16 @@ type 'statement _directive =
   | 'statement _normalisable_directive ]
 
 type 'statement _normalisable =
+(*
   [ `GotoOn    of location * [`Goto | `Gosub] * 'statement _expression * label list
+  [ `GotoOn    of location * string * Text.t * 'statement _expression * label list
+*)
+
+(*
+  [ `GotoList  of location * (string * Text.t) * 'statement _expression * label list
+*)
+  [ `GotoOn    of location * (string * Text.t) * 'statement _expression * label list
+  
   | `Return    of location * bool * 'statement _expression
   | `LoadFile  of location * 'statement _expression
   | 'statement _normalisable_directive ]
@@ -187,13 +205,25 @@ and statement =
                    * [ `None | `Auto | `Some of statement _expression ]
                    * [ `None | `Scalar of statement _expression | `Array of statement _expression list ]
                    * (statement _expression * statement _expression) option) list
+(*
   | `GotoCase  of location * [`Goto | `Gosub] * statement _expression 
                 * [ `Default of label | `Match of statement _expression * label ] list
+  | `GotoCase  of location * string * Text.t * statement _expression 
+                * [ `Default of label | `Match of statement _expression * label ] list
+*)
+
+  | `GotoCase  of location * (string * Text.t) * statement _expression 
+                * [ `Default of label | `Match of statement _expression * label ] list
+                
   | `UnknownOp of location * func * int * statement _parameter list
   | `Select    of location * statement _assignable * string * int * statement optexpr * statement _sel_parameter list
   | `FuncCall  of funccall_type
   | `VarOrFn   of location * string * Text.t
   | `RawCode   of location * [`Bytes of string | `Int of int32 | `Ident of string * Text.t] list
+(*
+  | `HexDump   of location * `Int of int32 list 
+*)
+  
   | statement _normalisable
   | statement _assignment
   | statement _directive
@@ -358,8 +388,20 @@ let loc_of_statement : statement -> location =
     | `Continue l
     | `Label (l, _, _)
     | `Decl (l, _, _, _)
+
     | `GotoOn (l, _, _, _)
     | `GotoCase (l, _, _, _)
+
+(*
+    | `GotoList (l, _, _, _)
+    | `GotoCase (l, _, _, _)
+*)
+
+(*
+    | `GotoOn (l, _, _, _, _)
+    | `GotoCase (l, _, _, _, _)
+*)
+    
     | `UnknownOp (l, _, _, _)
     | `Select (l, _, _, _, _, _)
     | `FuncCall (l, _, _, _, _, _)
@@ -552,11 +594,27 @@ and string_of_strtokens t =
       | `Name (_, lg, e, None) -> ksprintf add "\\%s{%s}" (if lg = `Local then "l" else "m") (string_of_expr e)
       | `Name (_, lg, e, Some i) -> ksprintf add "\\%s{%s, %s}" (if lg = `Local then "l" else "m") (string_of_expr e) (string_of_expr i)
       | `Space (_, i) -> add (String.make i ' ')
-      | `Code (_, t, w, p) -> ksprintf add "\\%s%s{%s}" (Text.to_err t) (match w with None -> "" | Some e -> ":" ^ string_of_expr e) (string_of_list string_of_param p)
+      | `Code (_, t, w, p) -> ksprintf add "code \\%s%s{%s}" (Text.to_err t) (match w with None -> "" | Some e -> ":" ^ string_of_expr e) (string_of_list string_of_param p)
       | `Text (_, _, t) -> add (Text.to_err t)
+      | `ResRef (_, (_, t)) -> ksprintf add "\\res{%s}" (Text.to_err t)
+(*
+      | `ResRef (_, t) -> ksprintf add "\\res{%s}" t
+      | `ResRef (_, (_, t)) -> ksprintf add "\\res{%s}" (Text.to_err t)
+*)
       | `Delete _ -> add "\\d")
     t;
   Buffer.contents rv
+
+(*
+      | `ResRef(_, i) -> ksprintf add "\\res{%s}" i
+*)
+(*
+      | `BRes (_, i) -> ksprintf add "\\res{%s}" i
+*)
+    (*
+      | `ResRef(_, i) -> ksprintf add "\\res{%s}" i
+    *)
+(*      )*)
 
 and string_of_assignable : assignable -> string =
   function
@@ -587,7 +645,16 @@ and string_of_sel_param : sel_parameter -> string =
 
 and string_of_label (_, s, _) = sprintf "@%s" s
 
+(*
 and goto_gosub = function `Goto -> "goto" | `Gosub -> "gosub"
+*)
+
+and goto_gosub (s, t) = s
+
+(*
+= function (s `Goto -> "goto" | `Gosub -> "gosub"
+*)
+
 and string_of_case =
   function
     | `Default l -> sprintf "_: %s" (string_of_label l)
@@ -613,8 +680,20 @@ and string_of_statement : statement -> string =
                   (match l with None -> "" | Some (d, e) -> sprintf " -> %s.%s" (string_of_expr d) (string_of_expr e))
                   (match v with `None -> "" | `Scalar e -> sprintf " = %s" (string_of_expr e) | `Array es -> sprintf " = { %s }" (string_of_list string_of_expr es)))
               vs)
+              
     | `GotoOn (_, g, e, l) -> sprintf "%s_on (%s) { %s }" (goto_gosub g) (string_of_expr e) (string_of_list string_of_label l)
     | `GotoCase (_, g, e, c) -> sprintf "%s_case (%s) { %s }" (goto_gosub g) (string_of_expr e) (string_of_list string_of_case c ~sep:";")
+
+(*
+    | `GotoList (_, g, e, l) -> sprintf "%s_on (%s) { %s }" (goto_gosub g) (string_of_expr e) (string_of_list string_of_label l)
+    | `GotoCase (_, g, e, c) -> sprintf "%s_case (%s) { %s }" (goto_gosub g) (string_of_expr e) (string_of_list string_of_case c ~sep:";")
+*)
+
+(*
+    | `GotoOn (_, s, _, e, l) -> sprintf "%s (%s) { %s }" s (string_of_expr e) (string_of_list string_of_label l)
+    | `GotoCase (_, s, _, e, c) -> sprintf "%s (%s) { %s }" s (string_of_expr e) (string_of_list string_of_case c ~sep:";")
+*)
+    
     | `Select (_, `Store _, s, _, None, p) -> sprintf "%s(%s)" s (string_of_list string_of_sel_param p)
     | `Select (_, `Store _, s, _, Some e, p) -> sprintf "%s[%s](%s)" s (string_of_expr e) (string_of_list string_of_sel_param p)
     | `Select (_, d, s, _, None, p) -> sprintf "%s = %s(%s)" (string_of_assignable d) s (string_of_list string_of_sel_param p)
@@ -654,3 +733,4 @@ and string_of_ifdir is_cont =
     | `DEndif _ -> sprintf "#endif"
 
 let () = forward__string_of_expr := string_of_expr
+

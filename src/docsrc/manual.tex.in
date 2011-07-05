@@ -20,6 +20,19 @@
 \author{H\ae leth}
 \date{Version !!VERSION!! \ifhevea\@print{&mdash;}\else\textemdash\fi\ !!DATE!!}
 
+riffing
+\author{Richard 23}
+
+remix and dub
+\author{Mistah Mastah}
+
+mistakes
+\author{Zippy the Pinhead}
+
+with a very special intro by
+\author{Dr. Brian Oblivion}
+
+
 \newindex{concept}{cdx}{cnd}{Concept index}
 \newindex{default}{idx}{ind}{Keyword index}
 \newindex{funcidx}{fdx}{fnd}{Function index}
@@ -36,6 +49,27 @@
 \maketitle
 
 {\small\package\ program and documentation copyright \copyright\ 2006 H\ae leth.
+
+At some point in 2007, although some say 2008, which could even be as late as 2009,
+but everyone agrees that it had to be way before 2010....  
+
+Well, probably, was it?
+
+[Start again]
+
+At some point which could be debated once nothing remained to be done anywhere 
+in the known universe, a naive and handsome knight arrived on the scene finding
+sheafs of code lying out in the open air at the edge of a great lake.  "Hi there, 
+all alone little fella?" R23 said to the code.  Looking around, not a soul in was
+sight as far as the eye cared to see.  "Yoink!" ended the conversation and as before 
+the lake resumed lapping at the shore trying in vain to reach the empty clearing 
+at its edge.  What happened after that and what relevance it has here is unknown.}
+
+{\small\package\ program and documentation copyright \copyright\ 2006 H\ae leth.
+
+\small\package\ post-production final edit copypasta (cp) 2011 Richard 23.
+All rights and lefts neither claimed nor claimable revert to H\ae leth.
+Anything left over is a figment of your imagination.  Seek help.
 
 The programs, code, documentation, and data files in this package are 
 distributed without warranty under the terms of the GNU General Public License; 
@@ -59,6 +93,15 @@ particular, the author claims no affiliation to \mbox{\vas\ KK}, who have not
 authorised or endorsed this package in any way.}
 
 \tableofcontents
+
+\ifhevea
+  \@print{<H1 CLASS="chapter">}\aname{dbo}{A Very Special Introduction}\@print{</H1>}
+  \addcontentsline{toc}{chapter}{\ahrefloc{dbo}{A Very Special Introduction}}
+\else
+  \lchapter{A Very Special Introduction}
+\fi
+
+Hello.  I'm Dr. Brian Oblivion.
 
 \ifhevea
   \@print{<H1 CLASS="chapter">}\aname{ack}{Acknowledgements}\@print{</H1>}
@@ -118,6 +161,38 @@ inaccuracies, inadequacies, or inconsistencies.  You have the source code: as
 the sage advises, ``\textit{quicumque melior potest faceret}''.
 
 \mainmatter
+
+\ifhevea
+  \@print{<H1 CLASS="chapter">}\aname{add}{Addendum 2011}\@print{</H1>}
+  \addcontentsline{toc}{chapter}{\ahrefloc{add}{Addendum 2011}}
+\else
+  \lchapter{Addendum 2011}
+\fi
+
+Thanks to the generous nature of VisualArt's in 2010, as the decade long 
+lifecycle of its flagship product, RealLive, came to an end, much more is known
+and knowable about the mysterious source language which Haeleth approximated in
+a programming dialect of his own creation, known to the world as Kepago.
+
+For the very first time a mountain of documentation, various tools and gizmos, 
+sample code and much more tantalizing tidbits were bundled up into an official
+Software Development Kit bearing the name RealLiveMax and available to all of
+Japan from a special web page.  But VisualArt's went much further than that.
+Under the RealLiveMax license there would be no fees whatsoever.  Free at last!
+
+Where possible and practical, previously unknown source features, syntax, function
+names, keyword names et al exposed in the RealLiveMax SDK have been accounted for
+in RlDev so that standard features detailed in the offical documentation for
+RealLiveMax will also apply to Kepago++, a hybrid of what was and what will be.
+
+NOTE: It is left as an exercise for the reader to obtain the RealLiveMax SDK 
+and to read and comply with the license for himself if he is so inclined.
+The anonymous contributor of this section cannot be depended upon as a 
+substitute for your own quest for education and enlightenment.
+
+RealLiveMax Development (RealLiveMaxSDK) is a copyright of Visual Arts, Inc.
+
+Your lunch belongs to Zippy.
 
 \include{usage}
 \include{kepago}

@@ -1,6 +1,7 @@
 #
 #  RLDev: RealLive-compatible development toolkit
-#  Copyright (C) 2004 Haeleth
+#  Copyright (C) 2004-2006 Haeleth
+#  Revised 2009-2011 by Richard 23
 #
 #  This program is free software; you can redistribute it and/or modify it under
 #  the terms of the GNU General Public License as published by the Free Software
@@ -21,6 +22,7 @@ OCAMLFLAGS = -warn-error Asxyz -cc $(if $(equal $(CXX),gcc),g++,$(CXX))
 USE_OCAMLFIND = true
 
 if $(defined-env DEBUG)
+  echo "Debug mode"
   NATIVE_ENABLED = false
   BYTE_ENABLED = true
   OCAMLFLAGS += -g -custom
@@ -40,6 +42,11 @@ EXEDIR = $(dir ../bin)
     ./configure
 
 OCAMLLEX += -q
+
+# Generate a description of the parsing tables and a report on conflicts resulting 
+# from ambiguities in the grammar. The description is put in file grammar.output.
+
+OCAMLYACC += -v
 
 .PHONY: all clean distclean
 

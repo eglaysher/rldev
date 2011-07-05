@@ -25,10 +25,10 @@ The tricky part is likely to be getting all the dependencies present.  The
 following tools and libraries are required:
 
   Objective Caml 3.09 (http://caml.inria.fr)
-  Findlib             (http://www.ocaml-programming.de/programming/findlib.html)
+  Findlib             (http://projects.camlcity.org/projects/findlib.html)
   Omake 0.9.6.8       (http://omake.metaprl.org)
-  ExtLib 1.4 or later (http://ocaml-lib.sf.net)
-  Ulex                (http://www.eleves.ens.fr/home/frisch/soft#ulex)
+  ExtLib 1.4 or later (http://code.google.com/p/ocaml-extlib/)
+  Ulex                (http://www.cduce.org/download.html#side)
 
 The vaconv utility has the following additional requirements:
 

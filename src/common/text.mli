@@ -1,6 +1,7 @@
 (*
-    RLdev: unicode handling interface
-    Copyright (C) 2006 Haeleth
+   RLdev: unicode handling interface
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -57,3 +58,5 @@ val ustream : string -> in_channel -> int Stream.t
 val sjs_to_err : string -> string
 
 val ident : string -> t (* Convert from CP932, memoise result *)
+
+val sjs_to_utf8_prep : string -> string

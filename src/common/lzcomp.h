@@ -19,6 +19,27 @@
  ***********************************************************
 */
 
+/*********************************************************
+ * Lzcomp.h: AVG32 of PDT / archive files for
+ * 			General LZ77 compression routine
+ * 			To properly templated PDT, PDT mask, and archive
+ * 			One class is doing.
+ * 			The source has been written from scratch,
+ * 			Zlib 1.1.3 to the overall algorithm
+ * 			Imitation. Constant, the name of the method
+ * 			Something like that possible.
+ *
+ * 				zlib 1.1.3 of copyright:
+ * 			(C) 1995-1998 Jean-loup Gailly and Mark Adler
+ *
+ * 			Jean-loup Gailly 			Mark Adler
+ * 			jloup@gzip.org 		madler@alumni.caltech.edu
+ *
+ * 		distributor: http://www.cdrom.com/pub/infozip/zlib/
+ *
+ ***********************************************************
+*/
+
 /*
   Haeleth's changelog:
 
@@ -94,6 +115,55 @@
 ********************************************************************
 */
 
+/***********************************************************
+**
+** Class for storing information for LZComp compression and 
+** compression class CInfo
+** To do with LZ77 compression.
+**
+** LZ compression class ** CInfo minimum / maximum length 
+** match (Min / MaxMatch) and other information as the 
+** maximum distance to detect static method returns a match
+** With. In addition, pixel-level compression and byte-level 
+** compression together for, DataSize Hash and with such methods.
+**
+** LZComp CInfo class methods defined with class class
+** Defined as having a class as a template.
+**
+** LZComp to initialize the class, the compressed data to output
+** WriteInterface instance of the class is needed. The WriteInterface
+** To output uncompressed information WriteCompRaw method
+** WriteCompData compression to output information with the method.
+** Note, LZComp to NULL when initializing an instance of the class
+** Inflict, after LZComp:: SetOutputInteface can redefine methods
+** Possible. However, when checking whether a NULL data output did not go so
+** Note.
+**
+** Uncompressed data LZComp:: WriteData () method to pass
+** LZComp:: Deflate () call is made by compression method.
+** If all data output LZComp:: WriteDataEnd () method to
+** Again LZComp:: Deflate () method call.
+**
+** A little more easily hold the output data, WriteInterface, LZComp combined
+** Compress classes are offered. This class is an output format
+** AVG32 are using a file format used in the compressed in memory
+** To hold the data. With this, data compression, for example,
+** Write to the specified stream function that can be written as follows:
+**
+** Void LZtoFile (const char * data, int datalen, FILE * out) (
+** Compress <CInfoArc, Container::DataContainer> comp;
+** Comp.WriteData (data, datalen); // write data to an instance
+** Comp.WriteDataEnd ();
+** Comp.Deflate (); // compression
+** Comp.Flush (); // terminate the output buffer
+** Fwrite (comp.Data (), comp.Length (), 1, out);
+**)
+**
+** On the CInfoPDT CInfoArc CInfoMask and that, the compression format
+** Choice.
+********************************************************************
+*/
+
 /*
 ** Copyright (c) 2001-   Kazunori Ueno(JAGARL) <jagarl@creator.club.ne.jp>
 ** All rights reserved.
@@ -122,6 +192,9 @@
 */
 
 #include <string.h>
+#include <stdio.h>
+
+// #define TESTED_BUT_SLOW
 
 namespace AVG32Comp {
 	
@@ -129,42 +202,55 @@ template <typename T> inline T max(const T& a, const T& b) { return a > b ? a : 
 
 const int NIL=-1;
 /*************************
-** 前に一致するデータの情報を表す。
-** データ書き込みの際に一致データは
-** この構造体の形式で渡される
+** Represents the information before a match.
+** Match data when writing data
+** This structure is passed in the form of
 **/
 struct Match {
-	int prev_match_length; /* prev_match_length が十分に長ければ今回の探索は適当にやる */
+	int prev_match_length; /* prev_match_length this discovery is long enough to do it properly */
 	int prev_match_pos;
 	int match_length;
 	int match_pos;
 	Match(void) {
+		// printf("Match()\n");
 		prev_match_length = 0;
 		match_length = 0;
 		prev_match_pos = NIL;
 		match_pos = NIL;
 	}
 	void SetPrev(void) {
+		// printf("SetPrev()\n");
 		prev_match_pos = match_pos;
 		prev_match_length = match_length;
 		match_pos = NIL;
 		match_length = 0;
 	}
 	void Clear(void) {
+		// printf("Clear()\n");
 		prev_match_length = 0;
 		match_length = 0;
 		prev_match_pos = NIL;
 		match_pos = NIL;
 	}
-	int Pos(void) { return prev_match_pos;}
-	int Length(void) { return prev_match_length;}
+	int Pos(void) {
+		// printf("Pos(): %d\n", 
+		// 	prev_match_pos);
+		
+		return prev_match_pos;
+	}
+	int Length(void) { 
+		// printf("Length(): %d\n", 
+		// 	prev_match_length);
+		
+		return prev_match_length;
+	}
 };
 
 /*********************
-** データ出力用のクラス
-** このクラスを適当に拡張して
-** 所定のデータ形式でデータを
-** 格納できるようにする
+** Classes for data output
+** This class extends the appropriate
+** Data in the form given data
+** To be able to store
 */
 class WriteInterface {
 public:
@@ -173,51 +259,53 @@ public:
 };
 
 /**********************
-** 圧縮法に関する情報。 DataSize と Hash は
-** 適当に再定義すること。 また、MaxMatch, MaxDist
-** 等も必要に応じて再定義すること
+** Information about compression method. The Hash and DataSize
+** Redefining appropriately. In addition, MaxMatch, MaxDist
+** Be defined as needed and re-
 */
 class CInfo {
 public:
-	/* この二つは適当に再定義すること */
+	/* these two redefining appropriately */
 	static int DataSize(void) { return 1;}
 	static unsigned char Hash(char* data) {
+		// printf("DataSize()\n");
+		
 		return *(unsigned char*)data;
 	}
-	/* GoodLength 以下のデータが見つかっていれば
-	** 次のデータを調べる長さを1/4にする
+	/* GoodLength found if the following data:
+	** 1 examine the following data: the length / 4 to
 	*/
 	static int GoodLength(void) { return 4;}
-	/* MaxLazy 以上の一致データが見つかれば
-	** 次のデータを調べずにデータが一致したとする
+	/* MaxLazy have found more consistent data
+	** Not check that data matches the following data:
 	*/
 	static int MaxLazy(void) { return 4;}
-	/* 最大 MaxDist の距離まで調べる */
+	/* look up to a distance MaxDist */
 	static int MaxDist(void) { return 4096;}
-	/* 一致長検索は MaxChan 個のデータについて行う */
+	/* gind length of data for each match MaxChain do */
 	static int MaxChain(void) { return 16;}
 	/* minimum and maximum match lengths */
 	static int MinMatch(void) { return 3; }
 	static int MaxMatch(void) { return 258; }
 	/* hash parameter */
-	/* hash は更新されるたびに HashShift する。すなわち、
-	** hash は MinMatch 回のデータに依存する
-	** HashBits を変える場合、残りの定義も写すこと
+	/* hash is updated whenever you HashShift. That is,
+	/* hash MinMatch is time-dependent data
+	** if HashBits change, the definition of a transcription
 	*/
 	static int HashBits(void) { return 15; /* 8+7 */}
 	static int HashSize(void) { return 1<<HashBits(); }
 	static int HashMask(void) { return HashSize() - 1; }
 	static int HashShift(void) { return (HashBits() + MinMatch() - 1) / MinMatch();}
 	/* window parameter */
-	/* WindowSize > DataSize * MaxMatch * 2 でなければならない
-	** 予期せぬバグを防ぐためには大きい方が良い
+	/* WindowSize > DataSize * MaxMatch * 2 must be
+	** To avoid unexpected bugs bigger is better
 	*/
 	static int WindowBits(void) { return 14; }
 	static int WindowSize(void) { return 1<<WindowBits(); }
 	static int WindowMask(void) { return WindowSize() - 1; }
 	/* lookahead */
 	static int MinLookahead(void) { return (MaxMatch() + MinMatch() + 1)*DataSize(); }
-	/* 適当に…… */
+	/* random */
 	int seed;
 	int Rand(void) {
 		seed = seed*6331+817;
@@ -226,40 +314,48 @@ public:
 };
 
 /***********************
-** 圧縮用のクラス
-**   WriteData() -> Deflate() -> WriteData() -> Deflate()
-**   ... -> WriteData() -> WriteDataEnd() -> Deflate()
-**   で WriteData() したデータが圧縮される
+** Classes for compression
+** WriteData () -> Deflate () -> WriteData () -> Deflate ()
+** ... -> WriteData () -> WriteDataEnd () -> Deflate ()
+** The WriteData () data is compressed
 */
 template <class CInfo> class LZComp {
 	int hash;
-	int window_top; /* window の top の位置 */
-	int dust_top; /* ゴミデータの先頭 */
-	int window_datalen; /* 有効な window の大きさ */
+	int window_top; /* window the top position */
+	int dust_top; /* top of the garbage data */
+	int window_datalen; /* size of the active window */
 	char* window;
-	int hash_pos; /* 直前にInsertStringしたデータの辞書中の位置 */
-	int* prev; /* hash chain. info.WindowSize() の大きさを持つ */
-	int* head; /* hash リスト。info.HashSize() の大きさを持つ */
+	int hash_pos; /* just before InsertString position in the data dictionary */
+	int* prev; /* hash chain. info.WindowSize () with a size of */
+	int* head; /* hash list. info.HashSize () with a size of */
 	WriteInterface* dataout;
 
 	CInfo info;
 	void UpdateHash(char* data) {
+	//	printf("UpdateHash()\n");
+		
 		hash = (((hash<<5)&0xffe0) | (info.Hash(data)&0x1f)) & info.HashMask();
 	}
-	/* 辞書にデータを挿入し、hash_head を前に一致した辞書の位置にセット */
+	/* Insert the data dictionary, hash_head dictionary set position before the match */
 	void InsertString(int pos) {
+	//	printf("InsertString(%d)\n", pos);
+		
 		UpdateHash(window + (pos-window_top) + info.DataSize()*2);
 		prev[pos & info.WindowMask()] = hash_pos = head[hash];
 		head[hash] = pos;
 	}
-	/* hash / prev を初期化 */
+	/* hash / prev initialize */
 	void ClearHash(void) {
+	//	printf("ClearHash()\n");
+		
 		int i;
 		for (i=0; i<info.HashSize(); i++) head[i] = NIL;
 		for (i=0; i<info.WindowSize(); i++) prev[i] = NIL;
 	}
 	void FillDust(void) {
-		/* window の使われてない部分に乱数をコピー */
+		/* window to copy numbers of the unused portion */
+	//	printf("FillDust()\n");
+		
 		int dust_len = info.WindowSize() - window_datalen;
 		if (dust_len > 256) dust_len = 256;
 		memcpy(window+window_datalen, window+info.WindowSize(), dust_len);
@@ -272,30 +368,30 @@ private:
 	char* data_pool;
 	int deflate_pos;
 	int is_data_pool_end;
-	/* 圧縮用にデータを書き込む */
+	/* Write the compressed data for */
 public:
 	void WriteData(const char* new_data, int new_data_length);
-	/* 圧縮用データが終了した */
+	/* Data compression has ended */
 	void WriteDataEnd(void) {
 		is_data_pool_end = 1;
 	}
 private:
-	/* 圧縮用データを window に読み込む */
-	/* 1 : 成功
-	** 0 : データは終了している
+	/* Data compression load window */
+	/* 1 : success
+	** 0 : data has been terminated
 	*/
 	int FillWindow(void);
-	/* 最長一致する位置を探す */
-	/* WriteDataEnd() してない場合、データの読み込み失敗したら
-	** 0 を帰す。一般には 1 を帰す
+	/* Find longest match position */
+	/* WriteDataEnd() if you have not, if it fails to load data
+	** 0. Generally attributed to one
 	*/
 private:
 	int LongestMatch(int pos, Match& match);
 public:
-	/* 圧縮を行う */
+	/* do compression */
 	/* WriteData -> Deflate() -> WriteData() -> Deflate
-	** とやっていき、最後に WriteDataEnd() -> Deflate()
-	** で終了
+	** Iki to do and, finally WriteDataEnd() -> Deflate()
+	** ends
 	*/
 	void Deflate(void);
 public:
@@ -304,18 +400,18 @@ public:
 	}
 	LZComp(WriteInterface* _dataout) {
 		dataout = _dataout;
-		/* hash の初期化 */
+		/* hash initialization */
 		head = new int[info.HashSize()];
 		prev = new int[info.WindowSize()];
-		/* window の初期化 */
+		/* window initialization */
 		window = new char[info.WindowSize()+256];
 		window_datalen = 0;
-		/* 最後にゴミを書く */
-		/* メモリ違反を出さないための番人 */
+		/* write the garbage at the end */
+		/* as no guardian of the memory violation */
 		int i; for (i=0; i<256; i++)
 			window[info.WindowSize()+i] = info.Rand()>>5;
 		dust_top = 0;
-		/* data pool の初期化 */
+		/* data pool initialization */
 		data_pool = new char[128];
 		data_pool_length = 0;
 		data_pool_capacity = 128;
@@ -331,6 +427,8 @@ public:
 };
 
 template<class CInfo> void LZComp<CInfo>::WriteData(const char* new_data, int new_data_length) {
+	// printf("WriteData(...,%d)", new_data_length);
+	
 	if (new_data_length <= 0) return;
 #ifndef TESTED_BUT_SLOW
 	if (data_pool_top + data_pool_length + new_data_length > data_pool_capacity) {
@@ -357,7 +455,7 @@ template<class CInfo> void LZComp<CInfo>::WriteData(const char* new_data, int ne
 	data_pool_top = 0;
 #endif
 	if (is_data_pool_end == 1 && data_pool_length > info.MinMatch()*info.DataSize()) {
-		/* ハッシュを初期化し、最初のデータをしらべておく */
+		/* Window to copy the data in */
 		is_data_pool_end = 0;
 		ClearHash();
 		hash = 0;
@@ -367,23 +465,25 @@ template<class CInfo> void LZComp<CInfo>::WriteData(const char* new_data, int ne
 	}
 }
 template<class CInfo> int LZComp<CInfo>::FillWindow(void) {
-	/* window 内のデータをコピー */
+	// printf("FillWindow()\n");
+	
+	/* window to copy the data in */
 	if (data_pool_length == 0) {
 		if (is_data_pool_end) return 0;
 		if (dust_top != window_datalen) FillDust();
 		return 1;
 	}
-	/* 原則として WindowSize / 2 だけ移動する */
+	/* in principle WindowSize / 2 only to move */
 	if (window_datalen > info.WindowSize()/2+info.MinLookahead()) {
 		memmove(window, window+info.WindowSize()/2, info.WindowSize()-info.WindowSize()/2);
 		window_top += info.WindowSize()/2;
 		window_datalen -= info.WindowSize()/2;
 	}
-	/* コピーできない */
+	/* can not be copied */
 	if (window_datalen == info.WindowSize()) {
 		return 1;
 	}
-	/* データをコピー */
+	/* copy data */
 	int copy_length = info.WindowSize() - info.WindowSize()/2;
 	if (copy_length > data_pool_length) copy_length = data_pool_length;
 	if (copy_length > info.WindowSize()-window_datalen) copy_length = info.WindowSize()-window_datalen;
@@ -395,19 +495,21 @@ template<class CInfo> int LZComp<CInfo>::FillWindow(void) {
 	return 0;
 }
 template<class CInfo> int LZComp<CInfo>::LongestMatch(int pos, Match& match) {
+	// printf("LongestMatch(%d,...)\n", pos);
+	
 	match.SetPrev();
 	int search_length = info.MaxChain();
 	if (match.prev_match_length >= info.GoodLength()) search_length >>= 2;
 	int cmp_pos = hash_pos;
-	/* 探索に十分なデータを確保する */
+	/* To ensure sufficient data to explore */
 	if (window_datalen < pos-window_top+info.MinLookahead()) {
-		if (FillWindow() && window_datalen < pos+info.MinLookahead()) return 0; /* データ取得失敗 */
+		if (FillWindow() && window_datalen < pos+info.MinLookahead()) return 0; /* failure data capture */
 	}
 	int window_first = window_top;
 	if (window_first < pos-info.MaxDist()) window_first = pos-info.MaxDist();
 	int window_last = pos;
 	int i; for (i=0; i<search_length; i++) {
-		if (cmp_pos < window_first || cmp_pos >= pos) break; /* hash link が範囲外になった */
+		if (cmp_pos < window_first || cmp_pos >= pos) break; /* hash link was out of range */
 		char* d = window + (pos-window_top);
 		char* cmp_d = window + (cmp_pos-window_top);
 		char* d_end = window + (window_datalen > pos-window_top+info.MinLookahead() ? pos-window_top+info.MinLookahead() : window_datalen);
@@ -422,33 +524,35 @@ template<class CInfo> int LZComp<CInfo>::LongestMatch(int pos, Match& match) {
 		if (cur_match_len/info.DataSize() > match.match_length) {
 			match.match_length = cur_match_len/info.DataSize();
 			match.match_pos = cmp_pos;
-			if (d >= d_end) break; /* 必要ないところまで検索するくらい一致すれば終了 */
+			if (d >= d_end) break; /* exit if no agreement about where to find needed */
 		}
 		cmp_pos = prev[cmp_pos & info.WindowMask()];
 	}
-	/* match_length の検査 */
+	/* match_length test */
 	if (match.match_length > info.MaxMatch()) match.match_length = info.MaxMatch();
 	if (match.match_length > window_datalen/info.DataSize()) match.match_length = window_datalen/info.DataSize();
 	return 1;
 }
 template<class CInfo> void LZComp<CInfo>::Deflate(void) {
-	/* データが少なすぎる場合 */
+	// printf("Deflate()\n");
+	
+	/* If too few data */
 	if (is_data_pool_end == 1 && data_pool_length <= info.MinMatch()*info.DataSize()) {
-		/* data_pool にデータがあれば書き込んでおく */
+		/* data_pool if you write data */
 		int i; for (i=data_pool_top; i<data_pool_length; i+=info.DataSize()) {
 			dataout->WriteCompRaw(data_pool + i);
 		}
 		return;
 	}
-	/* 一回後の LongestMatchと今回を比べ、
-	** 今回の方が良いか同じ場合のみ圧縮を
-	** おこなうことで、効率を向上している
+	/* After this one and compare LongestMatch,
+	** The same or better compression only if this
+	** The conduct that has improved efficiency
 	*/
 	int pos = deflate_pos;
 	Match match;
 	FillWindow();
 	InsertString(pos);
-	/* データがなくなったら終了 */
+	/* end of data is no longer */
 	if (LongestMatch(pos, match) == 0) return;
 	while(1) {
 		InsertString(pos+info.DataSize());
@@ -460,44 +564,45 @@ template<class CInfo> void LZComp<CInfo>::Deflate(void) {
 			break;
 		}
 		if (match.prev_match_length >= match.match_length && match.prev_match_length >= info.MinMatch()) {
-			/* 圧縮データを保存 */
+			/* save the compressed data */
 			dataout->WriteCompData(pos, match);
-			/* hash を登録 */
+			/* hash register */
 			pos += info.DataSize()*2;
 			int i; for (i=0; i<match.prev_match_length-2; i++) {
 				InsertString(pos);
 				pos += info.DataSize();
 			}
-			/* pos がデータの最後なら終了 */
+			/* pos end if end of data */
 			if (pos >= window_top + window_datalen - info.DataSize() && is_data_pool_end) {
-				if (pos < window_top+window_datalen) { /* 最後のデータを書かないといけない */
+				if (pos < window_top+window_datalen) { /* last data I have to write */
 					dataout->WriteCompRaw(window+(pos-window_top));
 					pos += info.DataSize();
 				}
 				break;
 			}
-			/* 次のデータの為に LongestMatch しておく */
+			/* the following data for LongestMatch keep */
 			InsertString(pos);
 			match.Clear();
 			if (LongestMatch(pos, match) == 0) break;
 		} else {
-			/* データを保存 */
+			/* save data */
 			dataout->WriteCompRaw(window+(pos-window_top));
-			/* 次のデータで終わりなら終了 */
+			/* end if end on the next data */
 			pos += info.DataSize();
 			if (pos >= window_top + window_datalen && is_data_pool_end) break;
 		}
 	}
 	deflate_pos = pos;
+	// printf("deflate_pos: %d\n", deflate_pos);
 	return;
 }
 
 /*****************************************
-** PDT 等の圧縮を行うためのクラス定義
+** PDT class definition for compression, etc.
 */
-namespace Container { /* LZComp::Container */
+namespace Container { /* LZComp:: Container */
 
-static unsigned char reverse_bits[] = { /* RealLive用 */
+static unsigned char reverse_bits[] = { /* RealLive for */
   0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0, 0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0,
   0x08, 0x88, 0x48, 0xc8, 0x28, 0xa8, 0x68, 0xe8, 0x18, 0x98, 0x58, 0xd8, 0x38, 0xb8, 0x78, 0xf8,
   0x04, 0x84, 0x44, 0xc4, 0x24, 0xa4, 0x64, 0xe4, 0x14, 0x94, 0x54, 0xd4, 0x34, 0xb4, 0x74, 0xf4,
@@ -559,6 +664,7 @@ protected:
 	int size;
 	int tail;
 	void Expand(int add_size) {
+		// printf("Expand(%d)\n", add_size);
 		if (add_size <= 0) return;
 		if (tail+add_size > size) {
 			size = (tail+add_size)*2;
@@ -578,6 +684,7 @@ public:
 		delete[] data;
 	}
 	void Append(TmpData& d) {
+		// printf("datacontainer.Append()\n");
 		Expand(d.Length());
 		memcpy(data+tail, d.Data(), d.Length());
 		tail += d.Length();
@@ -589,6 +696,7 @@ public:
 class RLDataContainer : public DataContainer {
 public:
 	void Append(TmpData& d) {
+		// printf("rldatacontainer.Append()\n");
 		Expand(d.Length());
 		memcpy(data+tail, d.Data(), d.Length());
 		data[tail] = reverse_bits[(unsigned char)data[tail]];
@@ -617,13 +725,20 @@ public:
 		compress.SetOutputInterface(this);
 	}
 	~Compress() {}
-	void WriteData(const char* new_data, int new_data_length) {
+	void WriteData(const char* new_data, unsigned int new_data_length) {
+		// printf("WriteDataEnd\n");
+
 		compress.WriteData(new_data, new_data_length);
 	}
 	void WriteDataEnd(void) {
+		// printf("WriteDataEnd\n");
+	
 		compress.WriteDataEnd();
 	}
 	void Deflate(void) {
+		// printf("Deflate\n");
+		// printf("compress.Deflate()\n");
+
 		compress.Deflate();
 	}
 	int Length(void) const { return data.Length();}

@@ -1,6 +1,7 @@
 (*
-    Rlc: `select' function typechecking and compilation
-    Copyright (C) 2006 Haeleth
+   Rlc: `select' function typechecking and compilation
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -39,6 +40,10 @@ let handle_parameter insert_pos s l e =
             (fun () -> if !quoted then Buffer.add_char b '\"'; quoted := false),
             (fun () -> not !quoted)
           in
+          
+          if not (Memory.defined (Text.ident "__DynamicLineationUsed__")) then
+            Memory.define ~scoped:false (Text.ident "__DynamicLineationUsed__") (`Integer 1l);
+
           (* We iterate through the string in much the same way as for handle_literal_in_strc. *)
           DynArray.iter
             (function `EOS -> assert false
@@ -49,6 +54,8 @@ let handle_parameter insert_pos s l e =
               | `Percent _  -> Buffer.add_string b "\x81\x93"
               | `Hyphen _   -> Buffer.add_string b "-"
               | `Space (_, i) -> quote (); Buffer.add_string b (String.make i ' ')
+              
+(*              
               | `Text (l, _, s)
                  ->(if not_quoted () then try
                       Text.iter (fun c -> if not (StrTokens.unquoted_char c) then raise Exit) s
@@ -57,12 +64,38 @@ let handle_parameter insert_pos s l e =
                       Buffer.add_string b (TextTransforms.to_bytecode s)
                     with Text.Bad_char c ->
                       ksprintf (error l) "cannot represent U+%04x in RealLive bytecode" c)
-             (* Invalid codes *)
+*)
+
+              | `Text (l, _, s)
+                 ->(try (if not_quoted () then try
+                      Text.iter (fun c -> if not (StrTokens.unquoted_char c) then raise Exit) s
+                    with Exit -> quote ());
+                    Buffer.add_string b (TextTransforms.to_bytecode s)
+                    with Text.Bad_char c ->
+                    (*
+                    ksprintf (error l) "cannot represent U+%04x in RealLive bytecode" c)
+                    *)
+                    (*
+                    ksprintf (warning l) ("cannot represent U+%04x in RealLive "
+                      ^^ "bytecode [select parameter] with %s") 
+                      c (TextTransforms.describe ());
+                    *)
+                    
+                    warning l (TextTransforms.complain c "select parameter");
+
+                    Buffer.add_string b " "; (* sane default for emergencies *)
+                    (*
+                    raise (Text.Bad_char c));
+                    *)
+                     )
+                     
+           (* Invalid codes *)
               | `Speaker l -> invalid l "{}' / `\\name"
               | `Gloss (l, `Gloss, _, _) -> invalid l "g"
               | `Gloss (l, `Ruby, _, _) -> invalid l "ruby"
               | `Add (l, _) -> invalid l "a"
               | `Delete l -> invalid l "d"
+              | `ResRef (l, _) -> invalid l "res"
               | `Rewrite (l, _) -> invalid l "f"
               | `Code (l, t, _, _) when not (StrTokens.is_output_code t) -> invalid l (Text.to_err t)
              (* Special treatment *)
@@ -113,14 +146,17 @@ let get_op l s t =
     | _ -> ksprintf (error l) "unknown effect `%s' in select condition" s
 
 let compile (loc, dest, s, opcode, window, params) =
+  if !App.verbose > 1 then ksprintf (warning loc) "compile `%s' (opcode %d)" s opcode;
   if params = [] then ksprintf (warning loc) "`%s' called with no options" s;
   let handle = handle_parameter (Output.length ()) s in
   Output.add_kidoku loc;
   Output.add_code loc (code_of_opcode 0 2 opcode (List.length params) 0);
   Option.may 
     (fun e -> 
-      if List.mem opcode [3; 13] (* removed 2 and 12 *)
-      then ksprintf (error loc) "select window specifiers are not valid in `%s' calls" s
+  (*  if List.mem opcode [3; 13] *) (* removed 2 and 12 *)
+      if List.mem opcode [13] (* removed 2, 3 and 12 *)
+  (*  then ksprintf (error loc) "select window specifiers are not valid in `%s' calls" s *)
+      then ksprintf (error loc) "select window specifiers are not valid in `%s' (opcode %d) calls" s opcode
       else ksprintf (Output.add_code nowhere) "(%s)" (code_of_expr e))
     window;
   Output.add_code nowhere "{";

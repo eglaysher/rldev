@@ -1,6 +1,7 @@
 (*
-    RLdev: transformations of Unicode to the CP932 codespace
-    Copyright (C) 2006 Haeleth
+   RLdev: transformations of Unicode to the CP932 codespace
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -24,6 +25,8 @@ open Encoding
 open Text
 
 let force_encode = ref false
+
+let badc : (int, int) Hashtbl.t = Hashtbl.create 0
 
 (* Encode Simplified Chinese text.
    Fail on characters that cannot be represented in the GBK encoding. *)
@@ -80,11 +83,11 @@ let decode_kfc text =
                let c1, c2 =
                  match (a1 lsl 8) lor a2 with
                    | 0x8175 -> 0xa1 - 0xa1, 0xb8 - 0xa1
-    	           | 0x8177 -> 0xa1 - 0xa1, 0xba - 0xa1
-    	           | 0x8169 -> 0xa3 - 0xa1, 0xa8 - 0xa1
-    	           | 0x8153 -> 0xbb - 0xa1, 0xa2 - 0xa1
-    	           | 0x8252 -> 0xdd - 0xa1, 0xa2 - 0xa1
-    	           | 0x8253 -> 0xb5 - 0xa1, 0xa2 - 0xa1
+                   | 0x8177 -> 0xa1 - 0xa1, 0xba - 0xa1
+                   | 0x8169 -> 0xa3 - 0xa1, 0xa8 - 0xa1
+                   | 0x8153 -> 0xbb - 0xa1, 0xa2 - 0xa1
+                   | 0x8252 -> 0xdd - 0xa1, 0xa2 - 0xa1
+                   | 0x8253 -> 0xb5 - 0xa1, 0xa2 - 0xa1
                    | _ -> let c2 = ((if a1 > 0xdf then a1 - 0x40 else a1) - 0x81) * 2
                           and c1 = (if a2 >= 0x80 then a2 - 1 else a2) - 0x40 in
                           c1 / 2, c2 + (c1 mod 2)
@@ -117,7 +120,8 @@ let encode_cp1252 fail text =
             | 0x017d -> 0x8e | 0x2018 -> 0x91 | 0x2019 -> 0x92 | 0x201c -> 0x93 
             | 0x201d -> 0x94 | 0x2022 -> 0x95 | 0x2013 -> 0x96 | 0x2014 -> 0x97 
             | 0x02dc -> 0x98 | 0x2122 -> 0x99 | 0x0161 -> 0x9a | 0x203a -> 0x9b 
-            | 0x0153 -> 0x9c | 0x017e -> 0x9e | 0x0178 -> 0x9f | _      -> ch
+            | 0x0153 -> 0x9c | 0x017e -> 0x9e | 0x0178 -> 0x9f | 0xff5e -> 0x7e
+            | _      -> ch
         in
         let c =
           if wc < 0 || wc > 0xff 
@@ -186,6 +190,7 @@ let decode_cp1252 text =
       Remainder: translate/remap onto e701-e9a9 
       CP932 equivalents: collisions mapped onto ea40-ea42
 *)
+
 let encode_hangul fail text =
   let b = Buffer.create 0 in
   Text.iter
@@ -281,6 +286,8 @@ let decode_hangul text =
 (* Output transformations *)
 let outenc = ref `None
 
+and complained = ref false
+
 let describe () =
   match !outenc with
     | `None -> "no output transformation"
@@ -288,6 +295,87 @@ let describe () =
     | `Western -> "the `Western' transformation of CP1252"
     | `Korean  -> "the `Korean' transformation of KS X 1001"
 
+
+
+let complain what kind =
+  (*
+  ignore (Hashtbl.replace badc what (
+    try Hashtbl.find badc what 
+    with Not_found -> 0) + 1);
+  *)
+  
+  ignore (Hashtbl.replace badc what (
+    if not (Hashtbl.mem badc what) then 1
+    else (Hashtbl.find badc what) + 1));
+    
+  if !complained then sprintf "%s: U+%04x" kind what
+  else (complained := true; sprintf ("cannot represent U+%04x in "
+    ^^ "RealLive bytecode [%s] with %s") what kind (describe ()))
+
+let adjust what repl kind =
+  (*
+  ignore (Hashtbl.replace badc (
+    try Hashtbl.find badc what 
+    with Not_found -> 0) + 1);
+  *)
+  
+  ignore (Hashtbl.replace badc what (
+    if not (Hashtbl.mem badc what) then 1
+    else (Hashtbl.find badc what) + 1));
+
+  if !complained then sprintf "%s: U+%04x -> '%s'" kind what repl
+  else (complained := true; sprintf ("cannot represent U+%04x (-> %s) in "
+    ^^ "RealLive bytecode [%s] with %s") what repl kind (describe ()))
+
+      
+(*
+      Hashtbl.add bchars (
+        try Hashtbl.find bchars c
+        with Not_found -> 0) + 1;
+*)        
+
+(*
+let enclog () =    
+if App.badc.length > 0 then 
+  let oc = open_out "xform.kn" in
+  let sz = out_channel_length oc in
+  if sz = 0 then (
+    output_string oc "# Specific Encoding Non-Conformity Report\n";
+    output_string oc "# Generic Remap Table for Compliant Output\n";
+    (*
+    ksprintf (write_string oc) "{-# cp %s #- Disassembled with %s %1.2f -}\n\n#file '%s'\n"
+      (String.lowercase !App.enc) App.app.name App.app.version bname;
+    *)
+    
+    fwritef oc "# Presented in glorious %s by %s %1.2f\n"
+      (String.lowercase !App.enc) App.app.name App.app.version bname;
+      
+    fwritef oc ("[ ] Customize the table as desired, rename to \n\"mapenc.kh\""
+        ^^ "and move to the your script or project directory.\n\n")
+  );
+  
+(*
+  let bada = DynArray () in
+  Hashtbl.iter (fun ch -> DynArray.add bada ch)
+*)
+  
+  let bada = Array.create () in
+  Hashtbl.iter (fun ch -> 
+    Array.append bada ch)
+  Array.sort bada;
+  
+  Array.iter (fun ch -> fwritef oc 
+    "U+%04x '%c' => ""    // instances: %d\n"
+    ch ch (Hashtbl.find badc ch)) bada;
+      
+  close_out oc
+else
+  try
+    Unix.unlink "./enclog.kn.txt"
+  with _ -> ()
+*)
+
+    
 (* Encode text according to a given Unicode -> CP932-codespace transformation *)
 let make_cp932_compatible fail text =
   match !outenc with
@@ -345,3 +433,106 @@ let to_bytecode a =
   match !outenc with
     | `None -> to_sjs_bytecode a
     | enc -> make_cp932_compatible (fun c -> raise (Text.Bad_char c)) a
+
+let enclog nam ver enc file = 
+(*
+  ksprintf Optpp.sysInfo "enclog %s %s %s\n" nam (string_of_version ver) (string_of_encoding enc);
+  ksprintf Optpp.sysInfo "enclog %s %s %s\n" nam ver (Text.string_of_encoding enc);
+*)
+  
+  if Hashtbl.length badc > 0 then 
+    ksprintf Optpp.sysInfo "enclog %s %1.2f %s\n" nam ver enc;
+    ksprintf Optpp.sysInfo "bad chars: %d\n" (Hashtbl.length badc);
+    
+    (*
+    if log = "" then let log = "mapenc.kh" in
+    *)
+    (*
+    let oc = open_out "mapenc.kh.txt" in
+    *)
+    (*
+    let oc = open_out_gen [Open_append, Open_creat, Open_text] 0 "mapenc.kh.txt" in
+    *)
+    
+    let oc = open_out_gen [Open_wronly; Open_creat; 
+      Open_append; Open_text] 0o666 "mapenc.kh.txt" in
+    (*
+    Printf.printf "file open?\n";
+    *)
+    let sz = out_channel_length oc in
+    (*
+    Printf.printf "sz: %d\n" sz;
+    *)
+    
+    (*
+    Printf.printf "obj: %s\n" obj;
+    Printf.printf "log: %s\n" log;
+    *)
+    
+    if sz = 0 then (
+      output_string oc "// Specific Encoding Non-Conformity Report\n";
+      output_string oc "// Generic Remap Table for Compliant Output\n";
+      Printf.fprintf oc "// Presented in glorious %s by %s %1.2f\n"
+        (String.lowercase enc) nam ver;
+        (*
+        (String.lowercase !App.enc) App.app.name App.app.version;
+        (String.lowercase obj.app.enc) app.name app.version;
+
+        *)
+      output_string oc ("// [ ] Customize the table as desired, rename to \n" ^
+        "// \"mapenc.kh\" and move to the script directory.\n")
+    );
+    
+(*
+  ) else (
+    seek_out oc sz
+  );
+*)
+  
+(*
+  let bada = DynArray () in
+  Hashtbl.iter (fun ch -> DynArray.add bada ch)
+*)
+  
+  let i = ref 0 in 
+  let bada = (Array.make (Hashtbl.length badc) ~-1) in
+  Hashtbl.iter (fun c n -> bada.(!i) <- c; incr i) badc;
+(*
+  Array.append bada c) badc;
+  bada.(n) <- x
+*)
+  
+(*
+  let a = Array.make (Hashtbl.length badc) 0
+    and l = List.map int_of_string (ExtString.String.nsplit s ".") in
+    List.iteri (Array.set a) l;
+*)
+    
+  (*
+              let cases = List.sort cases ~cmp:(fun (a, _) (b, _) -> compare a b) in
+  *)
+  
+  Array.sort compare bada;
+  
+  Printf.fprintf oc "\n# %s\n\n" file;
+
+  Array.iter (fun c -> fprintf oc 
+    "U+%04x '%s' => \"\"    // instances: %d\n"
+    c (Text.to_sjs (Text.of_char c)) (Hashtbl.find badc c)) bada;
+(*
+    c (Text.of_sjs (Text.of_char c) (Hashtbl.find badc c)) bada;
+    c (char_of_int c) (Hashtbl.find badc c)) bada;
+*)
+    (*
+    c c n) bada
+    *)  
+  close_out oc
+  
+  (*
+  Hashtbl.length badc
+  *)
+(*
+else
+  Unix.unlink "./enclog.kn.txt"
+  (* 0 *)
+*)

@@ -1,6 +1,7 @@
 (*
-    Rlc: code generation functions
-    Copyright (C) 2006 Haeleth
+   Rlc: code generation functions
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -99,20 +100,34 @@ module Output =
       then DynArray.add bytecode (Lineref loc.line)
       else if force then DynArray.add bytecode (Lineref 0);
       lnum := loc.line
-
+(*
     let maybe_line loc =
       if loc <> nowhere && loc.line <> !lnum then add_line loc
+*)	  
+    let maybe_line loc =
+      if loc <> nowhere && loc.line <> !lnum then 
+(*
+	    if loc.line < !lnum then Optpp.sysWarning (sprintf "line %d/%d" !lnum loc.line);
+*)
+(*
+		add_line (if loc.line < !lnum then loc else { file = loc.file; line = !lnum } ) 
+*)
+		add_line loc
+
 
     let add_code loc s =
       maybe_line loc;
       DynArray.add bytecode (Code s)
 
     let length () = DynArray.length bytecode
+
     let insert_code i s =
       DynArray.insert bytecode i (Code s)
 
     let add_label (loc, s, t) =
+(*
       maybe_line loc;
+*)
       if Hashtbl.mem labels t then ksprintf (error loc) "@%s already defined; label identifiers must be unique" s;
       DynArray.add bytecode (Label t);
       Hashtbl.add labels t ()

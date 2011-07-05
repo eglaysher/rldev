@@ -1,0 +1,678 @@
+   0  $accept : %entry% $end
+
+   1  parse : games
+
+   2  games : game
+   3        | game AND games
+   4        | game Cm games
+   5        | game games
+
+   6  game : GAME IDENT title pub seens inherits target key
+
+   7  title :
+   8        | IDENT
+   9        | STRING
+
+  10  pub :
+  11      | BY IDENT
+  12      | BY STRING
+
+  13  seens :
+  14        | WITH INTEGER SEENS
+  15        | WITH INTEGER
+
+  16  inherits :
+  17           | INHERITS NONE
+  18           | INHERITS ids
+
+  19  ids : IDENT
+  20      | IDENT Cm ids
+  21      | IDENT ids
+
+  22  target :
+  23         | FOR engine version compiler
+
+  24  engine : IDENT
+
+  25  version :
+  26          | vstamp
+
+  27  compiler :
+  28           | INTEGER
+
+  29  vstamp : INTEGER
+  30         | INTEGER Pt INTEGER
+  31         | INTEGER Pt INTEGER Pt INTEGER
+  32         | INTEGER Pt INTEGER Pt INTEGER Pt INTEGER
+
+  33  key :
+  34      | USING subkeys
+  35      | USING NONE
+  36      | USING NO KEY
+
+  37  subkeys : subkey
+  38          | subkey AND subkeys
+  39          | subkey Cm subkeys
+
+  40  subkey : KEY FROM INTEGER FOR INTEGER Co bytes
+
+  41  bytes : INTEGER
+  42        | INTEGER bytes
+
+  43  %entry% : '\001' parse
+
+state 0
+	$accept : . %entry% $end  (0)
+
+	'\001'  shift 1
+	.  error
+
+	%entry%  goto 2
+
+
+state 1
+	%entry% : '\001' . parse  (43)
+
+	GAME  shift 3
+	.  error
+
+	parse  goto 4
+	games  goto 5
+	game  goto 6
+
+
+state 2
+	$accept : %entry% . $end  (0)
+
+	$end  accept
+
+
+state 3
+	game : GAME . IDENT title pub seens inherits target key  (6)
+
+	IDENT  shift 7
+	.  error
+
+
+state 4
+	%entry% : '\001' parse .  (43)
+
+	.  reduce 43
+
+
+state 5
+	parse : games .  (1)
+
+	.  reduce 1
+
+
+state 6
+	games : game .  (2)
+	games : game . AND games  (3)
+	games : game . Cm games  (4)
+	games : game . games  (5)
+
+	Cm  shift 8
+	AND  shift 9
+	GAME  shift 3
+	$end  reduce 2
+
+	games  goto 10
+	game  goto 6
+
+
+state 7
+	game : GAME IDENT . title pub seens inherits target key  (6)
+	title : .  (7)
+
+	IDENT  shift 11
+	STRING  shift 12
+	$end  reduce 7
+	Cm  reduce 7
+	AND  reduce 7
+	BY  reduce 7
+	FOR  reduce 7
+	GAME  reduce 7
+	INHERITS  reduce 7
+	USING  reduce 7
+	WITH  reduce 7
+
+	title  goto 13
+
+
+state 8
+	games : game Cm . games  (4)
+
+	GAME  shift 3
+	.  error
+
+	games  goto 14
+	game  goto 6
+
+
+state 9
+	games : game AND . games  (3)
+
+	GAME  shift 3
+	.  error
+
+	games  goto 15
+	game  goto 6
+
+
+state 10
+	games : game games .  (5)
+
+	.  reduce 5
+
+
+state 11
+	title : IDENT .  (8)
+
+	.  reduce 8
+
+
+state 12
+	title : STRING .  (9)
+
+	.  reduce 9
+
+
+state 13
+	game : GAME IDENT title . pub seens inherits target key  (6)
+	pub : .  (10)
+
+	BY  shift 16
+	$end  reduce 10
+	Cm  reduce 10
+	AND  reduce 10
+	FOR  reduce 10
+	GAME  reduce 10
+	INHERITS  reduce 10
+	USING  reduce 10
+	WITH  reduce 10
+
+	pub  goto 17
+
+
+state 14
+	games : game Cm games .  (4)
+
+	.  reduce 4
+
+
+state 15
+	games : game AND games .  (3)
+
+	.  reduce 3
+
+
+state 16
+	pub : BY . IDENT  (11)
+	pub : BY . STRING  (12)
+
+	IDENT  shift 18
+	STRING  shift 19
+	.  error
+
+
+state 17
+	game : GAME IDENT title pub . seens inherits target key  (6)
+	seens : .  (13)
+
+	WITH  shift 20
+	$end  reduce 13
+	Cm  reduce 13
+	AND  reduce 13
+	FOR  reduce 13
+	GAME  reduce 13
+	INHERITS  reduce 13
+	USING  reduce 13
+
+	seens  goto 21
+
+
+state 18
+	pub : BY IDENT .  (11)
+
+	.  reduce 11
+
+
+state 19
+	pub : BY STRING .  (12)
+
+	.  reduce 12
+
+
+state 20
+	seens : WITH . INTEGER SEENS  (14)
+	seens : WITH . INTEGER  (15)
+
+	INTEGER  shift 22
+	.  error
+
+
+state 21
+	game : GAME IDENT title pub seens . inherits target key  (6)
+	inherits : .  (16)
+
+	INHERITS  shift 23
+	$end  reduce 16
+	Cm  reduce 16
+	AND  reduce 16
+	FOR  reduce 16
+	GAME  reduce 16
+	USING  reduce 16
+
+	inherits  goto 24
+
+
+state 22
+	seens : WITH INTEGER . SEENS  (14)
+	seens : WITH INTEGER .  (15)
+
+	SEENS  shift 25
+	$end  reduce 15
+	Cm  reduce 15
+	AND  reduce 15
+	FOR  reduce 15
+	GAME  reduce 15
+	INHERITS  reduce 15
+	USING  reduce 15
+
+
+state 23
+	inherits : INHERITS . NONE  (17)
+	inherits : INHERITS . ids  (18)
+
+	NONE  shift 26
+	IDENT  shift 27
+	.  error
+
+	ids  goto 28
+
+
+state 24
+	game : GAME IDENT title pub seens inherits . target key  (6)
+	target : .  (22)
+
+	FOR  shift 29
+	$end  reduce 22
+	Cm  reduce 22
+	AND  reduce 22
+	GAME  reduce 22
+	USING  reduce 22
+
+	target  goto 30
+
+
+state 25
+	seens : WITH INTEGER SEENS .  (14)
+
+	.  reduce 14
+
+
+state 26
+	inherits : INHERITS NONE .  (17)
+
+	.  reduce 17
+
+
+27: shift/reduce conflict (shift 31, reduce 19) on Cm
+state 27
+	ids : IDENT .  (19)
+	ids : IDENT . Cm ids  (20)
+	ids : IDENT . ids  (21)
+
+	Cm  shift 31
+	IDENT  shift 27
+	$end  reduce 19
+	AND  reduce 19
+	FOR  reduce 19
+	GAME  reduce 19
+	USING  reduce 19
+
+	ids  goto 32
+
+
+state 28
+	inherits : INHERITS ids .  (18)
+
+	.  reduce 18
+
+
+state 29
+	target : FOR . engine version compiler  (23)
+
+	IDENT  shift 33
+	.  error
+
+	engine  goto 34
+
+
+state 30
+	game : GAME IDENT title pub seens inherits target . key  (6)
+	key : .  (33)
+
+	USING  shift 35
+	$end  reduce 33
+	Cm  reduce 33
+	AND  reduce 33
+	GAME  reduce 33
+
+	key  goto 36
+
+
+state 31
+	ids : IDENT Cm . ids  (20)
+
+	IDENT  shift 27
+	.  error
+
+	ids  goto 37
+
+
+state 32
+	ids : IDENT ids .  (21)
+
+	.  reduce 21
+
+
+state 33
+	engine : IDENT .  (24)
+
+	.  reduce 24
+
+
+34: shift/reduce conflict (shift 38, reduce 25) on INTEGER
+state 34
+	target : FOR engine . version compiler  (23)
+	version : .  (25)
+
+	INTEGER  shift 38
+	$end  reduce 25
+	Cm  reduce 25
+	AND  reduce 25
+	GAME  reduce 25
+	USING  reduce 25
+
+	version  goto 39
+	vstamp  goto 40
+
+
+state 35
+	key : USING . subkeys  (34)
+	key : USING . NONE  (35)
+	key : USING . NO KEY  (36)
+
+	KEY  shift 41
+	NO  shift 42
+	NONE  shift 43
+	.  error
+
+	subkeys  goto 44
+	subkey  goto 45
+
+
+state 36
+	game : GAME IDENT title pub seens inherits target key .  (6)
+
+	.  reduce 6
+
+
+state 37
+	ids : IDENT Cm ids .  (20)
+
+	.  reduce 20
+
+
+state 38
+	vstamp : INTEGER .  (29)
+	vstamp : INTEGER . Pt INTEGER  (30)
+	vstamp : INTEGER . Pt INTEGER Pt INTEGER  (31)
+	vstamp : INTEGER . Pt INTEGER Pt INTEGER Pt INTEGER  (32)
+
+	Pt  shift 46
+	$end  reduce 29
+	Cm  reduce 29
+	AND  reduce 29
+	GAME  reduce 29
+	USING  reduce 29
+	INTEGER  reduce 29
+
+
+state 39
+	target : FOR engine version . compiler  (23)
+	compiler : .  (27)
+
+	INTEGER  shift 47
+	$end  reduce 27
+	Cm  reduce 27
+	AND  reduce 27
+	GAME  reduce 27
+	USING  reduce 27
+
+	compiler  goto 48
+
+
+state 40
+	version : vstamp .  (26)
+
+	.  reduce 26
+
+
+state 41
+	subkey : KEY . FROM INTEGER FOR INTEGER Co bytes  (40)
+
+	FROM  shift 49
+	.  error
+
+
+state 42
+	key : USING NO . KEY  (36)
+
+	KEY  shift 50
+	.  error
+
+
+state 43
+	key : USING NONE .  (35)
+
+	.  reduce 35
+
+
+state 44
+	key : USING subkeys .  (34)
+
+	.  reduce 34
+
+
+45: shift/reduce conflict (shift 51, reduce 37) on Cm
+45: shift/reduce conflict (shift 52, reduce 37) on AND
+state 45
+	subkeys : subkey .  (37)
+	subkeys : subkey . AND subkeys  (38)
+	subkeys : subkey . Cm subkeys  (39)
+
+	Cm  shift 51
+	AND  shift 52
+	$end  reduce 37
+	GAME  reduce 37
+
+
+state 46
+	vstamp : INTEGER Pt . INTEGER  (30)
+	vstamp : INTEGER Pt . INTEGER Pt INTEGER  (31)
+	vstamp : INTEGER Pt . INTEGER Pt INTEGER Pt INTEGER  (32)
+
+	INTEGER  shift 53
+	.  error
+
+
+state 47
+	compiler : INTEGER .  (28)
+
+	.  reduce 28
+
+
+state 48
+	target : FOR engine version compiler .  (23)
+
+	.  reduce 23
+
+
+state 49
+	subkey : KEY FROM . INTEGER FOR INTEGER Co bytes  (40)
+
+	INTEGER  shift 54
+	.  error
+
+
+state 50
+	key : USING NO KEY .  (36)
+
+	.  reduce 36
+
+
+state 51
+	subkeys : subkey Cm . subkeys  (39)
+
+	KEY  shift 41
+	.  error
+
+	subkeys  goto 55
+	subkey  goto 45
+
+
+state 52
+	subkeys : subkey AND . subkeys  (38)
+
+	KEY  shift 41
+	.  error
+
+	subkeys  goto 56
+	subkey  goto 45
+
+
+state 53
+	vstamp : INTEGER Pt INTEGER .  (30)
+	vstamp : INTEGER Pt INTEGER . Pt INTEGER  (31)
+	vstamp : INTEGER Pt INTEGER . Pt INTEGER Pt INTEGER  (32)
+
+	Pt  shift 57
+	$end  reduce 30
+	Cm  reduce 30
+	AND  reduce 30
+	GAME  reduce 30
+	USING  reduce 30
+	INTEGER  reduce 30
+
+
+state 54
+	subkey : KEY FROM INTEGER . FOR INTEGER Co bytes  (40)
+
+	FOR  shift 58
+	.  error
+
+
+state 55
+	subkeys : subkey Cm subkeys .  (39)
+
+	.  reduce 39
+
+
+state 56
+	subkeys : subkey AND subkeys .  (38)
+
+	.  reduce 38
+
+
+state 57
+	vstamp : INTEGER Pt INTEGER Pt . INTEGER  (31)
+	vstamp : INTEGER Pt INTEGER Pt . INTEGER Pt INTEGER  (32)
+
+	INTEGER  shift 59
+	.  error
+
+
+state 58
+	subkey : KEY FROM INTEGER FOR . INTEGER Co bytes  (40)
+
+	INTEGER  shift 60
+	.  error
+
+
+state 59
+	vstamp : INTEGER Pt INTEGER Pt INTEGER .  (31)
+	vstamp : INTEGER Pt INTEGER Pt INTEGER . Pt INTEGER  (32)
+
+	Pt  shift 61
+	$end  reduce 31
+	Cm  reduce 31
+	AND  reduce 31
+	GAME  reduce 31
+	USING  reduce 31
+	INTEGER  reduce 31
+
+
+state 60
+	subkey : KEY FROM INTEGER FOR INTEGER . Co bytes  (40)
+
+	Co  shift 62
+	.  error
+
+
+state 61
+	vstamp : INTEGER Pt INTEGER Pt INTEGER Pt . INTEGER  (32)
+
+	INTEGER  shift 63
+	.  error
+
+
+state 62
+	subkey : KEY FROM INTEGER FOR INTEGER Co . bytes  (40)
+
+	INTEGER  shift 64
+	.  error
+
+	bytes  goto 65
+
+
+state 63
+	vstamp : INTEGER Pt INTEGER Pt INTEGER Pt INTEGER .  (32)
+
+	.  reduce 32
+
+
+state 64
+	bytes : INTEGER .  (41)
+	bytes : INTEGER . bytes  (42)
+
+	INTEGER  shift 64
+	$end  reduce 41
+	Cm  reduce 41
+	AND  reduce 41
+	GAME  reduce 41
+
+	bytes  goto 66
+
+
+state 65
+	subkey : KEY FROM INTEGER FOR INTEGER Co bytes .  (40)
+
+	.  reduce 40
+
+
+state 66
+	bytes : INTEGER bytes .  (42)
+
+	.  reduce 42
+
+
+State 27 contains 1 shift/reduce conflict.
+State 34 contains 1 shift/reduce conflict.
+State 45 contains 2 shift/reduce conflicts.
+
+
+23 terminals, 19 nonterminals
+44 grammar rules, 67 states

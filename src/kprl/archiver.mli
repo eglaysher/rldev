@@ -1,6 +1,7 @@
 (*
    Kprl: archive handler interface
    Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -18,12 +19,20 @@
 *)
 
 (* bool: whether App.outdir needs creating *)
+
 type action = bool * (string list -> unit)
 
 val add: action
 val pack: action
 val list: action
+val info: action
 val break: action
 val remove: action
 val extract: action
+val check: action
 val disassemble: action
+val map: action
+val decompress: action
+val encrypt: action
+val decrypt: action
+

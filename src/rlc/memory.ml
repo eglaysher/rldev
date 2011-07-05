@@ -1,6 +1,7 @@
 (*
-    Rlc: memory handling (mostly stubs)
-    Copyright (C) 2006 Haeleth
+   Rlc: memory handling (mostly stubs)
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -102,7 +103,7 @@ let dealloc : symbol_t -> unit =
     (* TODO: handle other kinds of symbol? *)
 
 let process f =
-  try f symbols with Not_found -> memerr "undeclared identifier"
+  try f symbols with Not_found -> memerr "undeclared identifier[6]"
 
 let undefine loc s id =
   let scoped =
@@ -133,7 +134,7 @@ let close_scope () =
             dealloc sym;
             Hashtbl.remove tbl id)
       with
-        MemoryError "undeclared identifier" -> ())
+        MemoryError "undeclared identifier[7]" -> ())
     closing
 
 let describe t =
@@ -148,7 +149,7 @@ let describe t =
       | `StaticVar (_, _, None, _, _, _) -> "integer variable"
       | `StaticVar _ -> "integer array"
   with
-    Not_found -> "undeclared identifier"
+    Not_found -> "undeclared identifier[8]"
 
 let get_args loc args defs s =
   let al = List.length args

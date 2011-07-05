@@ -1,6 +1,7 @@
 (*
    Rldev: configuration-related functionality
    Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -36,6 +37,17 @@ ELSE
       if !prefix = "" then (
         let home = try Sys.getenv "HOME" with Not_found -> Filename.dirname Sys.argv.(0)
         and rldir = try Sys.getenv "RLDEV" with Not_found -> "." in
+        
+        (*
+        cliInfo sprintf "HOME=%s" home;
+        cliInfo sprintf "RLDEV=%s" rldir;
+        *)
+
+        (*
+        Optpp.cliWarning (Printf.sprintf "HOME=%s" home);
+        Optpp.cliWarning (Printf.sprintf "RLDEV=%s" rldir);
+        *)
+        
         prefix :=
           try
             List.find
@@ -46,10 +58,33 @@ ELSE
                "/usr/share/rldev"; "/usr/local/share/rldev"; 
                "/usr/share/rldev/lib"; "/usr/local/share/rldev/lib"]
           with Not_found ->
-            Optpp.sysError "Error: unable to locate reallive.kfn.  Try setting $RLDEV to your RLDev installation directory"
+            Optpp.sysError ("Error: unable to locate reallive.kfn.  " ^
+              "Try setting $RLDEV to your RLDev installation directory")
       );
+      
+      (*
+      Optpp.cliWarning (Printf.sprintf "prefix: %s" !prefix);
+      *)
+      
       !prefix
 END
 
+(*
+Optpp.cliWarning (Printf.sprintf "prefix=%s" (prefix ()))
+*)
+
+let lib_file fname = 
+  if String.sub fname 0 1 <> "/" then 
+    Filename.concat (prefix ()) fname
+  else fname
+  
 let ivar_prefix = "int"
 and svar_prefix = "str"
+
+(* let src_ext = "ke" *)
+
+(* for more convenient use with reallive debug mode and RealLiveMax compiler *)
+
+(*
+let src_ext = ref "org"
+*)

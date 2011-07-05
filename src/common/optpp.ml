@@ -1,5 +1,8 @@
 (*
-   Copyright (C) 2006 Haeleth; based on code copyright (C) 2000 Alain Frisch
+   Optpp: General help, info & options features
+   Based on code copyright (C) 2000 Alain Frisch
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -46,6 +49,9 @@ type app_info =
     description: string;
     year: int;
     author: string;
+    year2: int;
+    author2: string;
+    boss: string;
     usage: string; }
 
 let default_app_info =
@@ -55,6 +61,9 @@ let default_app_info =
     description = "a program";
     year = 2006;
     author = "Haeleth";
+    year2 = -1;
+    author2 = "";
+    boss = "Haeleth";
     usage = "<options> <files>" }
 
 open Printf
@@ -123,10 +132,31 @@ let cliWarning s =
   flush stderr;
   Format.set_formatter_out_channel stdout
 
-let cliError s =
+exception Error of string
+let abort s = raise (Error s)
+
+exception Trace of string * int
+
+let startTrace s =
+  raise (Trace ((sprintf "%s\nStack Trace:" s), 0))
+
+let contTrace s n sn =
+  let rec gen_space n =
+    match n with
+      | 0 -> ""
+      | _ -> "   " ^ gen_space (n-1) in
+  raise (Trace ( (s ^ (sprintf "\n") ^ gen_space(n) ^ sn), n+1))
+
+let printTrace s n =
   Format.set_formatter_out_channel stderr;
-  cliInfo s;
-  exit 2
+  cliInfo (sprintf "%s\n%d levels traced" s n)
+
+let cliErrorDisp s =
+  Format.set_formatter_out_channel stderr;
+  cliInfo s
+
+let cliError s =
+  abort s
 
 let usageError ?(app = default_app_info) s =
   ksprintf cliError "Error: %s.\nFor basic usage information run `%s --help'" s app.exe_name
@@ -136,8 +166,6 @@ let sysWarning s = ksprintf cliWarning "Warning: %s." s
 let sysError s = ksprintf cliError "Error: %s." s
 
 
-exception Error of string
-let abort s = raise (Error s)
 
 let noshort = '\000'
 let nolong  = ""
@@ -215,7 +243,8 @@ let parse opts others args first last =
                     for i = 2 to l - 1 do
                       match find_short s.[i] with
                         | _, _, Some handle, None -> handle ()
-                        | _ -> ksprintf abort "Only non-argument short-options can be concatenated (error with option %c in %s)"  s.[i] s
+                        | _ -> ksprintf abort ("Only non-argument short-options " ^^
+                          "can be concatenated (error with option %c in %s)")  s.[i] s
                     done;
                     aux (no + 1)
                 | _, _, _,Some handle as o (* argument allowed or mandatory *)
@@ -265,8 +294,11 @@ let display_options = function [] -> () | osl ->
     let short = function
       | Opt { descr = "" } -> "\001"
       | Opt { short = "" } -> " "
-      | Opt { short = x; argname = "" } -> shortlen := max !shortlen (String.length x); x
-      | Opt { short = x; argname = ar } -> let x = sprintf "%s %s" x ar in shortlen := max !shortlen (String.length x); x
+      | Opt { short = x; argname = "" } -> 
+        shortlen := max !shortlen (String.length x); x
+      | Opt { short = x; argname = ar } -> 
+        let x = sprintf "%s %s" x ar in 
+        shortlen := max !shortlen (String.length x); x
       | Break -> " "
       | Message s -> "\000"
    in (List.map short osl), !shortlen
@@ -274,8 +306,12 @@ let display_options = function [] -> () | osl ->
     let longlen = ref 0 in
     let long = function
       | Opt { long = "" } -> " "
-      | Opt { long = x; argname = "" } -> let x = "--" ^ x in longlen := max !longlen (String.length x); x
-      | Opt { long = x; argname = ar } -> let x = sprintf "--%s=%s" x ar in longlen := max !longlen (String.length x); x
+      | Opt { long = x; argname = "" } -> 
+        let x = "--" ^ x in 
+        longlen := max !longlen (String.length x); x
+      | Opt { long = x; argname = ar } -> 
+        let x = sprintf "--%s=%s" x ar in 
+        longlen := max !longlen (String.length x); x
       | Break | Message _ -> " "
     in (List.map long osl), !longlen
   and descrs =
@@ -329,7 +365,9 @@ let display_options = function [] -> () | osl ->
 
 let display_version app =
   ksprintf cliInfo "%s %.2f: %s" app.name app.version app.description;
-  ksprintf cliInfo "Copyright (C) %d %s" app.year app.author
+  ksprintf cliInfo "Copyright (C) %d %s" app.year app.author;
+  if app.year2 > 0 && app.author2 <> "" then
+    ksprintf cliInfo "Revised %d by %s" app.year2 app.author2
 
 let display_help app options =
   display_version app;
@@ -338,6 +376,20 @@ let display_help app options =
     ksprintf cliInfo "Usage: %s %s" app.exe_name app.usage;
     display_options options
   );
+  exit 0
+
+let display_usage app =
+  let usage = try 
+    String.sub app.usage 0 (String.index app.usage '\n')
+  with 
+    Not_found -> app.usage
+  in
+  display_version app;
+  Format.print_newline();
+  ksprintf cliInfo "Usage: %s %s" app.exe_name usage;
+  Format.print_newline();
+  ksprintf cliInfo ("Type '%s --help' for " ^^
+    "detailed usage information.") app.exe_name;
   exit 0
 
 let getopt ?(app = default_app_info) options add_file no_files =
@@ -349,7 +401,9 @@ let getopt ?(app = default_app_info) options add_file no_files =
     try
       parse_cmdline options add_file
     with
-      | Error "Unknown option - " -> usageError ~app "unable to parse options (try adding `--' before filenames)"
+      | Error "Unknown option - " -> usageError 
+        ~app ("unable to parse options " ^ 
+        "(try adding `--' before filenames)")
       | Error s -> usageError ~app (String.uncapitalize s)
 
 let set_flag flag value =
@@ -361,7 +415,10 @@ let arg_to_flag op flag name =
     incr flag_set;
     match !flag_set with
       | 1 -> flag := op x
-      | 2 -> ksprintf sysWarning "only the first specified %s will be used" name
+      | 2 -> ksprintf sysWarning ("only the first " ^^ 
+        "specified %s will be used") name
       | _ -> ())
 
 let set_string = arg_to_flag (fun x -> x)
+
+let set_int = arg_to_flag (fun x -> (int_of_string x))

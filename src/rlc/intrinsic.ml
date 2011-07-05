@@ -1,6 +1,7 @@
 (*
-    Rlc: intrinsic functions
-    Copyright (C) 2006 Haeleth
+   Rlc: intrinsic functions
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -31,17 +32,21 @@ let buildin s f g = Hashtbl.add builtins (Text.ident s) (f, g)
 let eval_as_expr (loc, _, t, parms, label) : expression = 
   assert (label == None);
   (fst (Hashtbl.find builtins t)) loc (parms: parameter list)
+  
 let eval_as_code (loc, rv, _, t, parms, label) : statement = 
   assert (label == None);
   (snd (Hashtbl.find builtins t)) loc rv parms
+
 
 (* The actual functions *)
 
 let make_unignorable_as_code fn =
   fun loc rv parms ->
     match rv with
-      | None -> ksprintf (error loc) "the return value of the `%s' intrinsic cannot be ignored" fn
-      | Some rv -> `Assign (loc, rv, `Set, eval_as_expr (loc, fn, Text.ident fn, parms, None))
+      | None -> ksprintf (error loc) ("the return value " ^^  
+        "of the `%s' intrinsic cannot be ignored") fn
+      | Some rv -> `Assign (loc, rv, `Set, eval_as_expr 
+        (loc, fn, Text.ident fn, parms, None))
 
 let defined =
   buildin "defined?"
@@ -50,7 +55,8 @@ let defined =
         List.for_all
           (function
             | `Simple (_, `VarOrFn (_, _, t)) -> Memory.defined t
-            | _ -> error loc "the `defined?' intrinsic must be passed only simple identifiers")
+            | _ -> error loc ("the `defined?' intrinsic " ^ 
+              "must be passed only simple identifiers"))
           syms
       in
       `Int (loc, if all_defined then 1l else 0l))
@@ -62,7 +68,8 @@ and default =
       function
         | [`Simple (_, (`VarOrFn (_, _, sym) as ifdef)); `Simple (_, ifndef)]
            -> if Memory.defined sym then ifdef else ifndef
-        | _ -> error loc "the `default' intrinsic must be passed a symbol and an expression")
+        | _ -> error loc ("the `default' intrinsic must " ^ 
+              "be passed a symbol and an expression"))
     (make_unignorable_as_code "default")
 
 and constant =
@@ -71,7 +78,9 @@ and constant =
       try
         List.iter
           (function
-            | `Simple (_, e) -> ignore (!Global.expr__normalise_and_get_const e ~abort_on_fail:false)
+            | `Simple (_, e) -> ignore 
+              (!Global.expr__normalise_and_get_const 
+                e ~abort_on_fail:false)
             | _ -> raise Exit)
           exprs;
         `Int (loc, 1l)
@@ -124,7 +133,8 @@ and array =
         List.for_all 
           (function 
             | `Simple (_, `VarOrFn (_, _, t)) -> f t
-            | _ -> error loc "the `array?' intrinsic must be passed only simple identifiers")
+            | _ -> error loc ("the `array?' intrinsic must " ^ 
+              "must be passed only simple identifiers"))
           syms
       in
       `Int (loc, if all_defined then 1l else 0l))
@@ -142,7 +152,8 @@ and length =
                   | _ -> ksprintf (error loc) "`%s' is not an array" str
               in
               f sym
-        | _ -> error loc "the `length' function must be passed a single array variable")
+        | _ -> error loc ("the `length' function must " ^ 
+           "be passed a single array variable"))
     (make_unignorable_as_code "length")
 
 and __deref =
@@ -150,8 +161,10 @@ and __deref =
     (fun loc ->
       function
         | [`Simple (_, space); `Simple (_, e)]
-           -> `IVar (loc, Int32.to_int (Global.expr__normalise_and_get_int space), e)
-        | _ -> error loc "the `__deref' intrinsic must be passed an integer constant and an expression")
+           -> `IVar (loc, Int32.to_int 
+             (Global.expr__normalise_and_get_int space), e)
+        | _ -> error loc ("the `__deref' intrinsic must be " ^ 
+          "passed an integer constant and an expression"))
     (make_unignorable_as_code "__deref")
 
 and __sderef  =
@@ -159,8 +172,10 @@ and __sderef  =
     (fun loc ->
       function
         | [`Simple (_, space); `Simple (_, e)]
-           -> `SVar (loc, Int32.to_int (Global.expr__normalise_and_get_int space), e)
-        | _ -> error loc "the `__sderef' intrinsic must be passed an integer constant and an expression")
+           -> `SVar (loc, Int32.to_int 
+             (Global.expr__normalise_and_get_int space), e)
+        | _ -> error loc ("the `__sderef' intrinsic must be " ^ 
+          "passed an integer constant and an expression"))
     (make_unignorable_as_code "__sderef")
 
 and __variable =
@@ -209,9 +224,11 @@ and __ident =
   buildin "__ident"
     (fun loc ->
       function
-        | [`Simple (_, id)] -> let s = StrTokens.to_string (Global.expr__normalise_and_get_str id) ~enc:"UTF-8"
-                               in `VarOrFn (loc, s, Text.of_string "UTF-8" s)
-        | _ -> error loc "the `__ident' intrinsic function must be passed a single string constant")
+        | [`Simple (_, id)] -> let s = StrTokens.to_string 
+          (Global.expr__normalise_and_get_str id) ~enc:"UTF-8"
+          in `VarOrFn (loc, s, Text.of_string "UTF-8" s)
+        | _ -> error loc ("the `__ident' intrinsic function " ^ 
+          "must be passed a single string constant"))
     (make_unignorable_as_code "__ident")
 
 and at =
@@ -223,7 +240,8 @@ and at =
                 { file = StrTokens.to_string (Global.expr__normalise_and_get_str file);
                   line = Int32.to_int (Global.expr__normalise_and_get_int line) }
                 expr
-        | _ -> error loc "the `at' intrinsic function must be passed a location and an expression (str file; int line; any expression)")
+        | _ -> error loc ("the `at' intrinsic function must be passed a " ^ 
+          "location and an expression (str file; int line; any expression)"))
     (fun loc rv ->
       function
         | [`Simple (_, file); `Simple (_, line); `Simple (_, str)]
@@ -235,8 +253,10 @@ and at =
                 { file = StrTokens.to_string (Global.expr__normalise_and_get_str file);
                   line = Int32.to_int (Global.expr__normalise_and_get_int line) }
               in
-              KeULexer.call_parser_on_text KeAstParser.program atloc (Text.of_string "UTF8" (StrTokens.to_string str ~enc:"UTF8"))
-        | _ -> error loc "the `at' intrinsic statement must be passed a location and a string to evaluate (str file; int line; str statement_string)")
+              KeULexer.call_parser_on_text KeAstParser.program atloc 
+                (Text.of_string "UTF8" (StrTokens.to_string str ~enc:"UTF8"))
+        | _ -> error loc ("the `at' intrinsic statement must be passed a location " ^ 
+          "and a string to evaluate (str file; int line; str statement_string)"))
   
 and __empty_string =
   buildin "__empty_string?"
@@ -299,7 +319,8 @@ and gameexe =
       with Not_found ->
         match default with
           | Some expr -> expr
-          | None -> ksprintf (error loc) "unable to find #%s in GAMEEXE.INI, and no default was provided" key)
+          | None -> ksprintf (error loc) ("unable to find #%s in " ^^ 
+            "GAMEEXE.INI, and no default was provided") key)
     (make_unignorable_as_code "gameexe")
 
 and target_comparisons =
@@ -349,9 +370,11 @@ and rlc_parse_string =
         | [`Simple (_, str)]
            -> let str =
                 try Global.expr__normalise_and_get_str str ~abort_on_fail:false
-                with _ -> error loc "the string passed to `rlc_parse_string' must be evaluable at compile-time"
+                with _ -> error loc ("the string passed to `rlc_parse_string' " ^ 
+                  "must be evaluable at compile-time")
               in
-              KeULexer.call_parser_on_text KeAstParser.just_expression loc (Text.of_string "UTF8" (StrTokens.to_string str ~enc:"UTF8"))
+              KeULexer.call_parser_on_text KeAstParser.just_expression loc 
+                (Text.of_string "UTF8" (StrTokens.to_string str ~enc:"UTF8"))
         | _ -> error loc "the `rlc_parse_string' intrinsic must be passed a single string constant")
     (fun loc rv ->
       function
@@ -359,7 +382,29 @@ and rlc_parse_string =
            -> assert (rv = None); (* Needs checking to make sure this can never happen, but... *)
               let str =
                 try Global.expr__normalise_and_get_str str ~abort_on_fail:false
-                with _ -> error loc "the string passed to `rlc_parse_string' must be evaluable at compile-time"
+                with _ -> error loc ("the string passed to `rlc_parse_string' " ^ 
+                  "must be evaluable at compile-time")
               in
-              KeULexer.call_parser_on_text KeAstParser.program loc (Text.of_string "UTF8" (StrTokens.to_string str ~enc:"UTF8"))
+              KeULexer.call_parser_on_text KeAstParser.program loc 
+                (Text.of_string "UTF8" (StrTokens.to_string str ~enc:"UTF8"))
         | _ -> error loc "the `rlc_parse_string' intrinsic must be passed a single string constant")
+
+(*
+  and __FILE__ =
+  buildin "__FILE__"
+    (fun loc ->
+      function
+        | [] -> `Str (loc, DynArray.of_list [`Text (loc, `Sbcs, Text.of_string(loc.file))])
+        | _ -> error loc "the `__FILE__' intrinsic takes no parameters")
+    (make_unignorable_as_code "__FILE__")
+*)
+(*    
+  and __LINE__ =
+  buildin "__LINE__"
+    (fun loc ->
+      function
+        | [] -> `Int (loc, loc.line)
+        | _ -> error loc "the `__LINE__' intrinsic takes no parameters")
+    (make_unignorable_as_code "__LINE__")
+*)
+

@@ -1,6 +1,7 @@
 (*
    Kprl: RealLive archiver and disassembler
    Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -24,6 +25,8 @@ let app =
     exe_name = "kprl";
     name = "Kprl";
     description = "archiver/disassembler for RealLive";
+    author2 = "Richard 23";
+    year2 = 2011;
     usage =
       "<options> <files or ranges>\n\
        \n\
@@ -33,9 +36,10 @@ let app =
        separate bytecode files. In all other cases, the first filename is the name \
        of an archive and the rest should be a list of numerical ranges of files to \
        be processed (e.g. `50 60 100-150'); if omitted, all files in the archive \
-       will be processed." }
+       will be processed."
+}
 
-let verbose = ref false
+let verbose = ref 0
 let outdir = ref ""
 let names_opt = ref false
 let enc = ref Config.default_encoding
@@ -45,3 +49,12 @@ let auto_target = ref true
 and target_version = ref (0, 0, 0, 0)
 and target_interpreter = ref ""
 and force_meta : [`Chinese | `None | `Western | `Korean ] option ref = ref None
+
+let kfn_file = ref "reallive.kfn"
+let cast_file = ref ""
+let game_file = ref "game.cfg"
+let game_id = ref "LB"
+
+let src_ext = ref "org"
+
+let opcodes = ref false

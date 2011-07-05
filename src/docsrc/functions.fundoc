@@ -182,6 +182,137 @@ cases they were implemented for.
   expressions (see \ref{constexprs}), or 0 otherwise.
 @}
 
+@fun/integer?/
+@def/integer?(<exprs>~{\ldots~}): integer constant/
+@{
+  Tests whether parameter list consists entirely of integer expressions.
+  Result is 1 if true, or 0 otherwise.
+@}
+
+@fun/array?/
+@def/array? (<symbols>~{\ldots~}): integer constant/
+@{
+  Intrinsic macro: expands to 1 if all <symbols> are arrays, 0 otherwise.
+@}
+
+@fun/length/
+@def/length (<array>): integer/
+@{
+  Returns the length of <array>, which must be an array variable.
+@}
+
+@fun/__deref/
+@def/__deref(<integer>, <expr>): integer element/
+@{
+  [description]
+@}
+
+@fun/__sdref/
+@def/__sdref(<integer>, <expr>): string element/
+@{
+  [description]
+@}
+
+@fun/__variable?/
+@def/__variable?(<expr>): integer constant/
+@{
+  [description]
+@}
+
+@fun/__addr/
+@def/__addr(<variable>): result/
+@{
+  [description]
+@}
+
+@fun/__ident/
+@def/__ident(<string>): result/
+@{
+  [description]
+@}
+
+@fun/at/
+@def/at(<location>, <expr>): result/
+@{
+  [description]
+@}
+
+@fun/__empty_string?/
+@def/__empty_string?(<string>): integer constant/
+@{
+  The present Kepago implementation does not permit comparison of strings, even
+  constant strings, in constant expressions.  This macro can be used instead to
+  determine at compile-time whether a string constant is equal to the empty
+  string or not, which is the most useful case.
+@}
+
+@fun/__equal_strings?/
+@def/__equal_strings?(<string>, <string>): result/
+@{
+  [description]
+@}
+
+@fun/gameexe/
+@def/gameexe(<key>, [index], [default]): expression/
+@{
+  Expands (at compile-time) to the value bound to <key> in \gameexe.
+
+  <key> should be a string constant.  You can include or omit the initial \#
+  character as you wish, and keys are not case-sensitive.
+
+  For keys with multiple values (such as @iref{CANCELCALL}), the value
+  returned is specified by <index>, which defaults to 0 (the first value).
+
+  If <default> is given, it is returned when <key> is not found in
+  \gameexe.  It has no default value: if <key> is not found when
+  <default> is not given, an error is reported instead.
+@}
+
+@fun/target_lt/
+@def/target_lt(<version>): result/
+@{
+  [description]
+@}
+
+@fun/target_le/
+@def/target_le(<version>): result/
+@{
+  [description]
+@}
+
+@fun/target_gt/
+@def/target_gt(<version>): result/
+@{
+  [description]
+@}
+
+@fun/target_ge/
+@def/target_ge(<version>): result/
+@{
+  [description]
+@}
+
+@fun/kinetic?/
+@def/kinetic?(): result/
+@{
+  [description]
+@}
+
+@fun/rlc_parse_string/
+@def/rlc_parse_string(<string>): statements or expression/
+@{
+  Passes the constant string <string> to the \compiler\ parser.  If the call is
+  within an expression, <string> must represent a complete expression; if the
+  call is as a statement, <string> must represent one or more complete
+  statements.  The parsed code will replace the call in the AST.
+
+  The use of this function can be considered `deep magic'.  If you find yourself
+  considering it, think very hard about whether you really want to do whatever
+  it is you're attempting.
+@}
+
+
+
 @fun/const_eq?/
 @def/const_eq?(<expr>, <const>): integer constant/
 @{

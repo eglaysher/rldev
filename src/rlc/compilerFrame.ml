@@ -1,6 +1,7 @@
 (*
-    Rlc: compiler framework
-    Copyright (C) 2006 Haeleth
+   Rlc: compiler framework
+   Copyright (C) 2006 Haeleth
+   Revised 2009-2011 by Richard 23
 
    This program is free software; you can redistribute it and/or modify it under
    the terms of the GNU General Public License as published by the Free Software
@@ -27,6 +28,445 @@ open Optpp
 open KeTypes
 open KeAst
 open Codegen
+
+open Ulexing
+
+(*
+open ULexing
+open UParser
+*)
+
+(*
+let get_token = function 
+  let (token,value,lstate) = KeULexer.get_token in
+*)
+
+(*
+let get_token loc lexbuf = 
+  let tok = KeULexer.get_token (loc) in (* lexbuf in *)
+
+  tok
+*)
+
+let token_of_id id =
+match id with
+  |   0 -> "EOF"
+  | 257 -> "LPAR"
+  | 258 -> "RPAR"
+  | 259 -> "LSQU"
+  | 260 -> "RSQU"
+  | 261 -> "LCUR"
+  | 262 -> "RCUR"
+  | 263 -> "SADD"
+  | 264 -> "SSUB"
+  | 265 -> "SMUL"
+  | 266 -> "SDIV"
+  | 267 -> "SMOD"
+  | 268 -> "SAND"
+  | 269 -> "SOR"
+  | 270 -> "SXOR"
+  | 271 -> "SSHL"
+  | 272 -> "SSHR"
+  | 273 -> "SET"
+  | 274 -> "ADD"
+  | 275 -> "SUB"
+  | 276 -> "MUL"
+  | 277 -> "DIV"
+  | 278 -> "MOD"
+  | 279 -> "AND"
+  | 280 -> "OR"
+  | 281 -> "XOR"
+  | 282 -> "SHL"
+  | 283 -> "SHR"
+  | 284 -> "EQU"
+  | 285 -> "NEQ"
+  | 286 -> "LTE"
+  | 287 -> "LTN"
+  | 288 -> "GTE"
+  | 289 -> "GTN"
+  | 290 -> "LAND"
+  | 291 -> "LOR"
+  | 292 -> "NOT"
+  | 293 -> "TILDE"
+  | 294 -> "COLON"
+  | 295 -> "COMMA"
+  | 296 -> "SEMI"
+  | 297 -> "POINT"
+  | 298 -> "ARROW"
+  | 309 -> "STR"
+  | 311 -> "DEOF"
+  | 312 -> "DHALT"
+  | 313 -> "DTARGET"
+  | 314 -> "DVERSION"
+  | 315 -> "DLOAD"
+  | 316 -> "DIF"
+  | 317 -> "DELSE"
+  | 318 -> "DELSEIF"
+  | 319 -> "DENDIF"
+  | 320 -> "DFOR"
+  | 324 -> "DSET"
+  | 325 -> "DUNDEF"
+  | 326 -> "DHIDING"
+  | 327 -> "OP"
+  | 328 -> "USCORE"
+  | 329 -> "RETURN"
+  | 330 -> "IF"
+  | 331 -> "ELSE"
+  | 332 -> "WHILE"
+  | 333 -> "REPEAT"
+  | 334 -> "TILL"
+  | 335 -> "FOR"
+  | 336 -> "CASE"
+  | 337 -> "OF"
+  | 338 -> "OTHER"
+  | 339 -> "ECASE"
+  | 340 -> "BREAK"
+  | 341 -> "CONTINUE"
+  | 342 -> "RAW"
+  | 343 -> "ENDRAW"
+  |  id -> sprintf "%d" id
+  
+  
+(*
+handle_textout next (`Return (l, _, _) as elt) =
+*)  
+
+let rt_msg_event loc msg = 
+  prettily_blk_ln !Optpp.base_indent (Printf.sprintf 
+    "[RT] %s @ [Line %d, file: %s]" 
+    msg loc.line loc.file)
+
+let rt_msg_reply loc msg = 
+  prettily_blk_ln !Optpp.base_indent (Printf.sprintf 
+    "  --[RV]--> %s @ [Line %d, file: %s]" 
+    msg loc.line loc.file)
+
+(*
+let trace_eval f rv : statement = f
+let compile_stub text = do_compile compile_stub text
+*)
+
+(*    
+let trace_eval (loc, rv, _, t, parms, label as f) rv = (* : statement = *)  
+  let result = eval_as_code f in
+  rt_msg_event loc (string_of_statement f)
+  rt_msg_reply loc (string_of_statement result)
+  rv = result
+*)
+
+(* rv = : statement = *)  
+
+(*
+let trace_eval (loc, rv, _, t, parms, label as fn) : statement = 
+  rt_msg_event loc (string_of_statement fn);
+  rt_msg_reply loc rv 
+  eval_as_code loc fn rv in
+  
+  
+  rt_msg_reply loc msg = loc msg = string_of_expr rv
+*)
+
+
+(*
+let trace_eval (loc, rv, _, _, _, _ as fn) : statement = 
+let trace_eval fn : statement = 
+*)
+(*
+let trace_eval fn : statement = 
+  let loc = loc_of_statement fn in
+  rt_msg_event loc (string_of_statement fn);
+  Intrinsic.eval_as_code fn
+*)
+ 
+(*
+let trace_eval ((loc, rv, _, t, parms, label) as fn) : statement = 
+  rt_msg_event loc (string_of_statement (loc, rv, _, t, parms, label))
+(*let (loc, rv, _, _, _, _) = f in*)
+(*let loc = loc_of_statement(fn) in*)
+  let loc = loc_of_statement fn in
+  rt_msg_event loc (string_of_statement fn);
+  Intrinsic.eval_as_code fn
+  (*
+  loc fn rv [] 
+  *)
+  (*
+  rt_msg_reply loc (string_of_expr rv)
+  *)
+  *)
+  
+
+(*  
+  (loc, rv, fn loc [] Some result)    
+  rt_msg_reply loc (string_of_expr (handle_eval_result rv))
+*)
+  
+(*  
+  let result = eval_as_code fn in
+  let eval_as_code (loc, rv, _, t, parms, label) : statement = 
+*)
+(*
+  Intrinsic.eval_as_expr (l, s, t, [], None)
+*)
+(*  
+  rv = result
+*)
+
+(*
+let handle_eval_result =
+  fun loc rv parms ->
+    match rv with
+      | None -> ksprintf (error loc) ("the return value " ^ 
+         "of the `%s' intrinsic cannot be ignored") fn
+      | Some rv -> `Assign (loc, rv, `Set, eval_as_expr 
+         (loc, fn, Text.ident fn, parms, None))
+*)
+(*
+  ;
+  let result = eval_as_code f in
+  result
+*)
+
+  
+(*  
+if App.runtime_trace > 0 then 
+  trace_textout ( handle_textout ) 
+else handle_textout
+*)
+
+
+(*
+let get_token lstate lexbuf =
+(*
+  let aux = { term = `ResStr; file = fname; line = 1; res = res } in
+  let aux = { term = `ResStr; file = lstate.file; line = lstate.line; res = res } in
+*)
+
+(*
+  let return t = t, lstate in
+*)
+
+(*
+  let loc = lstate in
+*)
+  
+  let tkn, loc = KeULexer.get_token lstate lexbuf in
+
+(*
+  let t = ULexing.lexeme lexbuf in
+  let t = latin1_lexeme lexbuf in
+*)
+  
+(*
+  let (ti, v) = Ulexing.lexeme lexbuf in
+*)
+
+(*
+  let ti = fst (Ulexing.latin1_lexeme lexbuf) in
+*)
+
+  let ti = 666 in
+  
+(*
+  let t = token_of_id ti in
+*)
+  
+(*
+  Buffer.add_string b (latin1_lexeme lexbuf); quot lexbuf
+  sysInfo (sprintf "[%04d] token: %s [%s]" loc.line t v); (* t v); *) (* tkn); *)
+  sysInfo (sprintf "[%04d] token (%d): %s [%s]" loc.line ti t v);
+*)
+  
+(*
+  sysInfo (sprintf "[%04d] token (%d): %s" (loc.line) ti t);
+*)
+  sysInfo (sprintf "[%04d] token (%d)" (loc.line) ti);
+
+  
+  tkn, loc
+*)
+  
+(*
+  let t,v = tkn.KeAstParser.token in 
+*)
+
+(*
+match tkn with
+  | EOF
+  | LPAR
+  | RPAR
+  | LSQU
+  | RSQU
+  | LCUR
+  | RCUR
+  | SADD
+  | SSUB
+  | SMUL
+  | SDIV
+  | SMOD
+  | SAND
+  | SOR
+  | SXOR
+  | SSHL
+  | SSHR
+  | SET
+  | ADD
+  | SUB
+  | MUL
+  | DIV
+  | MOD
+  | AND
+  | OR
+  | XOR
+  | SHL
+  | SHR
+  | EQU
+  | NEQ
+  | LTE
+  | LTN
+  | GTE
+  | GTN
+  | LAND
+  | LOR
+  | NOT
+  | TILDE
+  | COLON
+  | COMMA
+  | SEMI
+  | POINT
+  | ARROW
+  | INTEGER i
+  | DRES t
+  | STRING tkns
+  | LABEL (str, txt)
+  | IDENT (str, txt)
+  | GOTO (str, txt)
+  | VAR i
+  | SVAR i
+  | REG i
+  | INT i
+  | STR
+  | DWITHEXPR (str, t)
+  | DEOF
+  | DHALT
+  | DTARGET
+  | DVERSION
+  | DLOAD
+  | DIF
+  | DELSE
+  | DELSEIF
+  | DENDIF
+  | DFOR
+  | DIFDEF b
+  | DINLINE b
+  | DDEFINE t
+  | DSET
+  | DUNDEF
+  | DHIDING
+  | OP
+  | USCORE
+  | RETURN
+  | IF
+  | ELSE
+  | WHILE
+  | REPEAT
+  | TILL
+  | FOR
+  | CASE
+  | OF
+  | OTHER
+  | ECASE
+  | BREAK
+  | CONTINUE
+  | RAW
+  | ENDRAW
+  | GOTOCASE (str, txt)
+  | GOTOON (str, txt)
+  | SELECT (str, num)
+  | SPECIAL s (*of ([ `S | `Pause ]) *)
+  
+  in
+  *)
+  (*
+  let (t,v,s) = KeULexer.get_token lexbuf in
+  *)
+  
+
+  (*
+This expression has type
+  (int -> string -> 'a -> 'b, unit, string, 'a -> 'b) format4
+but is here used with type
+  (int -> string -> 'a -> 'b, unit, string) format =
+    (int -> string -> 'a -> 'b, unit, string, string) format4
+    *)
+(*  
+  lexer
+    | _ -> rollback lexbuf; KeULexer.get_token loc lexbuf
+    
+    eof -> return EOF
+
+    KeULexer.get_token loc lexbuf
+
+    
+  lexer
+  let tkn, loc = KeULexer.get_token (loc aux) lexbuf in  
+  let tkn, nloc = KeULexer.get_token loc lexbuf in
+*)
+
+(*
+  let tok,loc = KeULexer.get_token () in (* lexbuf in *)
+  
+  let tok,loc = fn () in
+*)
+  
+(*
+  tvn
+*)
+
+(*
+let get_token2 lexbuf =
+(*
+  (token,value,lstate) = KeULexer.get_token
+*)
+  
+(*
+  let (t,v,s) = KeULexer.get_token lstate in
+*)
+
+(*
+  let (t,v,s) = KeULexer.get_token lexbuf in
+  sysInfo (sprintf "[%04d] token: %s %s" s.line t v);
+  (t,v,s)
+*)
+  
+  let tl = KeULexer.get_token lexbuf in 
+  
+  let tok,loc = tl in
+
+  let (t,v) = tok in
+
+  sysInfo (sprintf "[%04d] token: %s %s" loc.line t v);
+  
+  tvl  
+(*
+  let (tok, loc) = KeULexer.get_token lexbuf in
+  
+  let (t,v) = tok in
+  
+  sysInfo (sprintf "[%04d] token: %s %s" loc.line t v);
+  
+  (tok, loc)
+*)
+*)
+  
+(*
+  (token,value,lstate) = KeULexer.get_token
+  
+  sysInfo (sprintf "[%04d] token: %s %s" lstate.line token value );
+
+  (token, value, lstate)
+*)
+  
+  
 
 let get_ast_of_string ?(file = nowhere.file) ?(line = nowhere.line) s =
   KeULexer.call_parser_on_string KeAstParser.program { file = file; line = line } s
@@ -81,6 +521,14 @@ let get_ast_of_file file =
          raise e
 
 let disambiguate =
+
+(*
+    sysInfo "parse";
+    
+    ignore(printf "disambiguate() with %s\n"
+        string_of_param);
+*)
+        
   let mf =
     function
       | `Simple (_, e) -> e
@@ -89,7 +537,21 @@ let disambiguate =
   in
   function
     | `VarOrFn (loc, s, t)
-       -> if Memory.defined t then
+       -> (* printf "VarOrFn %s\n" s; *) (* printf "VarOrFn %s\n" (Text.to_err t); *)
+(*       
+          if s = "pause" && not (Memory.defined (Text.ident "__DynamicLineationUsed__")) then
+            Memory.define ~scoped:false (Text.ident "__DynamicLineationUsed__") (`Integer 1l);
+*)
+
+(*
+    ignore(printf "disambiguate(`VarOrFn) with %s\n" s);
+*)
+
+          if List.mem s [ "pause"; "spause"; "page" ] && 
+            not (Memory.defined (Text.ident "__DynamicLineationUsed__")) then
+            Memory.define ~scoped:false (Text.ident "__DynamicLineationUsed__") (`Integer 1l);
+            
+          if Memory.defined t then
             `Hiding (loc, t, Memory.get_as_code ~loc ~s t)
           else
             `FuncCall (loc, None, s, t, [], None)
@@ -105,8 +567,37 @@ let break_stack = Stack.create ()
 and continue_stack = Stack.create ()
 
 
+(*
+let trace_textout next (`Return (loc, _, _) as elt) rv = 
+  rt_msg_event loc (string_of_statement next);
+  let result = handle_textout next elt in
+  rt_msg_reply result;
+  rv = result  
+*)
+
 let rec parse ast =
+
+(*
+    sysInfo "parse";
+*)
+    
+(*
+    ignore(printf "parse(): %s\n" (string_of_statement ast));
+*)
+
+(*
+    ignore(printf "parse() with %s\n", 
+        string_of_statement);
+*)
+
+(*
+    ignore(printf "ast length: %d\n" (DynArray.length ast -1) );
+*)
+
   for i = 0 to DynArray.length ast - 1 do
+(* 
+ignore(printf "[>%d<]\n" i);
+*)
     match disambiguate (DynArray.unsafe_get ast i) with
       | `Return (_, false, _) as elt
          -> (* Glomp pause commands here. *)
@@ -115,15 +606,48 @@ let rec parse ast =
               match DynArray.unsafe_get ast (i + 1) with
                 | `FuncCall (l, None, _, t, [], None)
                 | `VarOrFn (l, _, t) -> if t = Text.ident "pause" then `Pause l
-                                        else if t = Text.ident "page" then `Page l
+                                        else if t = Text.ident "page" then `Page l (* (printf "PAGE\n"; `Page l ) *)
                                         else `No
                 | _ -> `No
             in
+
+
+            if next <> `No then (
+              DynArray.unsafe_set ast (i + 1) `Null;
+              if not (Memory.defined (Text.ident "__DynamicLineationUsed__")) then
+                Memory.define ~scoped:false (Text.ident "__DynamicLineationUsed__") (`Integer 1l);
+            );
+
             if next <> `No then DynArray.unsafe_set ast (i + 1) `Null;
-            handle_textout next elt
+            
+            if !App.runtime_trace > 0 
+            then trace_textout next elt
+            else handle_textout next elt
       | `Null -> ()
-      | elt -> parse_elt elt
+      | elt -> (* ignore(printf "** %d ** \n" i); *) 
+        parse_elt elt
   done
+
+and trace_textout next (`Return (loc, _, _) as elt) = (* rv = *) 
+  rt_msg_event loc (string_of_statement elt);
+  let result = handle_textout next elt in
+  (*
+  rt_msg_reply (lhandle_textout next elt);
+  rt_msg_reply loc (string_of_statement result);
+  *)
+  rt_msg_reply loc (string_of_statement elt);
+  result
+  
+(*
+  let result = match handle_textout next elt with
+    | Some rv -> string_of_expr(rv) 
+    | None | _ -> "undef"
+  in rt_msg_reply loc result  (* rv = result *)
+
+  rt_msg_reply loc (handle_textout next elt)  (* rv = result *)
+  let result = handle_textout next elt in
+  rt_msg_reply (elhandle_textout next elt)
+*)
 
 and handle_textout next (`Return (l, _, _) as elt) =
   let ret =
@@ -140,7 +664,9 @@ and handle_textout next (`Return (l, _, _) as elt) =
             match last with `Return (_, _, e) -> e | _ -> assert false
   in
   if type_of_normalised_expr ret = `Int then
-    error l "textout expressions must be strings. If you did not intend this expression to be displayed, you should precede it with the `return' keyword";
+    error l ("textout expressions must be strings. " ^ 
+       "If you did not intend this expression to be displayed, " ^ 
+       "you should precede it with the `return' keyword");
   let dynalin = Text.ident "__DynamicLineation__" in
   if not (Memory.defined dynalin) || (Memory.get_as_expression dynalin matches `Int (_, 0l))
   then Textout.compile_stub (l, ret, next)
@@ -152,19 +678,28 @@ and handle_textout next (`Return (l, _, _) as elt) =
     else error l "__DynamicLineation__ defined, but no recognised dynamic lineation library loaded"
   )
 
+  
 and parse_elt elt =
+
+(*
+    ignore(printf "parse_elt(): %s\n" (string_of_statement elt));
+*)
+    
   match disambiguate elt with
     | #structure as s -> parse_struct s
     | `Return (_, false, _) as elt' -> handle_textout `No elt'
     | elt ->
       match Expr.normalise elt with
         | `Nothing 
-           -> IFDEF DEBUG_STATEMENTS THEN if Memory.defined (Text.ident "__Trace__") then eprintf "No-op:  %s\n%!" (string_of_statement elt) ELSE () END
+           -> IFDEF DEBUG_STATEMENTS THEN if Memory.defined (Text.ident "__Trace__") then 
+              eprintf "No-op:  %s\n%!" (string_of_statement elt) ELSE () END
         | `Single elt'
-           -> IFDEF DEBUG_STATEMENTS THEN if Memory.defined (Text.ident "__Trace__") then eprintf "Single: %s\n%!" (string_of_statement elt) ELSE () END;
+           -> IFDEF DEBUG_STATEMENTS THEN if Memory.defined (Text.ident "__Trace__") then 
+              eprintf "Single: %s\n%!" (string_of_statement elt) ELSE () END;
               parse_norm_elt elt'
         | `Multiple elts
-           -> IFDEF DEBUG_STATEMENTS THEN if Memory.defined (Text.ident "__Trace__") then eprintf "Multi:  %s\n%!" (string_of_statement elt) ELSE () END;
+           -> IFDEF DEBUG_STATEMENTS THEN if Memory.defined (Text.ident "__Trace__") then 
+              eprintf "Multi:  %s\n%!" (string_of_statement elt) ELSE () END;
               let last = DynArray.last elts in
               DynArray.delete_last elts;
               DynArray.iter parse_norm_elt elts;
@@ -173,6 +708,11 @@ and parse_elt elt =
               else (parse_norm_elt last; Memory.close_scope ()) (* general case: so tempvars in funccalls ARE. *)
 
 and parse_norm_elt : statement -> unit =
+
+(*
+    ignore(printf "parse_norm_elt(): %s\n" (string_of_statement));
+*)
+    
   function `Null -> assert false
     | `Return _  -> ((* do nothing - "return _" == nop *))
     | `VarOrFn _ -> assert false (* converted to `FuncCall or `Return in parse_elt *)
@@ -183,13 +723,44 @@ and parse_norm_elt : statement -> unit =
     | `Break loc -> (try parse_elt (`FuncCall (nowhere, None, "goto", Text.ident "goto", [], Some (Stack.top break_stack))) with Stack.Empty -> error loc "break outside breakable structure")
     | `Continue loc -> (try parse_elt (`FuncCall (nowhere, None, "goto", Text.ident "goto", [], Some (Stack.top continue_stack))) with Stack.Empty -> error loc "continue outside loop")
     | `Label l -> Output.add_label l
+(*
+    | `GotoList g -> Goto.goto_on g
+*)
     | `GotoOn g   -> Goto.goto_on g
     | `GotoCase g -> Goto.goto_case g
     | `Assign ((loc, _, _, _) as a) -> Output.add_code loc (code_of_assignment a)
+(*
     | `FuncCall (_, _, _, t, _, _ as f)
         -> if Intrinsic.is_builtin t
            then parse_elt (Intrinsic.eval_as_code f)
            else Function.compile f
+*)
+
+(*
+    | `FuncCall (_, _, _, t, _, _ as f)
+        -> if Intrinsic.is_builtin t then 
+              parse_elt (
+                if !App.runtime_trace > 0 
+                then trace_eval f else 
+                Intrinsic.eval_as_code f
+            ) else Function.compile f
+*)
+
+    | `FuncCall (l, _, _, t, _, _ as f) as elt
+        -> if Intrinsic.is_builtin t then (
+            (*    then trace_eval elt else
+ *)              parse_elt (
+                if !App.runtime_trace > 0 then (
+                
+                  rt_msg_event l (string_of_statement elt);
+                  let result = Intrinsic.eval_as_code f in
+                  rt_msg_reply l (string_of_statement result);
+                  result
+                
+                (* then trace_eval elt else *)
+                ) else Intrinsic.eval_as_code f)
+            ) else Function.compile f
+            
     | `Select (l, _, _, _, _, _ as f)
        -> let dynalin = Text.ident "__DynamicLineation__" in
           if not (Memory.defined dynalin) 
@@ -233,12 +804,26 @@ and parse_norm_elt : statement -> unit =
                               error l "syntax error in raw block: #... not hex"
                             end
                       | '?' -> Output.add_code l (String.lchop (TextTransforms.to_bytecode (Text.of_string !App.enc s)))
+                      (*
                       | _ -> failwith "not implemented: anything to do with identifiers in raw blocks")
+                      *)
+                      | _ -> error l "not implemented: anything to do with identifiers in raw blocks")
             c
 
 and parse_struct =
+
+(*
+    sysInfo "parse struct";
+*)    
+
+    (*
+    ignore(printf "parse_struct(): %s\n" (string_of_expr));
+    *)
+
   function
-    | `Seq smts -> parse smts
+(*    | `Seq smts -> parse smts *)
+    | `Seq smts -> (* ignore(printf "got Seq...parse(smts)\n"); *) 
+        parse smts
     | `Hiding (l, t, e)
        -> let sym =
             try
@@ -407,19 +992,45 @@ and parse_struct =
                       Expr.normalise_and_get_int case ~abort_on_fail:false, l, da)
                     ofs)
               in
+              
               (* Check all cases are consecutive (and get them sorted if they are). *)
+              
               let cases = List.sort cases ~cmp:(fun (a, _) (b, _) -> compare a b) in
               let first = fst (List.hd cases) in
               let desired = List.init (List.length cases) (fun i -> Int32.add first (Int32.of_int i)) in
               if not (List.for_all2 (fun (a, _) b -> a = b) cases desired) then raise Exit;
+              
               (* We pass!  Compile to a nice efficient goto_on() statement. *)
+              
               Memory.define (Text.ident "__ConstantCase__") (`Macro (`Int (nowhere, 0l))) ~warnings:false;
+(*
               parse_elt (`GotoOn (l, `Goto, `Op (nowhere, e, `Sub, `Int (nowhere, first)), List.map snd cases));
+*)
+(*
+              parse_elt (`GotoOn (l, ("goto_on", "goto_on"), 
+*)              
+
+              let str = "goto_on" in
+                             
+(*
+              str, Text.ident str
+              parse_elt (`GotoOn (l, (Text.to_sjs tkn, Text.norm tkn)
+              let tkn = (str, Text.ident str) in
+*)
+
+(*
+              parse_elt (`GotoList (l, (str, Text.ident str),
+*)
+              parse_elt (`GotoOn (l, (str, Text.ident str),
+                `Op (nowhere, e, `Sub, `Int (nowhere, first)), 
+                List.map snd cases));
+              
               Meta.goto olbl;
               List.iter parse bodies;
               Memory.undefine nowhere "__ConstantCase__" (Text.ident "__ConstantCase__")
             with Exit ->
               (* Use goto_case() to handle complex situations. *)
+              
               let cases, ofs =
                 List.fold_left
                   (fun (ca, oa) (ce, oe) -> (ce :: ca), (oe :: oa))
@@ -434,7 +1045,20 @@ and parse_struct =
                     ofs)
               in
               Memory.define (Text.ident "__ConstantCase__") (`Macro (`Int (nowhere, 0l))) ~warnings:false;
+(*
               parse_elt (`GotoCase (l, `Goto, e, cases));
+*)
+
+              let str = "goto_case" in
+              let tkn = (str, Text.ident str) in
+
+(*
+              parse_elt (`GotoCase (l, ("goto_case", "goto_case"), e, cases));
+              parse_elt (`GotoCase (l, (str, Text.ident str), e, cases));
+*)
+
+              parse_elt (`GotoCase (l, tkn, e, cases));
+              
               List.iter (List.iter parse_elt) ofs;
               Memory.undefine nowhere "__ConstantCase__" (Text.ident "__ConstantCase__")
           end;
@@ -462,7 +1086,17 @@ and parse_struct =
           else for i = start downto finish do f i done
 
 let initialise_modular_recursion : unit =
+
+(*
+    ignore(printf "initialise_modular_recursion()\n");
+*)
+    
+
   StrLexer.KeULexer.init KeULexer.call_parser_on_text KeULexer.get_token;
+
+(*
+  StrLexer.KeULexer.init KeULexer.call_parser_on_text get_token;
+*)
   KeAst.memory__get_as_expression := Memory.get_as_expression;
   Global.expr__normalise_and_get_const := Expr.normalise_and_get_const;
   Global.compilerFrame__parse := parse;
@@ -470,14 +1104,32 @@ let initialise_modular_recursion : unit =
   Global.expr__disambiguate := Expr.expr_disambiguate
 
 
-let compile fname =
+let compile file =
+
+(*
+    ignore(printf "CompilerFrame::compile()\n");
+*)
+
+(*
+  if !App.verbose > 0 then sysInfo file;
+*)
+  
+(*
   let ast = DynArray.create () in
   let srcdir = if fname = "-" then "." else Filename.dirname fname in
+*)
+  
+  let ast = DynArray.create () in
+  let fdir = Filename.dirname file in
+  let fname = Filename.basename file in
+  let srcdir = if fname = "-" then "." else fdir in
   if !App.outdir = "" then App.outdir := srcdir;
 
   (* Initialise. *)
+  
   KeTypes.init ();
   Ini.init IniParser.inifile IniLexer.lex srcdir;
+  
   DynArray.add ast
    (ksprintf get_ast_of_string
      "#define __RLC__,
@@ -493,33 +1145,152 @@ let compile fname =
      (if !App.array_bounds then ", __SafeArrays__" else ""));
 
   (* Read RTL *)
-  if !App.verbose then sysInfo "Loading Kepago/RealLive RTL";
+
+  if !App.verbose > 0 then sysInfo "Loading Kepago/RealLive RTL";
   DynArray.add ast (get_ast_of_file (Config.prefix () // "system.kh"));
   
   (* Switch to source directory. *)
-  let oldcwd = Sys.getcwd () in
-  Sys.chdir srcdir;
-
-  (* Read project header (if present). *)
-  if Sys.file_exists "global.kh" then 
-   (if !App.verbose then sysInfo "Loading project header";
-    DynArray.add ast (get_ast_of_file "global.kh"));
   
+  
+  let oldcwd = Sys.getcwd () in
+  
+(*
+  if !App.resdir != "" then App.resdir := 
+    Filename.concat oldcwd !App.resdir;
+*)
+  
+  if !App.resdir != "" && Filename.is_relative !App.resdir then
+      App.resdir := Filename.concat oldcwd !App.resdir;
+      
+  
+  
+  (*
+  DynArray.add App.appdirs (Sys.getcwd ());
+  DynArray.add App.appdirs srcdir;
+  *)
+  
+  
+  Sys.chdir srcdir;
+  
+  
+  (* Read project and/or seen header (if present). *)
+  
+(*
+  if !App.verbose > 0 then ksprintf sysInfo 
+    "working directory: \"%s\"\n", (Sys.getcwd ());
+*)
+
+(*
+  if !App.verbose > 0 then ksprintf Optpp.sysInfo 
+    "cwd: %s\n" (Sys.getcwd ());
+*)
+        
+(*
+  if Sys.file_exists "global.kh" then (
+    if !App.verbose > 0 then sysInfo "Loading project header";
+    DynArray.add ast (get_ast_of_file "global.kh");
+  );
+*)
+
+  let bname = Filename.chop_extension fname in 
+  
+  (*
+  ksprintf sysInfo "String.length bname: %d" 
+    (String.length bname);
+
+  ksprintf sysInfo "String.sub bname 0 4: %s" 
+    (String.lowercase (String.sub bname 0 4));
+
+  ksprintf sysInfo "String.sub bname 4 4: %d" 
+    (int_of_string (String.sub bname 4 4));
+  *)
+  
+  if String.length bname = 8 && 
+    String.lowercase (String.sub bname 0 4) = "seen" then (
+    let idx = int_of_string (String.sub bname 4 4) in 
+    let nam = Printf.sprintf "global%04d.kh" idx in
+    
+    (*
+    ksprintf sysInfo "idx: %d" idx; 
+    ksprintf sysInfo "nam: \"%s\"" nam;
+    
+    ksprintf sysInfo "exists: %s" (string_of_bool (Sys.file_exists nam));
+    *)
+    
+    if Sys.file_exists nam then (
+      if !App.verbose > 0 then
+        sysInfo "Loading seen header";
+      DynArray.add ast (get_ast_of_file nam)
+    ) else if Sys.file_exists "global.kh" then (
+      if !App.verbose > 0 then sysInfo "Loading project header";
+      DynArray.add ast (get_ast_of_file "global.kh");
+    )
+  );
+
+      
   (* Read input file. *)
-  if !App.verbose then sysInfo "Lexing and parsing";
+  
+  if !App.verbose > 0 then sysInfo "Lexing and parsing";
+  
+(*
+  if !App.verbose > 0 then ksprintf sysInfo 
+    "working directory: \"%s\"\n", Sys.getcwd ();  
+*)
+
+  (*
+  if !App.verbose > 0 then ksprintf Optpp.sysInfo 
+    "cwd: %s\n" (Sys.getcwd ());
+  *)
+  
   DynArray.add ast
    (if fname = "-"
     then get_ast_of_channel !App.enc stdin ~file:"stdin" ~line:1
     else get_ast_of_file (Filename.basename fname));
+    (*
+    else get_ast_of_file (Filename.concat srcdir (Filename.basename fname)));
+    *)
 
   (* Normalise and compile. *)
-  if !App.verbose then sysInfo "Compiling";
+
+(*
+  Sys.chdir (if !App.resdir != "" then !App.resdir else srcdir);
+*)
+  
+  if !App.verbose > 0 then sysInfo "Compiling";
+(*
   parse ast;
+*)
+
+  (* reset working directory if resource directory defined *)
+  
+  (*
+  if !App.resdir != "" then Sys.chdir oldcwd;
+  *)
+  
+(*
+  if !App.verbose > 0 then ksprintf sysInfo 
+    "working directory: \"%s\"\n", Sys.getcwd ();
+*)
+
+  (*
+  if !App.verbose > 0 then ksprintf Optpp.sysInfo 
+    "cwd: %s\n" (Sys.getcwd ());
+  *)
+  
+    (try
+(*
+        loop_or (loop_and (get_expr_cond lexbuf) lexbuf) lexbuf
+*)
+        parse ast
+    with
+        | Optpp.Trace (s, n)  -> Optpp.contTrace s n "get_expr_bool");
   
   (* Hardwired while we don't have proper functions. *)
+  
   Textout.finalise ();
 
   (* Finish off file. *)
+  
   if !App.debug_info then 
     Output.add_code nowhere
       "\x82\x72\x82\x85\x82\x85\x82\x8e\x82\x64\x82\x8e\x82\x84\xff\xff\xff\xff\xff\
@@ -529,9 +1300,16 @@ let compile fname =
     Output.add_code nowhere "\x00";
 
   (* Postconditions *)
+  
   assert (Stack.length Memory.scope = 1);
 
   (* Output code. *)
-  if !App.verbose then sysInfo "Assembling";
+
   Sys.chdir oldcwd;
-  BytecodeGen.generate ()
+  
+  if !App.verbose > 0 then sysInfo "Assembling";
+(*  Sys.chdir oldcwd; *)
+  BytecodeGen.generate ();
+  
+  if !App.verbose > 0 then sysInfo ""
+
