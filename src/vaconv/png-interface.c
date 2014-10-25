@@ -52,7 +52,7 @@ value va_get_png_size (value fname)
     failwith ("out of memory");
   }
 
-  if (setjmp (png_ptr->jmpbuf)) {
+  if (setjmp (png_jmpbuf(png_ptr))) {
     fclose (fp);
     png_destroy_read_struct (&png_ptr, &info_ptr, (png_infopp)NULL);
     failwith ("generic png");
@@ -104,7 +104,7 @@ value va_read_png (value fname, value arr)
     failwith ("out of memory");
   }
 
-  if (setjmp (png_ptr->jmpbuf)) {
+  if (setjmp (png_jmpbuf(png_ptr))) {
     fclose (fp);
     png_destroy_read_struct (&png_ptr, &info_ptr, NULL);
     failwith ("generic png");
@@ -169,7 +169,7 @@ value va_write_png (value arr, value pix_len, value max_compression, value fname
     failwith ("out of memory");
   }
 
-  if (setjmp (png_ptr->jmpbuf)) {
+  if (setjmp (png_jmpbuf(png_ptr))) {
     fclose (fp);
     png_destroy_write_struct (&png_ptr, &info_ptr);
     failwith ("generic png");
